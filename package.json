@@ -1,0 +1,27 @@
+{
+  "name": "abap-adt-api",
+  "version": "0.1.0",
+  "description": "Interface to Abap Developer Tools webservice",
+  "outDir": "/build",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "Marcello Urbani",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "fast-xml-parser": "^3.12.12"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.13",
+    "@types/node": "^10.12.18",
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5",
+    "tslint": "^5.12.1",
+    "typescript": "^3.2.4"
+  }
+}
