@@ -1,6 +1,6 @@
 import { AdtHTTP } from "./AdtHTTP"
 import * as api from "./api"
-import { getTransportInfo } from "./api"
+import { createTransport, getTransportInfo } from "./api"
 
 export class ADTClient {
   private h: AdtHTTP
@@ -67,5 +67,13 @@ export class ADTClient {
 
   public async getTransportInfo(objPath: string, devClass: string) {
     return getTransportInfo(this.h, objPath, devClass)
+  }
+
+  public async createTransport(
+    objPath: string,
+    REQUEST_TEXT: string,
+    DEVCLASS: string
+  ) {
+    return createTransport(this.h, objPath, REQUEST_TEXT, DEVCLASS)
   }
 }

@@ -82,3 +82,17 @@ export async function getTransportInfo(
   const TRANSPORTS = extractTransports(REQUESTS)
   return { ...header, LOCKS: extractLocks(LOCKS), TRANSPORTS }
 }
+export async function createTransport(
+  h: AdtHTTP,
+  objPath: string,
+  REQUEST_TEXT: string,
+  DEVCLASS: string
+): Promise<string> {
+  const data = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF: objPath })
+  const response = await h.request("/sap/bc/adt/cts/transports", {
+    data,
+    method: "POST"
+  })
+  const transport = response.data.split("/").pop()
+  return transport
+}

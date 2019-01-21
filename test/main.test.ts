@@ -1,14 +1,8 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
 import { ADTClient } from "../src"
+import { create } from "./login"
 
-function create() {
-  return new ADTClient(
-    process.env.ADT_URL!,
-    process.env.ADT_USER!,
-    process.env.ADT_PASS!
-  )
-}
 test("login", async () => {
   const c = create()
   expect(c).toBeDefined()
@@ -38,7 +32,6 @@ test("getReentranceTicket", async () => {
   expect(ticket).toBeDefined()
   expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
 })
-
 test("getTransportInfo", async () => {
   const c = create()
   expect(c).toBeDefined()
@@ -56,6 +49,11 @@ test("getTransportInfo", async () => {
   )
   expect(info).toBeDefined()
   expect(info.RECORDING).toEqual("")
-  expect(info.LOCKS).toBeDefined()
-  expect(info.LOCKS.HEADER.TRKORR).toMatch(/NPLK9[\d]*/)
+  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+  info = await c.getTransportInfo(
+    "/sap/bc/adt/oo/classes/zapidummylocked",
+    "ZAPIDUMMY"
+  )
+  expect(info).toBeDefined()
+  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
 })

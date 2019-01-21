@@ -2,7 +2,7 @@
 
 This library simplifies access to the ADT REST interface
 
-At the moment only have one method, others will come soon
+At the moment only have a few methods, others will come soon
 
 ```typescript
 const client = new ADTClient(
