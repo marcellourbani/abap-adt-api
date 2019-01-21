@@ -1,9 +1,15 @@
 import Axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
+const SESSION_HEADER = "X-sap-adt-sessiontype"
 
 export class AdtHTTP {
-  public stateful: boolean = false
+  public get stateful() {
+    return this.axios.defaults.headers[SESSION_HEADER] === "stateful"
+  }
+  public set stateful(stateful: boolean) {
+    this.axios.defaults.headers[SESSION_HEADER] = stateful ? "stateful" : ""
+  }
   public get csrfToken() {
     return this.axios.defaults.headers[CSRF_TOKEN_HEADER]
   }
@@ -30,7 +36,7 @@ export class AdtHTTP {
       auth: { username: this.username, password: this.password },
       headers: {
         "x-csrf-token": FETCH_CSRF_TOKEN,
-        "X-sap-adt-sessiontype": this.stateful ? "stateful" : "",
+        SESSION_HEADER: "",
         "Cache-Control": "no-cache",
         withCredentials: true,
         Accept: "*/*"

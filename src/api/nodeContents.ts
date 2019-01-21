@@ -1,5 +1,5 @@
 import { parse } from "fast-xml-parser"
-
+import { AdtHTTP } from "../AdtHTTP"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F"
 export interface NodeRequestOptions {
   parent_name?: string
@@ -34,7 +34,7 @@ export interface NodeStructure {
     }
   ]
 }
-export const parsePackageResponse = (data: string): NodeStructure => {
+const parsePackageResponse = (data: string): NodeStructure => {
   const xml = parse(data)
   const root = xml["asx:abap"]["asx:values"]["DATA"]
   const nodes =
@@ -50,13 +50,17 @@ export const parsePackageResponse = (data: string): NodeStructure => {
   }
 }
 
-export const defined = (o: any) =>
-  Object.keys(o)
-    .filter(k => o[k] !== undefined)
-    .reduce(
-      (cur, k) => {
-        cur[k] = o[k]
-        return cur
-      },
-      {} as any
-    )
+export async function getNodeContents(
+  h: AdtHTTP,
+  options: NodeRequestOptions
+): Promise<NodeStructure> {
+  const params = {
+    ...options,
+    withShortDescriptions: true
+  }
+  const response = await h.request("/sap/bc/adt/repository/nodestructure", {
+    method: "POST",
+    params
+  })
+  return parsePackageResponse(response.data)
+}

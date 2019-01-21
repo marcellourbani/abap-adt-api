@@ -1,11 +1,7 @@
-import * as objt from "./ObjectTypes"
+import * as api from "./api"
 import { AdtHTTP } from "./AdtHTTP"
 
 export class ADTClient {
-  public stateful: boolean = false
-  public get csrfToken() {
-    return this.h.csrfToken
-  }
   private h: AdtHTTP
 
   /**
@@ -30,6 +26,16 @@ export class ADTClient {
       )
     this.h = new AdtHTTP(baseUrl, username, password)
   }
+  public get stateful() {
+    return this.h.stateful
+  }
+  public set stateful(stateful: boolean) {
+    this.h.stateful = stateful
+  }
+
+  public get csrfToken() {
+    return this.h.csrfToken
+  }
 
   /**
    * Logs on an ADT server. parameters provided on creation
@@ -46,19 +52,8 @@ export class ADTClient {
   }
 
   public async getNodeContents(
-    options: objt.NodeRequestOptions
-  ): Promise<objt.NodeStructure> {
-    const params = {
-      ...objt.defined(options),
-      withShortDescriptions: true
-    }
-    const response = await this.h.request(
-      "/sap/bc/adt/repository/nodestructure",
-      {
-        method: "POST",
-        params
-      }
-    )
-    return objt.parsePackageResponse(response.data)
+    options: api.NodeRequestOptions
+  ): Promise<api.NodeStructure> {
+    return api.getNodeContents(this.h, options)
   }
 }
