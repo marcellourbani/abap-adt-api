@@ -1,6 +1,6 @@
 {
   "name": "abap-adt-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "/build",
   "main": "build/index.js",
@@ -12,6 +12,10 @@
   "keywords": [],
   "author": "Marcello Urbani",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcellourbani/abap-adt-api"
+  },
   "dependencies": {
     "axios": "^0.18.0",
     "fast-xml-parser": "^3.12.12"
