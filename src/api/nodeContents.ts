@@ -17,6 +17,20 @@ export interface NodeStructure {
       OBJECT_URI: string
       OBJECT_VIT_URI: string
       EXPANDABLE: string
+      // new fields from 7.52
+      VISIBILITY?: number
+      NODE_ID?: string
+      DESCRIPTION?: string
+      DESCRIPTION_TYPE?: string
+      IS_ABSTRACT?: string
+      IS_CONSTANT?: string
+      IS_CONSTRUCTOR?: string
+      IS_EVENT_HANDLER?: string
+      IS_FINAL?: string
+      IS_FOR_TESTING?: string
+      IS_READ_ONLY?: string
+      IS_REDEFINITION?: string
+      IS_STATIC?: string
     }
   ]
   categories: [
@@ -36,7 +50,7 @@ export interface NodeStructure {
 }
 const parsePackageResponse = (data: string): NodeStructure => {
   const xml = parse(data)
-  const root = xml["asx:abap"]["asx:values"]["DATA"]
+  const root = xml["asx:abap"]["asx:values"].DATA
   const nodes =
     (root.TREE_CONTENT && root.TREE_CONTENT.SEU_ADT_REPOSITORY_OBJ_NODE) || []
   const categories =
@@ -44,8 +58,8 @@ const parsePackageResponse = (data: string): NodeStructure => {
   const objectTypes =
     (root.OBJECT_TYPES && root.OBJECT_TYPES.SEU_ADT_OBJECT_TYPE_INFO) || []
   return {
-    nodes,
     categories,
+    nodes,
     objectTypes
   }
 }

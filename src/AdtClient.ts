@@ -1,5 +1,6 @@
-import * as api from "./api"
 import { AdtHTTP } from "./AdtHTTP"
+import * as api from "./api"
+import { getTransportInfo } from "./api"
 
 export class ADTClient {
   private h: AdtHTTP
@@ -55,5 +56,16 @@ export class ADTClient {
     options: api.NodeRequestOptions
   ): Promise<api.NodeStructure> {
     return api.getNodeContents(this.h, options)
+  }
+
+  public async getReentranceTicket(): Promise<string> {
+    const response = await this.h.request(
+      "/sap/bc/adt/security/reentranceticket"
+    )
+    return response.data
+  }
+
+  public async getTransportInfo(objPath: string, devClass: string) {
+    return getTransportInfo(this.h, objPath, devClass)
   }
 }

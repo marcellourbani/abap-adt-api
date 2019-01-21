@@ -32,14 +32,14 @@ export class AdtHTTP {
         "Invalid ADTClient configuration: url, login and password are required"
       )
     this.axios = Axios.create({
-      baseURL: this.baseUrl,
       auth: { username: this.username, password: this.password },
+      baseURL: this.baseUrl,
       headers: {
-        "x-csrf-token": FETCH_CSRF_TOKEN,
-        SESSION_HEADER: "",
+        Accept: "*/*",
         "Cache-Control": "no-cache",
+        SESSION_HEADER: "",
         withCredentials: true,
-        Accept: "*/*"
+        "x-csrf-token": FETCH_CSRF_TOKEN
       }
     })
   }
@@ -52,7 +52,8 @@ export class AdtHTTP {
   public async request(url: string, config?: AxiosRequestConfig) {
     try {
       const response = await this.axios(url, config)
-      this.axios.defaults.headers.Cookie = response.headers["set-cookie"]
+      const cookie = response.headers["set-cookie"]
+      if (cookie) this.axios.defaults.headers.Cookie = cookie
       const newtoken = response.headers[CSRF_TOKEN_HEADER]
       if (typeof newtoken === "string" && this.csrfToken === FETCH_CSRF_TOKEN) {
         this.axios.defaults.headers[CSRF_TOKEN_HEADER] = newtoken
