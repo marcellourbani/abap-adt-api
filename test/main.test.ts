@@ -1,6 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import { ADTClient } from "../src"
+import { ADTClient, isClassStructure } from "../src"
 import { create } from "./login"
 
 test("login", async () => {
@@ -32,6 +32,7 @@ test("getReentranceTicket", async () => {
   expect(ticket).toBeDefined()
   expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
 })
+
 test("getTransportInfo", async () => {
   const c = create()
   expect(c).toBeDefined()
@@ -56,4 +57,36 @@ test("getTransportInfo", async () => {
   )
   expect(info).toBeDefined()
   expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+})
+
+test("objectStructure", async () => {
+  const c = create()
+  await c.login()
+  let structure = await c.objectStructure(
+    "/sap/bc/adt/programs/programs/zabapgit"
+  )
+  expect(structure.links).toBeDefined()
+  expect(structure.links!.length).toBeGreaterThan(0)
+  expect(c.mainInclude(structure)).toBe(
+    "/sap/bc/adt/programs/programs/zabapgit/source/main"
+  )
+  structure = await c.objectStructure(
+    "/sap/bc/adt/functions/groups/zabapgit_parallel"
+  )
+  expect(structure.links).toBeDefined()
+  expect(structure.links!.length).toBeGreaterThan(0)
+  expect(c.mainInclude(structure)).toBe(
+    "/sap/bc/adt/functions/groups/zabapgit_parallel/source/main"
+  )
+  structure = await c.objectStructure(
+    "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit"
+  )
+  if (!isClassStructure(structure)) throw new Error("ss")
+  expect(structure.includes.length).toBeGreaterThan(0)
+  expect(c.mainInclude(structure)).toBe(
+    "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/source/main"
+  )
+  expect(c.classIncludes(structure).get("definitions")).toBe(
+    "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/includes/definitions"
+  )
 })

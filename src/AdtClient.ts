@@ -1,6 +1,14 @@
 import { AdtHTTP } from "./AdtHTTP"
 import * as api from "./api"
-import { createTransport, getTransportInfo } from "./api"
+import {
+  AbapClassStructure,
+  AbapObjectStructure,
+  classIncludes,
+  createTransport,
+  getTransportInfo,
+  isClassStructure,
+  objectStructure
+} from "./api"
 
 export class ADTClient {
   private h: AdtHTTP
@@ -65,15 +73,48 @@ export class ADTClient {
     return response.data
   }
 
-  public async getTransportInfo(objPath: string, devClass: string) {
-    return getTransportInfo(this.h, objPath, devClass)
+  public async getTransportInfo(objPartUrl: string, devClass: string) {
+    return getTransportInfo(this.h, objPartUrl, devClass)
   }
 
   public async createTransport(
-    objPath: string,
+    objPartUrl: string,
     REQUEST_TEXT: string,
     DEVCLASS: string
   ) {
-    return createTransport(this.h, objPath, REQUEST_TEXT, DEVCLASS)
+    return createTransport(this.h, objPartUrl, REQUEST_TEXT, DEVCLASS)
+  }
+
+  public async objectStructure(
+    objectUrl: string
+  ): Promise<AbapObjectStructure> {
+    return objectStructure(this.h, objectUrl)
+  }
+
+  public mainInclude(object: AbapObjectStructure): string {
+    if (isClassStructure(object)) {
+      const mainInclude = object.includes.find(
+        x => x["class:includeType"] === "main"
+      )
+      const mainLink =
+        mainInclude && mainInclude.links.find(x => x.type === "text/plain")
+      if (mainLink) return object.objectUrl + "/" + mainLink.href
+    } else {
+      const mainLink = object.links.find(x => x.type === "text/plain")
+      if (mainLink) return object.objectUrl + "/" + mainLink.href
+    }
+    return object.objectUrl + "/source/main"
+  }
+
+  public classIncludes(clas: AbapClassStructure) {
+    const includes = new Map<classIncludes, string>()
+    for (const i of clas.includes) {
+      const mainLink = i.links.find(x => x.type === "text/plain")
+      includes.set(
+        i["class:includeType"] as classIncludes,
+        clas.objectUrl + "/" + mainLink!.href
+      )
+    }
+    return includes
   }
 }

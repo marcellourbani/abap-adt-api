@@ -1,2 +1,9 @@
 export * from "./AdtClient"
-export { NodeRequestOptions, NodeStructure } from "./api"
+export {
+  AbapClassStructure,
+  AbapObjectStructure,
+  isClassMetaData,
+  isClassStructure,
+  NodeRequestOptions,
+  NodeStructure
+} from "./api"
