@@ -4,6 +4,14 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## Unreleased
+
+### Added
+
+- custom exceptions
+- auto login
+- repeat login if ticket expired
+
 ## [0.2.5] - 2019-01-22
 
 ### Added

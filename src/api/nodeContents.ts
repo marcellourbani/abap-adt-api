@@ -49,14 +49,19 @@ export interface NodeStructure {
   ]
 }
 const parsePackageResponse = (data: string): NodeStructure => {
-  const xml = parse(data)
-  const root = xml["asx:abap"]["asx:values"].DATA
-  const nodes =
-    (root.TREE_CONTENT && root.TREE_CONTENT.SEU_ADT_REPOSITORY_OBJ_NODE) || []
-  const categories =
-    (root.CATEGORIES && root.CATEGORIES.SEU_ADT_OBJECT_CATEGORY_INFO) || []
-  const objectTypes =
-    (root.OBJECT_TYPES && root.OBJECT_TYPES.SEU_ADT_OBJECT_TYPE_INFO) || []
+  let nodes = []
+  let categories = []
+  let objectTypes = []
+  if (data) {
+    const xml = parse(data)
+    const root = xml["asx:abap"]["asx:values"].DATA
+    nodes =
+      (root.TREE_CONTENT && root.TREE_CONTENT.SEU_ADT_REPOSITORY_OBJ_NODE) || []
+    categories =
+      (root.CATEGORIES && root.CATEGORIES.SEU_ADT_OBJECT_CATEGORY_INFO) || []
+    objectTypes =
+      (root.OBJECT_TYPES && root.OBJECT_TYPES.SEU_ADT_OBJECT_TYPE_INFO) || []
+  }
   return {
     categories,
     nodes,

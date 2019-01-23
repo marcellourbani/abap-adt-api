@@ -1,19 +1,30 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
 import { ADTClient, isClassStructure } from "../src"
-import { create } from "./login"
+import { create, createHttp } from "./login"
 
 test("login", async () => {
-  const c = create()
+  const c = createHttp()
   expect(c).toBeDefined()
   await c.login()
   expect(c.csrfToken).not.toEqual("fetch")
 })
 
+test("badToken", async () => {
+  const c = createHttp("DE")
+  await c.login()
+  expect(c.csrfToken).not.toEqual("fetch")
+  c.csrfToken = "bad" // will trigger a bad login
+  const response = await c.request("/sap/bc/adt/repository/nodestructure", {
+    method: "POST",
+    params: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
+  })
+  expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
+  expect(response.data).toBeDefined()
+})
+
 test("getNodeContents", async () => {
   const c = create()
-  expect(c).toBeDefined()
-  await c.login()
   const resp = await c.getNodeContents({
     parent_name: "$ABAPGIT",
     parent_type: "DEVC/K"
@@ -24,10 +35,16 @@ test("getNodeContents", async () => {
   expect(known).toBeDefined()
 })
 
+test("emptyNodeContents", async () => {
+  const c = create()
+  const resp = await c.getNodeContents({
+    parent_name: "/FOO/BARFOOFOOTERTQWERWER",
+    parent_type: "DEVC/K"
+  })
+})
+
 test("getReentranceTicket", async () => {
   const c = create()
-  expect(c).toBeDefined()
-  await c.login()
   const ticket = await c.getReentranceTicket()
   expect(ticket).toBeDefined()
   expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
@@ -35,8 +52,6 @@ test("getReentranceTicket", async () => {
 
 test("getTransportInfo", async () => {
   const c = create()
-  expect(c).toBeDefined()
-  await c.login()
   let info = await c.getTransportInfo(
     "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
     "ZAPIDUMMY"
@@ -58,10 +73,21 @@ test("getTransportInfo", async () => {
   expect(info).toBeDefined()
   expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
 })
+test("badTransportInfo", async () => {
+  const c = create()
+  try {
+    const info = await c.getTransportInfo(
+      "/sap/bc/adt/oo/classes/zapidummytestcreation/foo/bar",
+      "ZAPIDUMMY"
+    )
+    fail("Exception expected for invalid object URL")
+  } catch (e) {
+    expect(e).toBeDefined()
+  }
+})
 
 test("objectStructure", async () => {
   const c = create()
-  await c.login()
   let structure = await c.objectStructure(
     "/sap/bc/adt/programs/programs/zabapgit"
   )

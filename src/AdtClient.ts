@@ -26,14 +26,14 @@ export class ADTClient {
     baseUrl: string,
     username: string,
     password: string,
-    readonly client: string = "",
-    readonly language: string = ""
+    client: string = "",
+    language: string = ""
   ) {
     if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-    this.h = new AdtHTTP(baseUrl, username, password)
+    this.h = new AdtHTTP(baseUrl, username, password, client, language)
   }
   public get stateful() {
     return this.h.stateful
@@ -45,19 +45,23 @@ export class ADTClient {
   public get csrfToken() {
     return this.h.csrfToken
   }
-
+  public get baseUrl() {
+    return this.h.baseUrl
+  }
+  public get client() {
+    return this.h.client
+  }
+  public get language() {
+    return this.h.language
+  }
+  public get username() {
+    return this.h.username
+  }
   /**
    * Logs on an ADT server. parameters provided on creation
    */
   public async login() {
-    let sep = "?"
-    let extra = ""
-    if (this.client) {
-      extra = `?sap-client=${this.client}`
-      sep = "&"
-    }
-    if (this.language) extra = extra + sep + `sap-language=${this.language}`
-    await this.h.request(`/sap/bc/adt/compatibility/graph${extra}`)
+    await this.h.login()
   }
 
   public async getNodeContents(

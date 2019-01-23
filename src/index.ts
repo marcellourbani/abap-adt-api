@@ -1,4 +1,5 @@
 export * from "./AdtClient"
+export * from "./AdtException"
 export {
   AbapClassStructure,
   AbapObjectStructure,
