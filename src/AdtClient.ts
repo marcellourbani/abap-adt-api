@@ -3,6 +3,7 @@ import * as api from "./api"
 import {
   AbapClassStructure,
   AbapObjectStructure,
+  activate,
   classIncludes,
   createTransport,
   getTransportInfo,
@@ -11,6 +12,33 @@ import {
 } from "./api"
 
 export class ADTClient {
+  public static mainInclude(object: AbapObjectStructure): string {
+    if (isClassStructure(object)) {
+      const mainInclude = object.includes.find(
+        x => x["class:includeType"] === "main"
+      )
+      const mainLink =
+        mainInclude && mainInclude.links.find(x => x.type === "text/plain")
+      if (mainLink) return object.objectUrl + "/" + mainLink.href
+    } else {
+      const mainLink = object.links.find(x => x.type === "text/plain")
+      if (mainLink) return object.objectUrl + "/" + mainLink.href
+    }
+    return object.objectUrl + "/source/main"
+  }
+
+  public static classIncludes(clas: AbapClassStructure) {
+    const includes = new Map<classIncludes, string>()
+    for (const i of clas.includes) {
+      const mainLink = i.links.find(x => x.type === "text/plain")
+      includes.set(
+        i["class:includeType"] as classIncludes,
+        clas.objectUrl + "/" + mainLink!.href
+      )
+    }
+    return includes
+  }
+
   private h: AdtHTTP
 
   /**
@@ -57,6 +85,7 @@ export class ADTClient {
   public get username() {
     return this.h.username
   }
+
   /**
    * Logs on an ADT server. parameters provided on creation
    */
@@ -95,30 +124,11 @@ export class ADTClient {
     return objectStructure(this.h, objectUrl)
   }
 
-  public mainInclude(object: AbapObjectStructure): string {
-    if (isClassStructure(object)) {
-      const mainInclude = object.includes.find(
-        x => x["class:includeType"] === "main"
-      )
-      const mainLink =
-        mainInclude && mainInclude.links.find(x => x.type === "text/plain")
-      if (mainLink) return object.objectUrl + "/" + mainLink.href
-    } else {
-      const mainLink = object.links.find(x => x.type === "text/plain")
-      if (mainLink) return object.objectUrl + "/" + mainLink.href
-    }
-    return object.objectUrl + "/source/main"
-  }
-
-  public classIncludes(clas: AbapClassStructure) {
-    const includes = new Map<classIncludes, string>()
-    for (const i of clas.includes) {
-      const mainLink = i.links.find(x => x.type === "text/plain")
-      includes.set(
-        i["class:includeType"] as classIncludes,
-        clas.objectUrl + "/" + mainLink!.href
-      )
-    }
-    return includes
+  public async activate(
+    objectName: string,
+    objectUrl: string,
+    mainInclude?: string
+  ) {
+    return activate(this.h, objectName, objectUrl, mainInclude)
   }
 }

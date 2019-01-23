@@ -73,6 +73,7 @@ test("getTransportInfo", async () => {
   expect(info).toBeDefined()
   expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
 })
+
 test("badTransportInfo", async () => {
   const c = create()
   try {
@@ -93,7 +94,7 @@ test("objectStructure", async () => {
   )
   expect(structure.links).toBeDefined()
   expect(structure.links!.length).toBeGreaterThan(0)
-  expect(c.mainInclude(structure)).toBe(
+  expect(ADTClient.mainInclude(structure)).toBe(
     "/sap/bc/adt/programs/programs/zabapgit/source/main"
   )
   structure = await c.objectStructure(
@@ -101,7 +102,7 @@ test("objectStructure", async () => {
   )
   expect(structure.links).toBeDefined()
   expect(structure.links!.length).toBeGreaterThan(0)
-  expect(c.mainInclude(structure)).toBe(
+  expect(ADTClient.mainInclude(structure)).toBe(
     "/sap/bc/adt/functions/groups/zabapgit_parallel/source/main"
   )
   structure = await c.objectStructure(
@@ -109,10 +110,27 @@ test("objectStructure", async () => {
   )
   if (!isClassStructure(structure)) throw new Error("ss")
   expect(structure.includes.length).toBeGreaterThan(0)
-  expect(c.mainInclude(structure)).toBe(
+  expect(ADTClient.mainInclude(structure)).toBe(
     "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/source/main"
   )
-  expect(c.classIncludes(structure).get("definitions")).toBe(
+  expect(ADTClient.classIncludes(structure).get("definitions")).toBe(
     "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/includes/definitions"
   )
+})
+
+test("activateProgram", async () => {
+  const c = create()
+  let result = await c.activate(
+    "zabapgit",
+    "/sap/bc/adt/programs/programs/zabapgit"
+  )
+  expect(result).toBeDefined()
+  expect(result.success).toBe(true)
+
+  result = await c.activate(
+    "zadttestinactive",
+    "/sap/bc/adt/programs/programs/zadttestinactive"
+  )
+  expect(result).toBeDefined()
+  expect(result.success).toBe(false)
 })
