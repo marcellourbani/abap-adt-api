@@ -1,6 +1,7 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
 import { xmlArray, xmlNodeAttr } from "../utilities"
+import { ValidateObjectUrl } from "../AdtException"
 
 interface ActivationResultMessage {
   objDescr: string
@@ -13,12 +14,20 @@ export interface ActivationResult {
   success: boolean
   messages: ActivationResultMessage[]
 }
+
+export interface MainInclude {
+  "adtcore:uri": string
+  "adtcore:type": string
+  "adtcore:name": string
+}
+
 export async function activate(
   h: AdtHTTP,
   objectName: string,
   objectUrl: string,
   mainInclude?: string
 ): Promise<ActivationResult> {
+  ValidateObjectUrl(objectUrl)
   const params = { method: "activate", preauditRequested: true }
   const incl = mainInclude ? `?context=${encodeURIComponent(mainInclude)}` : ""
   const data =
@@ -40,9 +49,23 @@ export async function activate(
     })
     messages = xmlArray(raw["chkl:messages"], "msg").map(xmlNodeAttr)
     messages.some(m => {
-      if (m.type.match(/EAX/)) success = false
+      if (m.type.match(/[EAX]/)) success = false
       return !success
     })
   }
   return { messages, success }
+}
+
+export async function getMainPrograms(h: AdtHTTP, IncludeUrl: string) {
+  ValidateObjectUrl(IncludeUrl)
+  const response = await h.request(`${IncludeUrl}/mainprograms`)
+  const parsed = parse(response.data, {
+    ignoreAttributes: false,
+    parseAttributeValue: true
+  })
+  const includes = xmlArray(
+    parsed["adtcore:objectReferences"],
+    "adtcore:objectReference"
+  ).map(xmlNodeAttr)
+  return includes as MainInclude[]
 }

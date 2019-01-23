@@ -6,6 +6,7 @@ import {
   activate,
   classIncludes,
   createTransport,
+  getMainPrograms,
   getTransportInfo,
   isClassStructure,
   objectStructure
@@ -130,5 +131,9 @@ export class ADTClient {
     mainInclude?: string
   ) {
     return activate(this.h, objectName, objectUrl, mainInclude)
+  }
+
+  public async getMainPrograms(includeUrl: string) {
+    return getMainPrograms(this.h, includeUrl)
   }
 }

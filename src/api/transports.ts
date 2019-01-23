@@ -1,4 +1,5 @@
 import { parse } from "fast-xml-parser"
+import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { JSON2AbapXML, xmlArray, xmlNode } from "../utilities"
 
@@ -68,6 +69,7 @@ export async function getTransportInfo(
   objPath: string,
   devClass: string
 ): Promise<TransportInfo> {
+  ValidateObjectUrl(objPath)
   const response = await h.request("/sap/bc/adt/cts/transportchecks", {
     data: JSON2AbapXML({
       DEVCLASS: devClass,
@@ -88,6 +90,7 @@ export async function createTransport(
   REQUEST_TEXT: string,
   DEVCLASS: string
 ): Promise<string> {
+  ValidateObjectUrl(objPath)
   const data = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF: objPath })
   const response = await h.request("/sap/bc/adt/cts/transports", {
     data,

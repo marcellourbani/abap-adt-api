@@ -11,9 +11,9 @@ class AdtErrorException extends Error {
   }
   constructor(
     public readonly err: number,
-    public readonly parent: AxiosError,
     public readonly type: string,
     public readonly message: string,
+    public readonly parent?: AxiosError,
     public readonly namespace?: string,
     public readonly localizedMessage?: string
   ) {
@@ -40,6 +40,8 @@ class AdtHttpException extends Error {
   }
   constructor(public readonly parent: AxiosError) {
     super()
+    this.message = parent.message
+    this.name = parent.name
   }
 }
 
@@ -73,13 +75,18 @@ export function fromException(err: AxiosError): AdtException {
     const getf = (base: any, idx: string) => (base ? base[idx] : "")
     return new AdtErrorException(
       err.response.status,
-      err,
       root.type["@_id"],
       root.message["#text"],
+      err,
       getf(root.namespace, "@_id"),
       getf(root.localizedMessage, "#text")
     )
   } catch (e) {
     return new AdtHttpException(err)
   }
+}
+
+export function ValidateObjectUrl(url: string) {
+  if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-z]+/)) return // valid
+  throw new AdtErrorException(0, "BADOBJECTURL", "Invalid Object URL:" + url)
 }

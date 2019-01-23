@@ -134,3 +134,13 @@ test("activateProgram", async () => {
   expect(result).toBeDefined()
   expect(result.success).toBe(false)
 })
+test("getMainPrograms", async () => {
+  const c = create()
+  const result = await c.getMainPrograms(
+    "/sap/bc/adt/programs/includes/zadttestincludeinc"
+  )
+  expect(result).toBeDefined()
+  expect(result.length).toBe(2)
+  expect(result[0]["adtcore:name"]).toBe("ZADTTESTINCLUDE1")
+})
+//

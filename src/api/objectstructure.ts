@@ -1,6 +1,7 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
 import { xmlNodeAttr, xmlRoot } from "../utilities"
+import { ValidateObjectUrl } from "../AdtException"
 
 interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean
@@ -99,6 +100,7 @@ export async function objectStructure(
   h: AdtHTTP,
   objectUrl: string
 ): Promise<AbapObjectStructure> {
+  ValidateObjectUrl(objectUrl)
   const response = await h.request(objectUrl)
   const res = parse(response.data, {
     ignoreAttributes: false,

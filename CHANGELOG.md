@@ -4,6 +4,17 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## Unreleased
+
+### Added
+
+- get main program
+- validate object URLs
+
+### Fixed
+
+-bug in activate
+
 ## [0.2.6] - 2019-01-23
 
 ### Added
