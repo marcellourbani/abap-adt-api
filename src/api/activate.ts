@@ -1,7 +1,7 @@
 import { parse } from "fast-xml-parser"
+import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { xmlArray, xmlNodeAttr } from "../utilities"
-import { ValidateObjectUrl } from "../AdtException"
 
 interface ActivationResultMessage {
   objDescr: string

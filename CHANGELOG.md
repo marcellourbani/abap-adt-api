@@ -10,6 +10,9 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 
 - get main program
 - validate object URLs
+- validate session status
+- lock/unlock (broken)
+- read/write source (write untested)
 
 ### Fixed
 

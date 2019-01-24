@@ -7,9 +7,13 @@ import {
   classIncludes,
   createTransport,
   getMainPrograms,
+  getObjectSource,
   getTransportInfo,
   isClassStructure,
-  objectStructure
+  lock,
+  objectStructure,
+  setObjectSource,
+  unLock
 } from "./api"
 
 export class ADTClient {
@@ -107,16 +111,16 @@ export class ADTClient {
     return response.data
   }
 
-  public async getTransportInfo(objPartUrl: string, devClass: string) {
-    return getTransportInfo(this.h, objPartUrl, devClass)
+  public async getTransportInfo(objSourceUrl: string, devClass: string) {
+    return getTransportInfo(this.h, objSourceUrl, devClass)
   }
 
   public async createTransport(
-    objPartUrl: string,
+    objSourceUrl: string,
     REQUEST_TEXT: string,
     DEVCLASS: string
   ) {
-    return createTransport(this.h, objPartUrl, REQUEST_TEXT, DEVCLASS)
+    return createTransport(this.h, objSourceUrl, REQUEST_TEXT, DEVCLASS)
   }
 
   public async objectStructure(
@@ -135,5 +139,31 @@ export class ADTClient {
 
   public async getMainPrograms(includeUrl: string) {
     return getMainPrograms(this.h, includeUrl)
+  }
+
+  public async lock(objectUrl: string, accessMode: string = "MODIFY") {
+    return await lock(this.h, objectUrl, accessMode)
+  }
+  public async unLock(objectUrl: string, lockHandle: string) {
+    return await unLock(this.h, objectUrl, lockHandle)
+  }
+
+  public async getObjectSource(objectSourceUrl: string) {
+    return getObjectSource(this.h, objectSourceUrl)
+  }
+
+  public async setObjectSource(
+    objectSourceUrl: string,
+    source: Uint8Array,
+    lockHandle: string,
+    transport?: string
+  ) {
+    return await setObjectSource(
+      this.h,
+      objectSourceUrl,
+      source,
+      lockHandle,
+      transport
+    )
   }
 }

@@ -40,16 +40,17 @@ export class AdtHTTP {
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
+    const headers: any = {
+      Accept: "*/*",
+      "Cache-Control": "no-cache",
+      withCredentials: true,
+      "x-csrf-token": FETCH_CSRF_TOKEN
+    }
+    headers[SESSION_HEADER] = ""
     this.axios = Axios.create({
       auth: { username: this.username, password: this.password },
       baseURL: this.baseUrl,
-      headers: {
-        Accept: "*/*",
-        "Cache-Control": "no-cache",
-        SESSION_HEADER: "",
-        withCredentials: true,
-        "x-csrf-token": FETCH_CSRF_TOKEN
-      }
+      headers
     })
   }
   /**

@@ -1,5 +1,6 @@
 import { AxiosError } from "axios"
 import { parse } from "fast-xml-parser"
+import { AdtHTTP } from "./AdtHTTP"
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -89,4 +90,13 @@ export function fromException(err: AxiosError): AdtException {
 export function ValidateObjectUrl(url: string) {
   if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-z]+/)) return // valid
   throw new AdtErrorException(0, "BADOBJECTURL", "Invalid Object URL:" + url)
+}
+
+export function ValidateStateful(h: AdtHTTP) {
+  if (h.stateful) return
+  throw new AdtErrorException(
+    0,
+    "STATELESS",
+    "This operation can only be performed in stateful mode"
+  )
 }

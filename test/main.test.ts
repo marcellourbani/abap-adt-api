@@ -134,6 +134,7 @@ test("activateProgram", async () => {
   expect(result).toBeDefined()
   expect(result.success).toBe(false)
 })
+
 test("getMainPrograms", async () => {
   const c = create()
   const result = await c.getMainPrograms(
@@ -143,4 +144,48 @@ test("getMainPrograms", async () => {
   expect(result.length).toBe(2)
   expect(result[0]["adtcore:name"]).toBe("ZADTTESTINCLUDE1")
 })
-//
+
+test("getObjectSource", async () => {
+  const c = create()
+  const result = await c.getObjectSource(
+    "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
+  )
+  expect(result).toBeDefined()
+  expect(result).toMatch(/Hello, World/gm)
+})
+
+test("lock_unlock", async () => {
+  const c = create()
+  try {
+    try {
+      await c.lock("/sap/bc/adt/programs/programs/zadttestinactive")
+      fail("lock should be forbidden when client is stateless")
+    } catch (e) {
+      // ignore
+    }
+    c.stateful = true
+    const handle = await c.lock(
+      "/sap/bc/adt/programs/programs/zadttestinactive"
+    )
+    try {
+      await c.lock("/sap/bc/adt/programs/programs/zadttestinactive")
+      fail("lock should be forbidden when object already locked")
+    } catch (e) {
+      // ignore
+    }
+    await c.unLock(
+      "/sap/bc/adt/programs/programs/zadttestinactive",
+      handle.LOCK_HANDLE
+    )
+  } catch (e) {
+    c.stateful = false
+    await c.getObjectSource(
+      "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
+    )
+    throw e
+  }
+  c.stateful = false
+  await c.getObjectSource(
+    "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
+  )
+})

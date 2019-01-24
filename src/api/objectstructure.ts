@@ -1,7 +1,7 @@
 import { parse } from "fast-xml-parser"
+import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { xmlNodeAttr, xmlRoot } from "../utilities"
-import { ValidateObjectUrl } from "../AdtException"
 
 interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean
