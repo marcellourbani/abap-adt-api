@@ -6,6 +6,7 @@ import {
   activate,
   classIncludes,
   createTransport,
+  findObjectPath,
   getMainPrograms,
   getObjectSource,
   getTransportInfo,
@@ -14,9 +15,13 @@ import {
   objectStructure,
   searchObject,
   setObjectSource,
-  unLock,
-  findObjectPath
+  unLock
 } from "./api"
+import {
+  CreatableTypeIds,
+  validate,
+  ValidateOptions
+} from "./api/objectcreator"
 
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
@@ -99,6 +104,9 @@ export class ADTClient {
   public async login() {
     await this.h.login()
   }
+  public async dropSession() {
+    await this.h.dropSession()
+  }
 
   public async getNodeContents(
     options: api.NodeRequestOptions
@@ -175,5 +183,9 @@ export class ADTClient {
 
   public async findObjectPath(objectUrl: string) {
     return findObjectPath(this.h, objectUrl)
+  }
+
+  public async validate(options: ValidateOptions) {
+    return validate(this.h, options)
   }
 }

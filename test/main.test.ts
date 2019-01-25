@@ -209,3 +209,14 @@ test("findObjectPath", async () => {
   expect(result).toBeDefined()
   expect(result[1] && result[1]["adtcore:name"]).toBe("$ABAPGIT")
 })
+
+test("validateClass", async () => {
+  const c = create()
+  const result = await c.validate({
+    description: "a class",
+    objname: "ZFOOBARFEWFWE",
+    objtype: "CLAS/OC",
+    packagename: "$TMP"
+  })
+  expect(result).toBeTruthy()
+})

@@ -87,6 +87,10 @@ export function fromException(err: AxiosError): AdtException {
   }
 }
 
+export function adtException(message: string) {
+  return new AdtErrorException(0, "", message)
+}
+
 export function ValidateObjectUrl(url: string) {
   if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-z]+/)) return // valid
   throw new AdtErrorException(0, "BADOBJECTURL", "Invalid Object URL:" + url)

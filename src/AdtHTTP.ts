@@ -80,16 +80,18 @@ export class AdtHTTP {
    * Logs on an ADT server. parameters provided on creation
    */
   public async login() {
-    let sep = "?"
-    let extra = ""
-    if (this.client) {
-      extra = `?sap-client=${this.client}`
-      sep = "&"
-    }
-    if (this.language) extra = extra + sep + `sap-language=${this.language}`
+    const params: any = {}
+    if (this.client) params["sap-client"] = this.client
+    if (this.language) params["sap-language"] = this.language
     this.csrfToken = FETCH_CSRF_TOKEN
-    await this._request(`/sap/bc/adt/compatibility/graph${extra}`)
+    await this._request("/sap/bc/adt/compatibility/graph", { params })
   }
+
+  public async dropSession() {
+    this.stateful = session_types.stateless
+    await this._request("/sap/bc/adt/compatibility/graph")
+  }
+
   /**
    * HTTP request using default values, and updating cookies/token
    * will login automatically if needed, and try refresh the login (once) if:

@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 
 - search
 - get object path
+- validation
 
 ## 0.2.7
 
