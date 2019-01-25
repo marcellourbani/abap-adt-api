@@ -1,6 +1,6 @@
 import { AxiosError } from "axios"
 import { parse } from "fast-xml-parser"
-import { AdtHTTP } from "./AdtHTTP"
+import { AdtHTTP, session_types } from "./AdtHTTP"
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -93,7 +93,7 @@ export function ValidateObjectUrl(url: string) {
 }
 
 export function ValidateStateful(h: AdtHTTP) {
-  if (h.stateful) return
+  if (h.isStateful) return
   throw new AdtErrorException(
     0,
     "STATELESS",

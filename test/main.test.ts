@@ -2,6 +2,7 @@
 // will only work if there's one connected and the environment variables are set
 import { ADTClient, isClassStructure } from "../src"
 import { create, createHttp } from "./login"
+import { session_types } from "../src/AdtHTTP"
 
 test("login", async () => {
   const c = createHttp()
@@ -163,7 +164,7 @@ test("lock_unlock", async () => {
     } catch (e) {
       // ignore
     }
-    c.stateful = true
+    c.stateful = session_types.stateful
     const handle = await c.lock(
       "/sap/bc/adt/programs/programs/zadttestinactive"
     )
@@ -178,13 +179,13 @@ test("lock_unlock", async () => {
       handle.LOCK_HANDLE
     )
   } catch (e) {
-    c.stateful = false
+    c.stateful = session_types.stateless
     await c.getObjectSource(
       "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
     )
     throw e
   }
-  c.stateful = false
+  c.stateful = session_types.stateless
   await c.getObjectSource(
     "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
   )

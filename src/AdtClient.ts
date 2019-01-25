@@ -1,4 +1,4 @@
-import { AdtHTTP } from "./AdtHTTP"
+import { AdtHTTP, session_types } from "./AdtHTTP"
 import * as api from "./api"
 import {
   AbapClassStructure,
@@ -71,7 +71,7 @@ export class ADTClient {
   public get stateful() {
     return this.h.stateful
   }
-  public set stateful(stateful: boolean) {
+  public set stateful(stateful: session_types) {
     this.h.stateful = stateful
   }
 

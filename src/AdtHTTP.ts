@@ -1,14 +1,37 @@
 import Axios, { AxiosInstance, AxiosRequestConfig } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
+
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
+export enum session_types {
+  stateful = "stateful",
+  stateless = "steteless",
+  keep = ""
+}
+const parseCookies = (cookies: string[]) =>
+  cookies.reduce(
+    (acc, cur) => {
+      const parts = cur.split("=")
+      if (parts && parts[0]) acc[parts[0]] = cur
+      return acc
+    },
+    {} as any
+  )
 
 export class AdtHTTP {
-  public get stateful() {
-    return this.axios.defaults.headers[SESSION_HEADER] === "stateful"
+  public get isStateful() {
+    return (
+      this.stateful === session_types.stateful ||
+      (this.stateful === session_types.keep &&
+        this.currentSession === session_types.stateful)
+    )
   }
-  public set stateful(stateful: boolean) {
+  private currentSession = session_types.stateless
+  public get stateful(): session_types {
+    return this.axios.defaults.headers[SESSION_HEADER]
+  }
+  public set stateful(stateful: session_types) {
     this.axios.defaults.headers[SESSION_HEADER] = stateful ? "stateful" : ""
   }
   public get csrfToken() {
@@ -46,7 +69,7 @@ export class AdtHTTP {
       withCredentials: true,
       "x-csrf-token": FETCH_CSRF_TOKEN
     }
-    headers[SESSION_HEADER] = ""
+    headers[SESSION_HEADER] = session_types.stateless
     this.axios = Axios.create({
       auth: { username: this.username, password: this.password },
       baseURL: this.baseUrl,
@@ -107,11 +130,20 @@ export class AdtHTTP {
    */
   private async _request(url: string, config?: AxiosRequestConfig) {
     const response = await this.axios(url, config)
-    const cookie = response.headers["set-cookie"]
-    if (cookie) this.axios.defaults.headers.Cookie = cookie
+    if (this.stateful !== session_types.keep)
+      this.currentSession = this.stateful
     const newtoken = response.headers[CSRF_TOKEN_HEADER]
     if (typeof newtoken === "string" && this.csrfToken === FETCH_CSRF_TOKEN) {
       this.axios.defaults.headers[CSRF_TOKEN_HEADER] = newtoken
+    }
+    const cookie = response.headers["set-cookie"] as string[] | undefined
+    // if (cookie) this.axios.defaults.headers.Cookie = cookie
+    if (cookie) {
+      const c = {
+        ...parseCookies(this.axios.defaults.headers.Cookie || []),
+        ...parseCookies(cookie)
+      }
+      this.axios.defaults.headers.Cookie = Object.values(c)
     }
     return response
   }
