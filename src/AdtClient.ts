@@ -12,8 +12,10 @@ import {
   isClassStructure,
   lock,
   objectStructure,
+  searchObject,
   setObjectSource,
-  unLock
+  unLock,
+  findObjectPath
 } from "./api"
 
 export class ADTClient {
@@ -165,5 +167,13 @@ export class ADTClient {
       lockHandle,
       transport
     )
+  }
+
+  public async searchObject(query: string, objType?: string) {
+    return await searchObject(this.h, query, objType)
+  }
+
+  public async findObjectPath(objectUrl: string) {
+    return findObjectPath(this.h, objectUrl)
   }
 }

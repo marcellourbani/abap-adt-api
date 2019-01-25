@@ -190,3 +190,22 @@ test("lock_unlock", async () => {
     "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
   )
 })
+
+test("searchObject", async () => {
+  const c = create()
+  const result = await c.searchObject("zabap*")
+  expect(result).toBeDefined()
+  const prog = result.find(
+    sr => sr["adtcore:name"] === "ZABAPGIT" && sr["adtcore:type"] === "PROG/P"
+  )
+  expect(prog).toBeDefined()
+})
+
+test("findObjectPath", async () => {
+  const c = create()
+  const result = await c.findObjectPath(
+    "/sap/bc/adt/programs/programs/zabapgit"
+  )
+  expect(result).toBeDefined()
+  expect(result[1] && result[1]["adtcore:name"]).toBe("$ABAPGIT")
+})
