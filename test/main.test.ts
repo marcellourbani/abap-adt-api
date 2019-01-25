@@ -1,8 +1,8 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
 import { ADTClient, isClassStructure } from "../src"
-import { create, createHttp } from "./login"
 import { session_types } from "../src/AdtHTTP"
+import { create, createHttp } from "./login"
 
 test("login", async () => {
   const c = createHttp()

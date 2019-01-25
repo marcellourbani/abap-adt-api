@@ -111,7 +111,7 @@ export class AdtHTTP {
       const adtErr = fromException(e)
       // if the logon ticket expired try to logon again, unless in stateful mode
       // or already tried a login
-      if (isCsrfError(adtErr) && !autologin && !this.stateful) {
+      if (isCsrfError(adtErr) && !autologin && !this.isStateful) {
         try {
           await this.login()
           return await this._request(url, config)

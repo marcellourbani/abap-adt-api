@@ -1,6 +1,6 @@
+import { parse } from "fast-xml-parser"
 import { ValidateObjectUrl, ValidateStateful } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { parse } from "fast-xml-parser"
 import { xmlArray } from "../utilities"
 
 export interface AdtLock {
