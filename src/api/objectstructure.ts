@@ -1,7 +1,6 @@
-import { parse } from "fast-xml-parser"
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlNodeAttr, xmlRoot } from "../utilities"
+import { fullParse, xmlNodeAttr, xmlRoot } from "../utilities"
 
 interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean
@@ -102,10 +101,7 @@ export async function objectStructure(
 ): Promise<AbapObjectStructure> {
   ValidateObjectUrl(objectUrl)
   const response = await h.request(objectUrl)
-  const res = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const res = fullParse(response.data)
   // return type depends on object type, but always have a single root
   const root = xmlRoot(res)
   const attr = xmlNodeAttr(root)

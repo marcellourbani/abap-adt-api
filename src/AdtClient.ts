@@ -6,21 +6,26 @@ import {
   activate,
   classIncludes,
   createTransport,
+  deleteObject,
   findObjectPath,
   getMainPrograms,
   getObjectSource,
-  getTransportInfo,
   isClassStructure,
   lock,
+  objectRegistrationInfo,
   objectStructure,
   searchObject,
   setObjectSource,
+  transportInfo,
   unLock
 } from "./api"
 import {
   CreatableTypeIds,
-  validate,
-  ValidateOptions
+  createObject,
+  NewObjectOptions,
+  validateNewObject,
+  ValidateOptions,
+  loadTypes
 } from "./api/objectcreator"
 
 export class ADTClient {
@@ -108,21 +113,21 @@ export class ADTClient {
     await this.h.dropSession()
   }
 
-  public async getNodeContents(
+  public async nodeContents(
     options: api.NodeRequestOptions
   ): Promise<api.NodeStructure> {
-    return api.getNodeContents(this.h, options)
+    return api.nodeContents(this.h, options)
   }
 
-  public async getReentranceTicket(): Promise<string> {
+  public async reentranceTicket(): Promise<string> {
     const response = await this.h.request(
       "/sap/bc/adt/security/reentranceticket"
     )
     return response.data
   }
 
-  public async getTransportInfo(objSourceUrl: string, devClass: string) {
-    return getTransportInfo(this.h, objSourceUrl, devClass)
+  public async transportInfo(objSourceUrl: string, devClass: string) {
+    return transportInfo(this.h, objSourceUrl, devClass)
   }
 
   public async createTransport(
@@ -185,7 +190,23 @@ export class ADTClient {
     return findObjectPath(this.h, objectUrl)
   }
 
-  public async validate(options: ValidateOptions) {
-    return validate(this.h, options)
+  public async validateNewObject(options: ValidateOptions) {
+    return validateNewObject(this.h, options)
+  }
+
+  public async createObject(options: NewObjectOptions) {
+    return await createObject(this.h, options)
+  }
+
+  public async objectRegistrationInfo(objectUrl: string) {
+    return await objectRegistrationInfo(this.h, objectUrl)
+  }
+
+  public async deleteObject(objectUrl: string, lockHandle: string) {
+    return await deleteObject(this.h, objectUrl, lockHandle)
+  }
+
+  public async loadTypes() {
+    return await loadTypes(this.h)
   }
 }

@@ -1,8 +1,7 @@
-import { parse } from "fast-xml-parser"
 import { sprintf } from "sprintf-js"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlArray, xmlNodeAttr } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 interface CreatableType {
   validationPath: string
   creationPath: string
@@ -136,10 +135,7 @@ export async function loadTypes(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/repository/typestructure", {
     method: "POST"
   })
-  const raw = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const raw = fullParse(response.data)
   return xmlArray(
     raw,
     "asx:abap",
@@ -149,22 +145,19 @@ export async function loadTypes(h: AdtHTTP) {
   ).map(xmlNodeAttr)
 }
 
-export async function validate(h: AdtHTTP, options: ValidateOptions) {
+export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
   const response = await h.request("/sap/bc/adt/" + ot.validationPath, {
     method: "POST",
     params: options
   })
-  const raw = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const raw = fullParse(response.data)
   const record = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
   return !!(record[0] && record[0].CHECK_RESULT === "X")
 }
 
-export async function create(h: AdtHTTP, options: NewObjectOptions) {
+export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
   const url = "/sap/bc/adt/" + sprintf("/sap/bc/adt/", options.parentName)
@@ -177,10 +170,7 @@ export async function create(h: AdtHTTP, options: NewObjectOptions) {
     method: "POST",
     params
   })
-  const raw = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const raw = fullParse(response.data)
   // const record = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
   // return !!(record[0] && record[0].CHECK_RESULT === "X")
   return raw

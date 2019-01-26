@@ -1,6 +1,7 @@
 import { AxiosError } from "axios"
 import { parse } from "fast-xml-parser"
 import { AdtHTTP, session_types } from "./AdtHTTP"
+import { fullParse } from "./utilities"
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -68,10 +69,7 @@ export function fromException(err: AxiosError): AdtException {
       err.response.headers["x-csrf-token"] === "Required"
     )
       return new AdtCsrfException(err.response.data, err)
-    const raw = parse(err.response.data, {
-      ignoreAttributes: false,
-      parseAttributeValue: true
-    })
+    const raw = fullParse(err.response.data)
     const root = raw["exc:exception"]
     const getf = (base: any, idx: string) => (base ? base[idx] : "")
     return new AdtErrorException(

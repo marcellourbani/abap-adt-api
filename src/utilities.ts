@@ -1,3 +1,4 @@
+import { parse } from "fast-xml-parser"
 import { isArray, isObject } from "util"
 
 export function JSON2AbapXML(original: any, root: string = "DATA") {
@@ -47,3 +48,9 @@ export const xmlNodeAttr = (n: any) =>
       part[cur.replace(/^@_/, "")] = n[cur]
       return part
     }, {})
+
+export const fullParse = (xml: string) =>
+  parse(xml, {
+    ignoreAttributes: false,
+    parseAttributeValue: true
+  })

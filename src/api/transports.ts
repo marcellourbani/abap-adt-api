@@ -64,7 +64,7 @@ function extractTransports(raw: any): TransportHeader[] {
   return xmlArray(raw, "CTS_REQUEST").map((x: any) => x.REQ_HEADER)
 }
 
-export async function getTransportInfo(
+export async function transportInfo(
   h: AdtHTTP,
   objPath: string,
   devClass: string

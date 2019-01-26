@@ -1,7 +1,6 @@
-import { parse } from "fast-xml-parser"
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlArray, xmlNodeAttr } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 
 export interface SearchResult {
   "adtcore:description": string
@@ -29,10 +28,7 @@ export async function searchObject(
     `/sap/bc/adt/repository/informationsystem/search`,
     { params }
   )
-  const raw = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const raw = fullParse(response.data)
   return xmlArray(
     raw,
     "adtcore:objectReferences",
@@ -47,10 +43,7 @@ export async function findObjectPath(h: AdtHTTP, objectUrl: string) {
     method: "POST",
     params
   })
-  const raw = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const raw = fullParse(response.data)
   return xmlArray(
     raw,
     "projectexplorer:nodepath",

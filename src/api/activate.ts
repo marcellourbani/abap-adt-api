@@ -1,7 +1,6 @@
-import { parse } from "fast-xml-parser"
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlArray, xmlNodeAttr } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 
 interface ActivationResultMessage {
   objDescr: string
@@ -43,10 +42,7 @@ export async function activate(
   let messages: ActivationResultMessage[] = []
   let success = true
   if (response.data) {
-    const raw = parse(response.data, {
-      ignoreAttributes: false,
-      parseAttributeValue: true
-    })
+    const raw = fullParse(response.data)
     messages = xmlArray(raw["chkl:messages"], "msg").map(xmlNodeAttr)
     messages.some(m => {
       if (m.type.match(/[EAX]/)) success = false
@@ -59,10 +55,7 @@ export async function activate(
 export async function getMainPrograms(h: AdtHTTP, IncludeUrl: string) {
   ValidateObjectUrl(IncludeUrl)
   const response = await h.request(`${IncludeUrl}/mainprograms`)
-  const parsed = parse(response.data, {
-    ignoreAttributes: false,
-    parseAttributeValue: true
-  })
+  const parsed = fullParse(response.data)
   const includes = xmlArray(
     parsed["adtcore:objectReferences"],
     "adtcore:objectReference"

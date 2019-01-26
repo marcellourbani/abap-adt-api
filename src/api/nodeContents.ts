@@ -69,7 +69,7 @@ const parsePackageResponse = (data: string): NodeStructure => {
   }
 }
 
-export async function getNodeContents(
+export async function nodeContents(
   h: AdtHTTP,
   options: NodeRequestOptions
 ): Promise<NodeStructure> {

@@ -26,7 +26,7 @@ test("badToken", async () => {
 
 test("getNodeContents", async () => {
   const c = create()
-  const resp = await c.getNodeContents({
+  const resp = await c.nodeContents({
     parent_name: "$ABAPGIT",
     parent_type: "DEVC/K"
   })
@@ -38,7 +38,7 @@ test("getNodeContents", async () => {
 
 test("emptyNodeContents", async () => {
   const c = create()
-  const resp = await c.getNodeContents({
+  const resp = await c.nodeContents({
     parent_name: "/FOO/BARFOOFOOTERTQWERWER",
     parent_type: "DEVC/K"
   })
@@ -46,28 +46,28 @@ test("emptyNodeContents", async () => {
 
 test("getReentranceTicket", async () => {
   const c = create()
-  const ticket = await c.getReentranceTicket()
+  const ticket = await c.reentranceTicket()
   expect(ticket).toBeDefined()
   expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
 })
 
 test("getTransportInfo", async () => {
   const c = create()
-  let info = await c.getTransportInfo(
+  let info = await c.transportInfo(
     "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
     "ZAPIDUMMY"
   )
   expect(info).toBeDefined()
   expect(info.RECORDING).toEqual("X")
   expect(info.TRANSPORTS.length).toBeGreaterThan(0)
-  info = await c.getTransportInfo(
+  info = await c.transportInfo(
     "/sap/bc/adt/oo/classes/zapidummylocked/source/main",
     "ZAPIDUMMY"
   )
   expect(info).toBeDefined()
   expect(info.RECORDING).toEqual("")
   expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
-  info = await c.getTransportInfo(
+  info = await c.transportInfo(
     "/sap/bc/adt/oo/classes/zapidummylocked",
     "ZAPIDUMMY"
   )
@@ -78,7 +78,7 @@ test("getTransportInfo", async () => {
 test("badTransportInfo", async () => {
   const c = create()
   try {
-    const info = await c.getTransportInfo(
+    const info = await c.transportInfo(
       "/sap/bc/adt/oo/classes/zapidummytestcreation/foo/bar",
       "ZAPIDUMMY"
     )
@@ -212,11 +212,24 @@ test("findObjectPath", async () => {
 
 test("validateClass", async () => {
   const c = create()
-  const result = await c.validate({
+  const result = await c.validateNewObject({
     description: "a class",
     objname: "ZFOOBARFEWFWE",
     objtype: "CLAS/OC",
     packagename: "$TMP"
   })
   expect(result).toBeTruthy()
+})
+
+test("loadTypes", async () => {
+  const c = create()
+  const result = await c.loadTypes()
+  expect(result).toBeDefined()
+})
+test("objectRegistration", async () => {
+  const c = create()
+  const result = await c.objectRegistrationInfo(
+    "/sap/bc/adt/programs/programs/zabapgit"
+  )
+  expect(result).toBeDefined()
 })
