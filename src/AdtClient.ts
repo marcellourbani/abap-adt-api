@@ -169,7 +169,7 @@ export class ADTClient {
 
   public async setObjectSource(
     objectSourceUrl: string,
-    source: Uint8Array,
+    source: string,
     lockHandle: string,
     transport?: string
   ) {

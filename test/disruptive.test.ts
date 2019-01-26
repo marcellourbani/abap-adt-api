@@ -38,23 +38,54 @@ test("Create and delete", async () => {
   await c.createObject(options)
   // group created, let's create a function module now
   await c.createObject({
-    objtype: "FUGR/FF",
     description: "test FM",
     name: "Y_ADTNPM_FOOBARFM",
+    objtype: "FUGR/FF",
     parentName: "Y_ADTNPM_FOOBAR",
     parentPath: newobject
   })
   // create successful, will try a deletion. Need to lock first
   // locks only work in stateful sessions
-  c.stateful = session_types.stateful
-  const handle = await c.lock(newobject)
-  expect(handle.LOCK_HANDLE).not.toBe("")
   try {
+    c.stateful = session_types.stateful
+    const handle = await c.lock(newobject)
+    expect(handle.LOCK_HANDLE).not.toBe("")
     await c.deleteObject(newobject, handle.LOCK_HANDLE)
   } catch (e) {
     fail("Deletion error")
   } finally {
-    await c.unLock(newobject, handle.LOCK_HANDLE)
     await c.dropSession()
+  }
+})
+
+test("write_program", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const name = "zadttest_temporary"
+  const path = "/sap/bc/adt/programs/programs/" + name
+  const main = path + "/source/main"
+  // const source = new TextEncoder().encode(
+  const source = `Report ${name}.\nwrite:/ 'Hello,World!'.`
+  // )
+  try {
+    await c.createObject({
+      description: "temporary test program",
+      name,
+      objtype: "PROG/P",
+      parentName: "$TMP",
+      parentPath: "/sap/bc/adt/packages/$TMP"
+    })
+    c.stateful = session_types.stateful
+    const handle = await c.lock(path)
+    // write the program
+    const wr = await c.setObjectSource(main, source, handle.LOCK_HANDLE)
+    // read it
+    const newsource = await c.getObjectSource(main)
+    expect(newsource).toMatch(/Hello,World!/m)
+    // delete
+    await c.deleteObject(path, handle.LOCK_HANDLE)
+    await c.unLock(path, handle.LOCK_HANDLE)
+  } finally {
+    c.dropSession()
   }
 })

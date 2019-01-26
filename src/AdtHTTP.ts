@@ -32,7 +32,7 @@ export class AdtHTTP {
     return this.axios.defaults.headers[SESSION_HEADER]
   }
   public set stateful(stateful: session_types) {
-    this.axios.defaults.headers[SESSION_HEADER] = stateful ? "stateful" : ""
+    this.axios.defaults.headers[SESSION_HEADER] = stateful
   }
   public get csrfToken() {
     return this.axios.defaults.headers[CSRF_TOKEN_HEADER]

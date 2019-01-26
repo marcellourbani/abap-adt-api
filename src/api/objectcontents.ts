@@ -16,19 +16,22 @@ export interface AdtLock {
 export async function getObjectSource(h: AdtHTTP, objectSourceUrl: string) {
   ValidateObjectUrl(objectSourceUrl)
   const response = await h.request(objectSourceUrl)
+  const raw = parse(response.data)
+  console.log(raw)
   return response.data
 }
 
 export async function setObjectSource(
   h: AdtHTTP,
   objectSourceUrl: string,
-  source: Uint8Array,
+  source: string,
   lockHandle: string,
   transport?: string
 ) {
   ValidateObjectUrl(objectSourceUrl)
   ValidateStateful(h)
-  const params: any = { lockHandle: encodeURIComponent(lockHandle) }
+  const params: any = { lockHandle }
+  // const params: any = { lockHandle: encodeURIComponent(lockHandle) }
   if (transport) params.corrNR = transport
   const response = await h.request(objectSourceUrl, {
     data: source,

@@ -179,16 +179,10 @@ test("lock_unlock", async () => {
       handle.LOCK_HANDLE
     )
   } catch (e) {
-    c.stateful = session_types.stateless
-    await c.getObjectSource(
-      "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
-    )
     throw e
+  } finally {
+    await c.dropSession()
   }
-  c.stateful = session_types.stateless
-  await c.getObjectSource(
-    "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
-  )
 })
 
 test("searchObject", async () => {
@@ -228,6 +222,7 @@ test("loadTypes", async () => {
   const groupinc = result.find(t => t.OBJECT_TYPE === "FUGR/I")
   expect(groupinc).toBeDefined()
 })
+
 test("objectRegistration", async () => {
   const c = create()
   const result = await c.objectRegistrationInfo(
