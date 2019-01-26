@@ -52,7 +52,7 @@ export async function activate(
   return { messages, success }
 }
 
-export async function getMainPrograms(h: AdtHTTP, IncludeUrl: string) {
+export async function mainPrograms(h: AdtHTTP, IncludeUrl: string) {
   ValidateObjectUrl(IncludeUrl)
   const response = await h.request(`${IncludeUrl}/mainprograms`)
   const parsed = fullParse(response.data)

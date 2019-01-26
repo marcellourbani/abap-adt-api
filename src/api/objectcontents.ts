@@ -16,8 +16,6 @@ export interface AdtLock {
 export async function getObjectSource(h: AdtHTTP, objectSourceUrl: string) {
   ValidateObjectUrl(objectSourceUrl)
   const response = await h.request(objectSourceUrl)
-  const raw = parse(response.data)
-  console.log(raw)
   return response.data
 }
 

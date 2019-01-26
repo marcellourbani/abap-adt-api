@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 
 ## 0.2.8 2019-01-26
 
+### Changed
+
+- renamed a couple of API methods
+
+## 0.2.8 2019-01-26
+
 ### Added
 
 - search

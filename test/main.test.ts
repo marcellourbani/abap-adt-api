@@ -138,7 +138,7 @@ test("activateProgram", async () => {
 
 test("getMainPrograms", async () => {
   const c = create()
-  const result = await c.getMainPrograms(
+  const result = await c.mainPrograms(
     "/sap/bc/adt/programs/includes/zadttestincludeinc"
   )
   expect(result).toBeDefined()

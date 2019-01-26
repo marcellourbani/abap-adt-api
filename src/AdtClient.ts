@@ -8,10 +8,10 @@ import {
   createTransport,
   deleteObject,
   findObjectPath,
-  getMainPrograms,
   getObjectSource,
   isClassStructure,
   lock,
+  mainPrograms,
   objectRegistrationInfo,
   objectStructure,
   searchObject,
@@ -20,7 +20,6 @@ import {
   unLock
 } from "./api"
 import {
-  CreatableTypeIds,
   createObject,
   loadTypes,
   NewObjectOptions,
@@ -152,8 +151,8 @@ export class ADTClient {
     return activate(this.h, objectName, objectUrl, mainInclude)
   }
 
-  public async getMainPrograms(includeUrl: string) {
-    return getMainPrograms(this.h, includeUrl)
+  public async mainPrograms(includeUrl: string) {
+    return mainPrograms(this.h, includeUrl)
   }
 
   public async lock(objectUrl: string, accessMode: string = "MODIFY") {
