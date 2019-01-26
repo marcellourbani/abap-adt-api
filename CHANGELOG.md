@@ -11,6 +11,8 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - search
 - get object path
 - validation
+- creation
+- deletion
 
 ## 0.2.7
 

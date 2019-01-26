@@ -57,7 +57,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
   [
     "FUGR/F",
     {
-      creationPath: "/sap/bc/adt/functions/groups",
+      creationPath: "functions/groups",
       nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
       rootName: "group:abapFunctionGroup",
       validationPath: "functions/validation"
@@ -101,20 +101,32 @@ export interface NewObjectOptions {
   name: string
   parentName: string
   description: string
-  devclass: string
+  // devclass: string
   parentPath: string
   responsible?: string
   transport?: string
 }
-
+export interface ObjectType {
+  CAPABILITIES: string
+  CATEGORY: string
+  CATEGORY_LABEL: string
+  OBJECT_TYPE: string
+  OBJECT_TYPE_LABEL: string
+  OBJNAME_MAXLENGTH: number
+  PARENT_OBJECT_TYPE: string
+  URI_TEMPLATE: string
+}
 function createBody(options: NewObjectOptions, type: CreatableType) {
+  const responsible = options.responsible
+    ? `adtcore:responsible="${options.responsible}"`
+    : ""
   if (options.objtype === "FUGR/FF" || options.objtype === "FUGR/I") {
     return `<?xml version="1.0" encoding="UTF-8"?>
     <${type.rootName} ${type.nameSpace}
        xmlns:adtcore="http://www.sap.com/adt/core"
        adtcore:description="${options.description}"
        adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-       adtcore:responsible="${options.responsible}">
+       ${responsible}>
          <adtcore:containerRef adtcore:name="${options.parentName}"
            adtcore:type="FUGR/F"
            adtcore:uri="${options.parentPath}"/>
@@ -125,8 +137,8 @@ function createBody(options: NewObjectOptions, type: CreatableType) {
       xmlns:adtcore="http://www.sap.com/adt/core"
       adtcore:description="${options.description}"
       adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-      adtcore:responsible="${options.responsible}">
-        <adtcore:packageRef adtcore:name="${options.parentName}"/>
+      ${responsible}>
+      <adtcore:packageRef adtcore:name="${options.parentName}"/>
     </${type.rootName}>`
   }
 }
@@ -142,7 +154,7 @@ export async function loadTypes(h: AdtHTTP) {
     "asx:values",
     "DATA",
     "SEU_ADT_OBJECT_TYPE_DESCRIPTOR"
-  ).map(xmlNodeAttr)
+  ) as ObjectType[]
 }
 
 export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
@@ -160,18 +172,16 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
 export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
-  const url = "/sap/bc/adt/" + sprintf("/sap/bc/adt/", options.parentName)
+  const url = "/sap/bc/adt/" + sprintf(ot.creationPath, options.parentName)
   const data = createBody(options, ot)
   const params: any = {}
   if (options.transport) params.corrNr = options.transport
 
-  const response = await h.request(url, {
+  // will raise exceptions on failure
+  await h.request(url, {
     data,
+    headers: { "Content-Type": "application/*" },
     method: "POST",
     params
   })
-  const raw = fullParse(response.data)
-  // const record = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
-  // return !!(record[0] && record[0].CHECK_RESULT === "X")
-  return raw
 }

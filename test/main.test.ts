@@ -225,6 +225,8 @@ test("loadTypes", async () => {
   const c = create()
   const result = await c.loadTypes()
   expect(result).toBeDefined()
+  const groupinc = result.find(t => t.OBJECT_TYPE === "FUGR/I")
+  expect(groupinc).toBeDefined()
 })
 test("objectRegistration", async () => {
   const c = create()

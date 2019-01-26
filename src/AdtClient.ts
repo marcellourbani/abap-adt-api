@@ -22,10 +22,10 @@ import {
 import {
   CreatableTypeIds,
   createObject,
+  loadTypes,
   NewObjectOptions,
   validateNewObject,
-  ValidateOptions,
-  loadTypes
+  ValidateOptions
 } from "./api/objectcreator"
 
 export class ADTClient {
