@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 ### Fixed
 
 - message text in activation
+- added .npmignore
 
 ## 0.3.1 2019-01-26
 

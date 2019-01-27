@@ -1,0 +1,8 @@
+setenv.js
+.vscode
+src/
+test/
+*.tgz
+*.md
+node_modules
+tmp
