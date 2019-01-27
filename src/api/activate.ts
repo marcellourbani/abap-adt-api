@@ -8,6 +8,7 @@ interface ActivationResultMessage {
   line: number
   href: string
   forceSupported: boolean
+  shortText: string
 }
 export interface ActivationResult {
   success: boolean
@@ -43,7 +44,11 @@ export async function activate(
   let success = true
   if (response.data) {
     const raw = fullParse(response.data)
-    messages = xmlArray(raw["chkl:messages"], "msg").map(xmlNodeAttr)
+    messages = xmlArray(raw["chkl:messages"], "msg").map((m: any) => {
+      const message = xmlNodeAttr(m)
+      message.shortText = (m.shortText && m.shortText.txt) || "Syntax error"
+      return message
+    }) as ActivationResultMessage[]
     messages.some(m => {
       if (m.type.match(/[EAX]/)) success = false
       return !success
