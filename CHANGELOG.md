@@ -4,7 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 0.3.2
+## 0.3.3 2019-01-28
+
+### Fixed
+
+- cookie jar support
+
+## 0.3.2 0.3.3 2019-01-27
 
 ### Fixed
 

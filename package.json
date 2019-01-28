@@ -1,6 +1,6 @@
 {
   "name": "abap-adt-api",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "/build",
   "main": "build/index.js",
@@ -20,12 +20,14 @@
   "dependencies": {
     "axios": "^0.18.0",
     "fast-xml-parser": "^3.12.12",
-    "sprintf-js": "^1.1.2"
+    "sprintf-js": "^1.1.2",
+    "tough-cookie": "^3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^23.3.13",
     "@types/node": "^10.12.18",
     "@types/sprintf-js": "^1.1.1",
+    "@types/tough-cookie": "^2.3.5",
     "jest": "^23.6.0",
     "ts-jest": "^23.10.5",
     "tslint": "^5.12.1",

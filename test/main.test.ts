@@ -10,7 +10,13 @@ test("login", async () => {
   await c.login()
   expect(c.csrfToken).not.toEqual("fetch")
 })
-
+test("logout", async () => {
+  const c = createHttp()
+  expect(c).toBeDefined()
+  await c.login()
+  expect(c.csrfToken).not.toEqual("fetch")
+  await c.logout()
+})
 test("badToken", async () => {
   const c = createHttp("DE")
   await c.login()

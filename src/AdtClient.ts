@@ -108,6 +108,15 @@ export class ADTClient {
   public async login() {
     await this.h.login()
   }
+  /**
+   * Logs out current user, clearing cookies
+   * NOTE: you won't be able to login again with this client
+   *
+   * @memberof ADTClient
+   */
+  public async logout() {
+    await this.h.logout()
+  }
   public async dropSession() {
     await this.h.dropSession()
   }

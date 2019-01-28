@@ -1,4 +1,5 @@
 import Axios, { AxiosInstance, AxiosRequestConfig } from "axios"
+import { CookieJar } from "tough-cookie"
 import { fromException, isCsrfError } from "./AdtException"
 
 const FETCH_CSRF_TOKEN = "fetch"
@@ -9,17 +10,10 @@ export enum session_types {
   stateless = "steteless",
   keep = ""
 }
-const parseCookies = (cookies: string[]) =>
-  cookies.reduce(
-    (acc, cur) => {
-      const parts = cur.split("=")
-      if (parts && parts[0]) acc[parts[0]] = cur
-      return acc
-    },
-    {} as any
-  )
 
 export class AdtHTTP {
+  private axios: AxiosInstance
+  private jar: CookieJar
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -43,7 +37,12 @@ export class AdtHTTP {
   private get loggedin() {
     return this.csrfToken !== FETCH_CSRF_TOKEN
   }
-  private axios: AxiosInstance
+  public get baseUrl() {
+    return this.axios.defaults.baseURL
+  }
+  public get username() {
+    return this.axios.defaults.auth && this.axios.defaults.auth.username
+  }
 
   /**
    * Create an ADT HTTP client
@@ -53,9 +52,9 @@ export class AdtHTTP {
    * @argument password Password
    */
   constructor(
-    readonly baseUrl: string,
-    readonly username: string,
-    private password: string,
+    baseUrl: string,
+    username: string,
+    password: string,
     readonly client: string,
     readonly language: string
   ) {
@@ -70,9 +69,10 @@ export class AdtHTTP {
       "x-csrf-token": FETCH_CSRF_TOKEN
     }
     headers[SESSION_HEADER] = session_types.stateless
+    this.jar = new CookieJar(undefined, { rejectPublicSuffixes: false })
     this.axios = Axios.create({
-      auth: { username: this.username, password: this.password },
-      baseURL: this.baseUrl,
+      auth: { username, password },
+      baseURL: baseUrl,
       headers
     })
   }
@@ -85,6 +85,11 @@ export class AdtHTTP {
     if (this.language) params["sap-language"] = this.language
     this.csrfToken = FETCH_CSRF_TOKEN
     await this._request("/sap/bc/adt/compatibility/graph", { params })
+  }
+  public async logout() {
+    await this._request("/sap/public/bc/icf/logoff")
+    // prevent autologin
+    this.axios.defaults.auth = undefined
   }
 
   public async dropSession() {
@@ -136,16 +141,14 @@ export class AdtHTTP {
       this.currentSession = this.stateful
     const newtoken = response.headers[CSRF_TOKEN_HEADER]
     if (typeof newtoken === "string" && this.csrfToken === FETCH_CSRF_TOKEN) {
-      this.axios.defaults.headers[CSRF_TOKEN_HEADER] = newtoken
+      this.csrfToken = newtoken
     }
     const cookie = response.headers["set-cookie"] as string[] | undefined
-    // if (cookie) this.axios.defaults.headers.Cookie = cookie
     if (cookie) {
-      const c = {
-        ...parseCookies(this.axios.defaults.headers.Cookie || []),
-        ...parseCookies(cookie)
-      }
-      this.axios.defaults.headers.Cookie = Object.values(c)
+      cookie.forEach(k => this.jar.setCookieSync(k, this.baseUrl + url))
+      this.axios.defaults.headers.Cookie = this.jar.getCookieStringSync(
+        this.baseUrl + url
+      )
     }
     return response
   }
