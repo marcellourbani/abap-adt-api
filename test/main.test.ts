@@ -32,10 +32,7 @@ test("badToken", async () => {
 
 test("getNodeContents", async () => {
   const c = create()
-  const resp = await c.nodeContents({
-    parent_name: "$ABAPGIT",
-    parent_type: "DEVC/K"
-  })
+  const resp = await c.nodeContents("DEVC/K", "$ABAPGIT")
   expect(resp).toBeDefined()
   expect(resp.nodes).toBeDefined()
   const known = resp.nodes.find(x => x.OBJECT_NAME === "ZABAPGIT")
@@ -44,10 +41,8 @@ test("getNodeContents", async () => {
 
 test("emptyNodeContents", async () => {
   const c = create()
-  const resp = await c.nodeContents({
-    parent_name: "/FOO/BARFOOFOOTERTQWERWER",
-    parent_type: "DEVC/K"
-  })
+  const resp = await c.nodeContents("DEVC/K", "/FOO/BARFOOFOOTERTQWERWER")
+  expect(resp.nodes.length).toBe(0)
 })
 
 test("getReentranceTicket", async () => {

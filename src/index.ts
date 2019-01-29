@@ -5,6 +5,5 @@ export {
   AbapObjectStructure,
   isClassMetaData,
   isClassStructure,
-  NodeRequestOptions,
   NodeStructure
 } from "./api"

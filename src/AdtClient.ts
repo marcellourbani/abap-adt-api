@@ -17,7 +17,8 @@ import {
   searchObject,
   setObjectSource,
   transportInfo,
-  unLock
+  unLock,
+  NodeParents
 } from "./api"
 import {
   createObject,
@@ -122,9 +123,18 @@ export class ADTClient {
   }
 
   public async nodeContents(
-    options: api.NodeRequestOptions
+    parent_type: NodeParents,
+    parent_name?: string,
+    user_name?: string,
+    parent_tech_name?: string
   ): Promise<api.NodeStructure> {
-    return api.nodeContents(this.h, options)
+    return api.nodeContents(
+      this.h,
+      parent_type,
+      parent_name,
+      user_name,
+      parent_tech_name
+    )
   }
 
   public async reentranceTicket(): Promise<string> {
