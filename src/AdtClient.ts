@@ -5,28 +5,28 @@ import {
   AbapObjectStructure,
   activate,
   classIncludes,
+  createObject,
   createTransport,
   deleteObject,
   findObjectPath,
   getObjectSource,
   isClassStructure,
+  loadTypes,
   lock,
   mainPrograms,
+  NewObjectOptions,
+  NodeParents,
   objectRegistrationInfo,
   objectStructure,
   searchObject,
   setObjectSource,
   transportInfo,
   unLock,
-  NodeParents
-} from "./api"
-import {
-  createObject,
-  loadTypes,
-  NewObjectOptions,
   validateNewObject,
-  ValidateOptions
-} from "./api/objectcreator"
+  ValidateOptions,
+  NodeStructure,
+  nodeContents
+} from "./api"
 
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
@@ -127,8 +127,8 @@ export class ADTClient {
     parent_name?: string,
     user_name?: string,
     parent_tech_name?: string
-  ): Promise<api.NodeStructure> {
-    return api.nodeContents(
+  ): Promise<NodeStructure> {
+    return nodeContents(
       this.h,
       parent_type,
       parent_name,

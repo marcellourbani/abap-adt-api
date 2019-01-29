@@ -3,7 +3,16 @@ export * from "./AdtException"
 export {
   AbapClassStructure,
   AbapObjectStructure,
+  ActivationResult,
+  AdtLock,
   isClassMetaData,
   isClassStructure,
-  NodeStructure
+  MainInclude,
+  NewObjectOptions,
+  NodeStructure,
+  ObjectType,
+  PathStep,
+  SearchResult,
+  TransportInfo,
+  ValidateOptions
 } from "./api"

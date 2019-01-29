@@ -1,5 +1,6 @@
 export * from "./nodeContents"
 export * from "./transports"
+export * from "./objectcreator"
 export * from "./objectstructure"
 export * from "./activate"
 export * from "./objectcontents"
