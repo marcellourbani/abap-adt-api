@@ -5,7 +5,10 @@ export function create() {
   return new ADTClient(
     process.env.ADT_URL!,
     process.env.ADT_USER!,
-    process.env.ADT_PASS!
+    process.env.ADT_PASS!,
+    "",
+    "",
+    { cert: process.env.ADT_CERT, rejectUnauthorized: false }
   )
 }
 export function createHttp(language: string = "") {
@@ -14,6 +17,7 @@ export function createHttp(language: string = "") {
     process.env.ADT_USER!,
     process.env.ADT_PASS!,
     "",
-    language
+    language,
+    { cert: process.env.ADT_CERT, rejectUnauthorized: false }
   )
 }

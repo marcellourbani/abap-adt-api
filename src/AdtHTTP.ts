@@ -1,13 +1,15 @@
-import Axios, { AxiosInstance, AxiosRequestConfig } from "axios"
-import { CookieJar } from "tough-cookie"
+import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
+import { CookieJar, Cookie } from "tough-cookie"
 import { fromException, isCsrfError } from "./AdtException"
+import { Agent, AgentOptions } from "https"
+import { isArray } from "util"
 
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
 export enum session_types {
   stateful = "stateful",
-  stateless = "steteless",
+  stateless = "stateless",
   keep = ""
 }
 
@@ -38,43 +40,51 @@ export class AdtHTTP {
     return this.csrfToken !== FETCH_CSRF_TOKEN
   }
   public get baseUrl() {
-    return this.axios.defaults.baseURL
+    return this.axios.defaults.baseURL!
   }
   public get username() {
     return this.axios.defaults.auth && this.axios.defaults.auth.username
   }
 
   /**
-   * Create an ADT HTTP client
-   *
-   * @argument baseUrl  Base url, i.e. http://vhcalnplci.local:8000
-   * @argument username SAP logon user
-   * @argument password Password
+   *Creates an instance of AdtHTTP.
+   * @param {string} baseURL  Base url, i.e. http://vhcalnplci.local:8000
+   * @param {string} username SAP logon user
+   * @param {string} password Password
+   * @param {string} client   login client
+   * @param {string} language login language
+   * @param {string} [sslOptions] Custom certificate authority
+   * @memberof AdtHTTP
    */
   constructor(
-    baseUrl: string,
+    baseURL: string,
     username: string,
     password: string,
     readonly client: string,
-    readonly language: string
+    readonly language: string,
+    sslOptions?: AgentOptions
   ) {
-    if (!(baseUrl && username && password))
+    if (!(baseURL && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-    const headers: any = {
-      Accept: "*/*",
-      "Cache-Control": "no-cache",
-      withCredentials: true,
-      "x-csrf-token": FETCH_CSRF_TOKEN
-    }
-    headers[SESSION_HEADER] = session_types.stateless
-    this.jar = new CookieJar(undefined, { rejectPublicSuffixes: false })
-    this.axios = Axios.create({
+    const options: AxiosRequestConfig = {
       auth: { username, password },
-      baseURL: baseUrl,
-      headers
+      baseURL,
+      headers: {
+        Accept: "*/*",
+        "Cache-Control": "no-cache",
+        withCredentials: true,
+        "x-csrf-token": FETCH_CSRF_TOKEN
+      }
+    }
+    options.headers[SESSION_HEADER] = session_types.stateless
+    this.jar = new CookieJar(undefined, {
+      looseMode: true,
+      rejectPublicSuffixes: false
     })
+    if (sslOptions) options.httpsAgent = new Agent(sslOptions)
+    this.axios = Axios.create(options)
   }
   /**
    * Logs on an ADT server. parameters provided on creation
@@ -87,14 +97,14 @@ export class AdtHTTP {
     await this._request("/sap/bc/adt/compatibility/graph", { params })
   }
   public async logout() {
-    await this._request("/sap/public/bc/icf/logoff")
+    await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
     this.axios.defaults.auth = undefined
   }
 
   public async dropSession() {
     this.stateful = session_types.stateless
-    await this._request("/sap/bc/adt/compatibility/graph")
+    await this._request("/sap/bc/adt/compatibility/graph", {})
   }
 
   /**
@@ -113,7 +123,7 @@ export class AdtHTTP {
         autologin = true
         await this.login()
       }
-      return await this._request(url, config)
+      return await this._request(url, config || {})
     } catch (e) {
       const adtErr = fromException(e)
       // if the logon ticket expired try to logon again, unless in stateful mode
@@ -121,12 +131,20 @@ export class AdtHTTP {
       if (isCsrfError(adtErr) && !autologin && !this.isStateful) {
         try {
           await this.login()
-          return await this._request(url, config)
+          return await this._request(url, config || {})
         } catch (e2) {
           throw fromException(e2)
         }
       } else throw adtErr
     }
+  }
+
+  private follow(url: string) {
+    if (!url) return this.baseUrl
+    const rest = url.replace(/^\.?\//, "")
+
+    if (this.baseUrl.match(/\/$/)) return this.baseUrl + rest
+    else return this.baseUrl + "/" + rest
   }
 
   /**
@@ -135,7 +153,8 @@ export class AdtHTTP {
    * @param url URL suffix
    * @param config request options
    */
-  private async _request(url: string, config?: AxiosRequestConfig) {
+  private async _request(url: string, config: AxiosRequestConfig) {
+    // config.headers = { Cookie: this.jar.getCookiesSync(this.baseUrl + url) }
     const response = await this.axios(url, config)
     if (this.stateful !== session_types.keep)
       this.currentSession = this.stateful
@@ -144,10 +163,16 @@ export class AdtHTTP {
       this.csrfToken = newtoken
     }
     const cookie = response.headers["set-cookie"] as string[] | undefined
+    // if (cookie && response.config.url) {
+    //   cookie.forEach(k => this.jar.setCookieSync(k, response.config.url!))
+    //   this.axios.defaults.headers.Cookie = this.jar.getCookieStringSync(
+    //     this.baseUrl+url
+    //   )
+    // }
     if (cookie) {
-      cookie.forEach(k => this.jar.setCookieSync(k, this.baseUrl + url))
+      cookie.forEach(k => this.jar.setCookieSync(k, this.follow(url)))
       this.axios.defaults.headers.Cookie = this.jar.getCookieStringSync(
-        this.baseUrl + url
+        this.follow(url)
       )
     }
     return response

@@ -15,7 +15,9 @@ import {
   lock,
   mainPrograms,
   NewObjectOptions,
+  nodeContents,
   NodeParents,
+  NodeStructure,
   objectRegistrationInfo,
   objectStructure,
   searchObject,
@@ -23,10 +25,9 @@ import {
   transportInfo,
   unLock,
   validateNewObject,
-  ValidateOptions,
-  NodeStructure,
-  nodeContents
+  ValidateOptions
 } from "./api"
+import { AgentOptions } from "https"
 
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
@@ -72,13 +73,21 @@ export class ADTClient {
     username: string,
     password: string,
     client: string = "",
-    language: string = ""
+    language: string = "",
+    sslOptions?: AgentOptions
   ) {
     if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-    this.h = new AdtHTTP(baseUrl, username, password, client, language)
+    this.h = new AdtHTTP(
+      baseUrl,
+      username,
+      password,
+      client,
+      language,
+      AgentOptions
+    )
   }
   public get stateful() {
     return this.h.stateful
@@ -123,6 +132,7 @@ export class ADTClient {
   }
 
   public async nodeContents(
+    // tslint:disable: variable-name
     parent_type: NodeParents,
     parent_name?: string,
     user_name?: string,
