@@ -1,8 +1,6 @@
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
-import { CookieJar, Cookie } from "tough-cookie"
+import { CookieJar } from "tough-cookie"
 import { fromException, isCsrfError } from "./AdtException"
-import { Agent, AgentOptions } from "https"
-import { isArray } from "util"
 
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
@@ -47,7 +45,7 @@ export class AdtHTTP {
   }
 
   /**
-   *Creates an instance of AdtHTTP.
+   * Creates an instance of AdtHTTP.
    * @param {string} baseURL  Base url, i.e. http://vhcalnplci.local:8000
    * @param {string} username SAP logon user
    * @param {string} password Password
@@ -62,28 +60,30 @@ export class AdtHTTP {
     password: string,
     readonly client: string,
     readonly language: string,
-    sslOptions?: AgentOptions
+    config: AxiosRequestConfig = {}
   ) {
     if (!(baseURL && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
+    const headers = {
+      ...config.headers,
+      Accept: "*/*",
+      "Cache-Control": "no-cache",
+      withCredentials: true,
+      "x-csrf-token": FETCH_CSRF_TOKEN
+    }
+    headers[SESSION_HEADER] = session_types.stateless
     const options: AxiosRequestConfig = {
+      ...config,
       auth: { username, password },
       baseURL,
-      headers: {
-        Accept: "*/*",
-        "Cache-Control": "no-cache",
-        withCredentials: true,
-        "x-csrf-token": FETCH_CSRF_TOKEN
-      }
+      headers
     }
-    options.headers[SESSION_HEADER] = session_types.stateless
     this.jar = new CookieJar(undefined, {
       looseMode: true,
       rejectPublicSuffixes: false
     })
-    if (sslOptions) options.httpsAgent = new Agent(sslOptions)
     this.axios = Axios.create(options)
   }
   /**
@@ -163,12 +163,7 @@ export class AdtHTTP {
       this.csrfToken = newtoken
     }
     const cookie = response.headers["set-cookie"] as string[] | undefined
-    // if (cookie && response.config.url) {
-    //   cookie.forEach(k => this.jar.setCookieSync(k, response.config.url!))
-    //   this.axios.defaults.headers.Cookie = this.jar.getCookieStringSync(
-    //     this.baseUrl+url
-    //   )
-    // }
+
     if (cookie) {
       cookie.forEach(k => this.jar.setCookieSync(k, this.follow(url)))
       this.axios.defaults.headers.Cookie = this.jar.getCookieStringSync(

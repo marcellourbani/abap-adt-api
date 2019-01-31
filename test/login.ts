@@ -1,3 +1,4 @@
+import { Agent } from "https"
 import { ADTClient } from "../src"
 import { AdtHTTP } from "../src/AdtHTTP"
 
@@ -8,7 +9,11 @@ export function create() {
     process.env.ADT_PASS!,
     "",
     "",
-    { cert: process.env.ADT_CERT, rejectUnauthorized: false }
+    {
+      httpsAgent: new Agent({
+        rejectUnauthorized: false // not a good idea for production code, required to trust some self-signed certificate
+      })
+    }
   )
 }
 export function createHttp(language: string = "") {
@@ -18,6 +23,10 @@ export function createHttp(language: string = "") {
     process.env.ADT_PASS!,
     "",
     language,
-    { cert: process.env.ADT_CERT, rejectUnauthorized: false }
+    {
+      httpsAgent: new Agent({
+        rejectUnauthorized: false // see above
+      })
+    }
   )
 }

@@ -28,6 +28,7 @@ import {
   ValidateOptions
 } from "./api"
 import { AgentOptions } from "https"
+import { AxiosRequestConfig } from "axios"
 
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
@@ -74,20 +75,13 @@ export class ADTClient {
     password: string,
     client: string = "",
     language: string = "",
-    sslOptions?: AgentOptions
+    config: AxiosRequestConfig = {}
   ) {
     if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-    this.h = new AdtHTTP(
-      baseUrl,
-      username,
-      password,
-      client,
-      language,
-      AgentOptions
-    )
+    this.h = new AdtHTTP(baseUrl, username, password, client, language, config)
   }
   public get stateful() {
     return this.h.stateful

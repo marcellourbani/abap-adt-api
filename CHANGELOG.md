@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 0.4.3 2019-01-31
+
+### Fixed
+
+- cookies/session handling
+- self-signed certificates support
+
 ## 0.4.2 2019-01-29
 
 ### Fixed
