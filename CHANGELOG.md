@@ -4,6 +4,12 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 0.4.4 2019-02-01
+
+### Added
+
+- label in creatable object types
+
 ## 0.4.3 2019-01-31
 
 ### Fixed

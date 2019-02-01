@@ -7,6 +7,7 @@ interface CreatableType {
   creationPath: string
   rootName: string
   nameSpace: string
+  label: string
 }
 type GroupTypeIds = "FUGR/FF" | "FUGR/I"
 export type NonGroupTypeIds =
@@ -22,6 +23,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "PROG/P",
     {
       creationPath: "programs/programs",
+      label: "Program",
       nameSpace: 'xmlns:program="http://www.sap.com/adt/programs/programs"',
       rootName: "program:abapProgram",
       validationPath: "programs/validation"
@@ -31,6 +33,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "CLAS/OC",
     {
       creationPath: "oo/classes",
+      label: "Class",
       nameSpace: 'xmlns:class="http://www.sap.com/adt/oo/classes"',
       rootName: "class:abapClass",
       validationPath: "oo/validation/objectname"
@@ -40,6 +43,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "INTF/OI",
     {
       creationPath: "oo/interfaces",
+      label: "Interface",
       nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces',
       rootName: "intf:abapInterface",
       validationPath: "oo/validation/objectname"
@@ -49,6 +53,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "PROG/I",
     {
       creationPath: "programs/includes",
+      label: "Include",
       nameSpace: 'xmlns:include="http://www.sap.com/adt/programs/includes"',
       rootName: "include:abapInclude",
       validationPath: "includes/validation"
@@ -58,6 +63,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "FUGR/F",
     {
       creationPath: "functions/groups",
+      label: "Function Group",
       nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
       rootName: "group:abapFunctionGroup",
       validationPath: "functions/validation"
@@ -67,6 +73,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "FUGR/FF",
     {
       creationPath: "functions/groups/%s/fmodules",
+      label: "Function module",
       nameSpace: 'xmlns:fmodule="http://www.sap.com/adt/functions/fmodules"',
       rootName: "fmodule:abapFunctionModule",
       validationPath: "functions/validation"
@@ -76,6 +83,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
     "FUGR/I",
     {
       creationPath: "functions/groups/%s/includes",
+      label: "Function group include",
       nameSpace: 'xmlns:finclude="http://www.sap.com/adt/functions/fincludes"',
       rootName: "finclude:abapFunctionGroupInclude",
       validationPath: "functions/validation"
