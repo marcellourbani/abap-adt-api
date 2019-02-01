@@ -41,7 +41,10 @@ export class AdtHTTP {
     return this.axios.defaults.baseURL!
   }
   public get username() {
-    return this.axios.defaults.auth && this.axios.defaults.auth.username
+    return (this.axios.defaults.auth && this.axios.defaults.auth.username) || ""
+  }
+  public get password() {
+    return (this.axios.defaults.auth && this.axios.defaults.auth.password) || ""
   }
 
   /**

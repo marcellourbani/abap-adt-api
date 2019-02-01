@@ -1,5 +1,5 @@
+import { AdtException, adtException } from "./AdtException"
 import { AdtHTTP, session_types } from "./AdtHTTP"
-import * as api from "./api"
 import {
   AbapClassStructure,
   AbapObjectStructure,
@@ -27,7 +27,6 @@ import {
   validateNewObject,
   ValidateOptions
 } from "./api"
-import { AgentOptions } from "https"
 import { AxiosRequestConfig } from "axios"
 
 export class ADTClient {
@@ -59,6 +58,8 @@ export class ADTClient {
   }
 
   private h: AdtHTTP
+  private pClone?: ADTClient
+  private pIsClone?: boolean
 
   /**
    * Create an ADT client
@@ -75,7 +76,7 @@ export class ADTClient {
     password: string,
     client: string = "",
     language: string = "",
-    config: AxiosRequestConfig = {}
+    private config: AxiosRequestConfig = {}
   ) {
     if (!(baseUrl && username && password))
       throw new Error(
@@ -83,10 +84,27 @@ export class ADTClient {
       )
     this.h = new AdtHTTP(baseUrl, username, password, client, language, config)
   }
+  public get statelessClone() {
+    if (this.pIsClone) return this
+    if (!this.pClone) {
+      this.pClone = new ADTClient(
+        this.baseUrl,
+        this.username,
+        this.password,
+        this.client,
+        this.language,
+        this.config
+      )
+      this.pClone.pIsClone = true
+    }
+    return this.pClone
+  }
   public get stateful() {
     return this.h.stateful
   }
   public set stateful(stateful: session_types) {
+    if (this.pIsClone)
+      throw adtException("Stateful sessions not allowed in stateless clones")
     this.h.stateful = stateful
   }
 
@@ -104,6 +122,9 @@ export class ADTClient {
   }
   public get username() {
     return this.h.username
+  }
+  private get password() {
+    return this.h.password
   }
 
   /**

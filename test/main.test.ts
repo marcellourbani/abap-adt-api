@@ -1,6 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import { ADTClient, isClassStructure } from "../src"
+import { ADTClient, isClassStructure, objectPath } from "../src"
 import { session_types } from "../src/AdtHTTP"
 import { create, createHttp } from "./login"
 
@@ -76,6 +76,16 @@ test("getTransportInfo", async () => {
   )
   expect(info).toBeDefined()
   expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+})
+
+test("objectPath", async () => {
+  const c = create()
+  const path = objectPath("CLAS/OC", "zapidummytestcreation", "")
+  expect(path).toBe("/sap/bc/adt/oo/classes/zapidummytestcreation")
+  const info = await c.transportInfo(path, "ZAPIDUMMY")
+  expect(info).toBeDefined()
+  expect(info.RECORDING).toEqual("X")
+  expect(info.TRANSPORTS.length).toBeGreaterThan(0)
 })
 
 test("badTransportInfo", async () => {
@@ -218,6 +228,20 @@ test("validateClass", async () => {
   expect(result).toBeTruthy()
 })
 
+test("validateExistingClass", async () => {
+  const c = create()
+  try {
+    await c.validateNewObject({
+      description: "a class",
+      objname: "ZCL_ABAPGIT_GUI",
+      objtype: "CLAS/OC",
+      packagename: "$TMP"
+    })
+    fail("Existing object should fail validation")
+  } catch (e) {
+    //
+  }
+})
 test("loadTypes", async () => {
   const c = create()
   const result = await c.loadTypes()
@@ -229,6 +253,21 @@ test("loadTypes", async () => {
 test("objectRegistration", async () => {
   const c = create()
   const result = await c.objectRegistrationInfo(
+    "/sap/bc/adt/programs/programs/zabapgit"
+  )
+  expect(result).toBeDefined()
+})
+
+test("stateless clone", async () => {
+  const c = create()
+  const clone = c.statelessClone
+  expect(clone.statelessClone).toBe(clone)
+  try {
+    clone.stateful = session_types.stateful
+    fail("Stateless clone must stay stateless")
+  } catch (e) {}
+  expect(clone.stateful).toBe(session_types.stateless)
+  const result = await clone.objectRegistrationInfo(
     "/sap/bc/adt/programs/programs/zabapgit"
   )
   expect(result).toBeDefined()

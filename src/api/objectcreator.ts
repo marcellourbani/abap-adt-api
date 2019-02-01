@@ -1,95 +1,88 @@
 import { sprintf } from "sprintf-js"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
-interface CreatableType {
+import { fullParse, xmlArray } from "../utilities"
+export interface CreatableType {
   validationPath: string
   creationPath: string
   rootName: string
   nameSpace: string
   label: string
+  typeId: CreatableTypeIds
 }
-type GroupTypeIds = "FUGR/FF" | "FUGR/I"
+export type GroupTypeIds = "FUGR/FF" | "FUGR/I"
 export type NonGroupTypeIds =
   | "CLAS/OC"
   | "FUGR/F"
   | "INTF/OI"
   | "PROG/I"
   | "PROG/P"
+
+export type ParentTypeIds = "DEVC/K" | "FUGR/F"
+
 export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds
 
-export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map([
-  [
-    "PROG/P",
-    {
-      creationPath: "programs/programs",
-      label: "Program",
-      nameSpace: 'xmlns:program="http://www.sap.com/adt/programs/programs"',
-      rootName: "program:abapProgram",
-      validationPath: "programs/validation"
-    }
-  ],
-  [
-    "CLAS/OC",
-    {
-      creationPath: "oo/classes",
-      label: "Class",
-      nameSpace: 'xmlns:class="http://www.sap.com/adt/oo/classes"',
-      rootName: "class:abapClass",
-      validationPath: "oo/validation/objectname"
-    }
-  ],
-  [
-    "INTF/OI",
-    {
-      creationPath: "oo/interfaces",
-      label: "Interface",
-      nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces',
-      rootName: "intf:abapInterface",
-      validationPath: "oo/validation/objectname"
-    }
-  ],
-  [
-    "PROG/I",
-    {
-      creationPath: "programs/includes",
-      label: "Include",
-      nameSpace: 'xmlns:include="http://www.sap.com/adt/programs/includes"',
-      rootName: "include:abapInclude",
-      validationPath: "includes/validation"
-    }
-  ],
-  [
-    "FUGR/F",
-    {
-      creationPath: "functions/groups",
-      label: "Function Group",
-      nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
-      rootName: "group:abapFunctionGroup",
-      validationPath: "functions/validation"
-    }
-  ],
-  [
-    "FUGR/FF",
-    {
-      creationPath: "functions/groups/%s/fmodules",
-      label: "Function module",
-      nameSpace: 'xmlns:fmodule="http://www.sap.com/adt/functions/fmodules"',
-      rootName: "fmodule:abapFunctionModule",
-      validationPath: "functions/validation"
-    }
-  ],
-  [
-    "FUGR/I",
-    {
-      creationPath: "functions/groups/%s/includes",
-      label: "Function group include",
-      nameSpace: 'xmlns:finclude="http://www.sap.com/adt/functions/fincludes"',
-      rootName: "finclude:abapFunctionGroupInclude",
-      validationPath: "functions/validation"
-    }
-  ]
-]) as Map<CreatableTypeIds, CreatableType>
+export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = [
+  {
+    creationPath: "programs/programs",
+    label: "Program",
+    nameSpace: 'xmlns:program="http://www.sap.com/adt/programs/programs"',
+    rootName: "program:abapProgram",
+    typeId: "PROG/P",
+    validationPath: "programs/validation"
+  },
+  {
+    creationPath: "oo/classes",
+    label: "Class",
+    nameSpace: 'xmlns:class="http://www.sap.com/adt/oo/classes"',
+    rootName: "class:abapClass",
+    typeId: "CLAS/OC",
+    validationPath: "oo/validation/objectname"
+  },
+  {
+    creationPath: "oo/interfaces",
+    label: "Interface",
+    nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces',
+    rootName: "intf:abapInterface",
+    typeId: "INTF/OI",
+    validationPath: "oo/validation/objectname"
+  },
+  {
+    creationPath: "programs/includes",
+    label: "Include",
+    nameSpace: 'xmlns:include="http://www.sap.com/adt/programs/includes"',
+    rootName: "include:abapInclude",
+    typeId: "PROG/I",
+    validationPath: "includes/validation"
+  },
+  {
+    creationPath: "functions/groups",
+    label: "Function Group",
+    nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
+    rootName: "group:abapFunctionGroup",
+    typeId: "FUGR/F",
+    validationPath: "functions/validation"
+  },
+  {
+    creationPath: "functions/groups/%s/fmodules",
+    label: "Function module",
+    nameSpace: 'xmlns:fmodule="http://www.sap.com/adt/functions/fmodules"',
+    rootName: "fmodule:abapFunctionModule",
+    typeId: "FUGR/FF",
+    validationPath: "functions/validation"
+  },
+  {
+    creationPath: "functions/groups/%s/includes",
+    label: "Function group include",
+    nameSpace: 'xmlns:finclude="http://www.sap.com/adt/functions/fincludes"',
+    rootName: "finclude:abapFunctionGroupInclude",
+    typeId: "FUGR/I",
+    validationPath: "functions/validation"
+  }
+].reduce((m, i) => {
+  m.set(i.typeId, i)
+  return m
+}, new Map())
 
 interface ObjectValidateOptions {
   objtype: NonGroupTypeIds
@@ -165,6 +158,16 @@ export async function loadTypes(h: AdtHTTP) {
   ) as ObjectType[]
 }
 
+export function objectPath(
+  typeId: CreatableTypeIds,
+  name: string,
+  parentName: string
+): string {
+  const ot = CreatableTypes.get(typeId)
+  if (!ot) return ""
+  return "/sap/bc/adt/" + sprintf(ot.creationPath, parentName) + "/" + name
+}
+
 export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
@@ -192,4 +195,8 @@ export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
     method: "POST",
     params
   })
+}
+
+export function isGroupType(type: CreatableTypeIds): type is GroupTypeIds {
+  return type === "FUGR/FF" || type === "FUGR/I"
 }

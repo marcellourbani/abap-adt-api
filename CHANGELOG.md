@@ -4,6 +4,15 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 0.4.5 2019-02-01
+
+### Added
+
+- stateless clone
+- object type label
+- object URL from name
+- exported more object types
+
 ## 0.4.4 2019-02-01
 
 ### Added
