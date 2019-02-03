@@ -2,6 +2,8 @@ import { sprintf } from "sprintf-js"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray } from "../utilities"
+import { isString } from "util"
+
 export interface CreatableType {
   validationPath: string
   creationPath: string
@@ -21,68 +23,6 @@ export type NonGroupTypeIds =
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
 export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds
-
-export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = [
-  {
-    creationPath: "programs/programs",
-    label: "Program",
-    nameSpace: 'xmlns:program="http://www.sap.com/adt/programs/programs"',
-    rootName: "program:abapProgram",
-    typeId: "PROG/P",
-    validationPath: "programs/validation"
-  },
-  {
-    creationPath: "oo/classes",
-    label: "Class",
-    nameSpace: 'xmlns:class="http://www.sap.com/adt/oo/classes"',
-    rootName: "class:abapClass",
-    typeId: "CLAS/OC",
-    validationPath: "oo/validation/objectname"
-  },
-  {
-    creationPath: "oo/interfaces",
-    label: "Interface",
-    nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces',
-    rootName: "intf:abapInterface",
-    typeId: "INTF/OI",
-    validationPath: "oo/validation/objectname"
-  },
-  {
-    creationPath: "programs/includes",
-    label: "Include",
-    nameSpace: 'xmlns:include="http://www.sap.com/adt/programs/includes"',
-    rootName: "include:abapInclude",
-    typeId: "PROG/I",
-    validationPath: "includes/validation"
-  },
-  {
-    creationPath: "functions/groups",
-    label: "Function Group",
-    nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
-    rootName: "group:abapFunctionGroup",
-    typeId: "FUGR/F",
-    validationPath: "functions/validation"
-  },
-  {
-    creationPath: "functions/groups/%s/fmodules",
-    label: "Function module",
-    nameSpace: 'xmlns:fmodule="http://www.sap.com/adt/functions/fmodules"',
-    rootName: "fmodule:abapFunctionModule",
-    typeId: "FUGR/FF",
-    validationPath: "functions/validation"
-  },
-  {
-    creationPath: "functions/groups/%s/includes",
-    label: "Function group include",
-    nameSpace: 'xmlns:finclude="http://www.sap.com/adt/functions/fincludes"',
-    rootName: "finclude:abapFunctionGroupInclude",
-    typeId: "FUGR/I",
-    validationPath: "functions/validation"
-  }
-].reduce((m, i) => {
-  m.set(i.typeId, i)
-  return m
-}, new Map())
 
 interface ObjectValidateOptions {
   objtype: NonGroupTypeIds
@@ -158,12 +98,26 @@ export async function loadTypes(h: AdtHTTP) {
   ) as ObjectType[]
 }
 
+export function objectPath(objOptions: NewObjectOptions): string
+export function objectPath(typeId: "DEVC/K", name: string): string
 export function objectPath(
-  typeId: CreatableTypeIds,
+  typeId: CreatableTypeIds | "DEVC/K",
   name: string,
   parentName: string
+): string
+export function objectPath(
+  typeIdOrObjectOptions: CreatableTypeIds | "DEVC/K" | NewObjectOptions,
+  name?: string,
+  parentName?: string
 ): string {
-  const ot = CreatableTypes.get(typeId)
+  if (!isString(typeIdOrObjectOptions))
+    return objectPath(
+      typeIdOrObjectOptions.objtype,
+      typeIdOrObjectOptions.name,
+      typeIdOrObjectOptions.parentName
+    )
+  if (typeIdOrObjectOptions === "DEVC/K") return `/sap/bc/adt/packages/${name}`
+  const ot = CreatableTypes.get(typeIdOrObjectOptions)
   if (!ot) return ""
   return "/sap/bc/adt/" + sprintf(ot.creationPath, parentName) + "/" + name
 }
@@ -197,6 +151,85 @@ export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   })
 }
 
-export function isGroupType(type: CreatableTypeIds): type is GroupTypeIds {
+export function isGroupType(type: string): type is GroupTypeIds {
   return type === "FUGR/FF" || type === "FUGR/I"
 }
+
+export function isNonGroupType(type: string): type is NonGroupTypeIds {
+  return (
+    type === "CLAS/OC" ||
+    type === "FUGR/F" ||
+    type === "INTF/OI" ||
+    type === "PROG/I" ||
+    type === "PROG/P"
+  )
+}
+
+export function isCreatableTypeId(type: string): type is CreatableTypeIds {
+  return isGroupType(type) || isNonGroupType(type)
+}
+
+export function parentTypeId(type: CreatableTypeIds): ParentTypeIds {
+  return isGroupType(type) ? "FUGR/F" : "DEVC/K"
+}
+export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = [
+  {
+    creationPath: "programs/programs",
+    label: "Program",
+    nameSpace: 'xmlns:program="http://www.sap.com/adt/programs/programs"',
+    rootName: "program:abapProgram",
+    typeId: "PROG/P",
+    validationPath: "programs/validation"
+  },
+  {
+    creationPath: "oo/classes",
+    label: "Class",
+    nameSpace: 'xmlns:class="http://www.sap.com/adt/oo/classes"',
+    rootName: "class:abapClass",
+    typeId: "CLAS/OC",
+    validationPath: "oo/validation/objectname"
+  },
+  {
+    creationPath: "oo/interfaces",
+    label: "Interface",
+    nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces',
+    rootName: "intf:abapInterface",
+    typeId: "INTF/OI",
+    validationPath: "oo/validation/objectname"
+  },
+  {
+    creationPath: "programs/includes",
+    label: "Include",
+    nameSpace: 'xmlns:include="http://www.sap.com/adt/programs/includes"',
+    rootName: "include:abapInclude",
+    typeId: "PROG/I",
+    validationPath: "includes/validation"
+  },
+  {
+    creationPath: "functions/groups",
+    label: "Function Group",
+    nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
+    rootName: "group:abapFunctionGroup",
+    typeId: "FUGR/F",
+    validationPath: "functions/validation"
+  },
+  {
+    creationPath: "functions/groups/%s/fmodules",
+    label: "Function module",
+    nameSpace: 'xmlns:fmodule="http://www.sap.com/adt/functions/fmodules"',
+    rootName: "fmodule:abapFunctionModule",
+    typeId: "FUGR/FF",
+    validationPath: "functions/validation"
+  },
+  {
+    creationPath: "functions/groups/%s/includes",
+    label: "Function group include",
+    nameSpace: 'xmlns:finclude="http://www.sap.com/adt/functions/fincludes"',
+    rootName: "finclude:abapFunctionGroupInclude",
+    typeId: "FUGR/I",
+    validationPath: "functions/validation"
+  }
+].reduce((m, i) => {
+  m.set(i.typeId, i)
+  return m
+}, new Map())

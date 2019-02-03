@@ -108,6 +108,10 @@ export class ADTClient {
     this.h.stateful = stateful
   }
 
+  public get isStateful() {
+    return this.h.isStateful
+  }
+
   public get csrfToken() {
     return this.h.csrfToken
   }

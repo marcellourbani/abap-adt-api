@@ -2,6 +2,10 @@ import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F"
 
+export function isNodeParent(t: string): t is NodeParents {
+  return t === "DEVC/K" || t === "PROG/P" || t === "FUGR/F"
+}
+
 interface NodeRequestOptions {
   parent_name?: string
   parent_type: NodeParents
