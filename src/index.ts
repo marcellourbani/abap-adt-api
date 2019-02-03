@@ -1,4 +1,4 @@
-import { CreatableTypes } from "./api/objectcreator"
+export { session_types } from "./AdtHTTP"
 export * from "./AdtClient"
 export * from "./AdtException"
 export {
@@ -6,6 +6,7 @@ export {
   AbapObjectStructure,
   ActivationResult,
   AdtLock,
+  classIncludes,
   CreatableType,
   CreatableTypeIds,
   CreatableTypes,
