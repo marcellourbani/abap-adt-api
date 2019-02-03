@@ -1,5 +1,6 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
+import { xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F"
 
 export function isNodeParent(t: string): t is NodeParents {
@@ -13,67 +14,63 @@ interface NodeRequestOptions {
   parent_tech_name?: string
   withShortDescriptions: boolean
 }
+export interface Node {
+  OBJECT_TYPE: string
+  OBJECT_NAME: string
+  TECH_NAME: string
+  OBJECT_URI: string
+  OBJECT_VIT_URI: string
+  EXPANDABLE: string
+  // new fields from 7.52
+  VISIBILITY?: number
+  NODE_ID?: string
+  DESCRIPTION?: string
+  DESCRIPTION_TYPE?: string
+  IS_ABSTRACT?: string
+  IS_CONSTANT?: string
+  IS_CONSTRUCTOR?: string
+  IS_EVENT_HANDLER?: string
+  IS_FINAL?: string
+  IS_FOR_TESTING?: string
+  IS_READ_ONLY?: string
+  IS_REDEFINITION?: string
+  IS_STATIC?: string
+}
+export interface NodeCategory {
+  CATEGORY: string
+  CATEGORY_LABEL: string
+}
+
+export interface NodeObjectType {
+  OBJECT_TYPE: string
+  CATEGORY_TAG: string
+  OBJECT_TYPE_LABEL: string
+  NODE_ID: string
+}
 export interface NodeStructure {
-  nodes: [
-    {
-      OBJECT_TYPE: string
-      OBJECT_NAME: string
-      TECH_NAME: string
-      OBJECT_URI: string
-      OBJECT_VIT_URI: string
-      EXPANDABLE: string
-      // new fields from 7.52
-      VISIBILITY?: number
-      NODE_ID?: string
-      DESCRIPTION?: string
-      DESCRIPTION_TYPE?: string
-      IS_ABSTRACT?: string
-      IS_CONSTANT?: string
-      IS_CONSTRUCTOR?: string
-      IS_EVENT_HANDLER?: string
-      IS_FINAL?: string
-      IS_FOR_TESTING?: string
-      IS_READ_ONLY?: string
-      IS_REDEFINITION?: string
-      IS_STATIC?: string
-    }
-  ]
-  categories: [
-    {
-      CATEGORY: string
-      CATEGORY_LABEL: string
-    }
-  ]
-  objectTypes: [
-    {
-      OBJECT_TYPE: string
-      CATEGORY_TAG: string
-      OBJECT_TYPE_LABEL: string
-      NODE_ID: string
-    }
-  ]
+  nodes: Node[]
+  categories: []
+  objectTypes: []
 }
 const parsePackageResponse = (data: string): NodeStructure => {
-  let nodes = []
-  let categories = []
-  let objectTypes = []
+  let nodes: Node[] = []
+  let categories: NodeCategory[] = []
+  let objectTypes: NodeObjectType[] = []
   if (data) {
     const xml = parse(data)
     const root = xml["asx:abap"]["asx:values"].DATA
-    nodes =
-      (root.TREE_CONTENT && root.TREE_CONTENT.SEU_ADT_REPOSITORY_OBJ_NODE) || []
-    categories =
-      (root.CATEGORIES && root.CATEGORIES.SEU_ADT_OBJECT_CATEGORY_INFO) || []
-    objectTypes =
-      (root.OBJECT_TYPES && root.OBJECT_TYPES.SEU_ADT_OBJECT_TYPE_INFO) || []
+    nodes = xmlArray(root, "TREE_CONTENT", "SEU_ADT_REPOSITORY_OBJ_NODE")
+    categories = xmlArray(root, "CATEGORIES", "SEU_ADT_OBJECT_CATEGORY_INFO")
+    objectTypes = xmlArray(root, "OBJECT_TYPES", "SEU_ADT_OBJECT_TYPE_INFO")
   }
   return {
     categories,
     nodes,
     objectTypes
-  }
+  } as NodeStructure
 }
 
+// tslint:disable: variable-name
 export async function nodeContents(
   h: AdtHTTP,
   parent_type: NodeParents,

@@ -6,9 +6,9 @@ interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean
   "abapsource:fixPointArithmetic": boolean
   "abapsource:sourceUri": string
-  "adtcore:changedAt": Date
+  "adtcore:changedAt": number
   "adtcore:changedBy": string
-  "adtcore:createdAt": Date
+  "adtcore:createdAt": number
   "adtcore:description": string
   "adtcore:descriptionTextLimit": number
   "adtcore:language": string
@@ -46,9 +46,9 @@ interface Link {
 }
 interface ClassInclude {
   "abapsource:sourceUri": string
-  "adtcore:changedAt": string
+  "adtcore:changedAt": number
   "adtcore:changedBy": string
-  "adtcore:createdAt": string
+  "adtcore:createdAt": number
   "adtcore:createdBy": string
   "adtcore:name": string
   "adtcore:type": string
