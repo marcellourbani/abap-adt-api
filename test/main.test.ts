@@ -130,6 +130,10 @@ test("objectStructure", async () => {
   expect(ADTClient.classIncludes(structure).get("definitions")).toBe(
     "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/includes/definitions"
   )
+  await c.objectStructure(
+    "/sap/bc/adt/vit/wb/object_type/trant/object_name/ZABAPGIT"
+  )
+  expect(structure).toBeDefined()
 })
 
 test("activateProgram", async () => {

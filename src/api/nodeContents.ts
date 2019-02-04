@@ -49,8 +49,8 @@ export interface NodeObjectType {
 }
 export interface NodeStructure {
   nodes: Node[]
-  categories: []
-  objectTypes: []
+  categories: NodeCategory[]
+  objectTypes: NodeObjectType[]
 }
 const parsePackageResponse = (data: string): NodeStructure => {
   let nodes: Node[] = []

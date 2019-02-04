@@ -1,6 +1,6 @@
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlNodeAttr, xmlRoot } from "../utilities"
+import { fullParse, xmlNodeAttr, xmlRoot, xmlArray } from "../utilities"
 
 interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean
@@ -105,10 +105,10 @@ export async function objectStructure(
   // return type depends on object type, but always have a single root
   const root = xmlRoot(res)
   const attr = xmlNodeAttr(root)
-  attr["adtcore:changedAt"] = Date.parse(attr["adtcore:changedAt"])
-  attr["adtcore:createdAt"] = Date.parse(attr["adtcore:createdAt"])
+  attr["adtcore:changedAt"] = Date.parse(attr["adtcore:changedAt"]) || 0
+  attr["adtcore:createdAt"] = Date.parse(attr["adtcore:createdAt"]) || 0
 
-  const links: Link[] = root["atom:link"].map(xmlNodeAttr)
+  const links: Link[] = xmlArray(root, "atom:link").map(xmlNodeAttr)
 
   const metaData: AbapMetaData = attr
   if (isClassMetaData(metaData)) {

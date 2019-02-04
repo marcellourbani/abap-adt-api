@@ -134,8 +134,8 @@ export class ADTClient {
   /**
    * Logs on an ADT server. parameters provided on creation
    */
-  public async login() {
-    await this.h.login()
+  public login() {
+    return this.h.login()
   }
   /**
    * Logs out current user, clearing cookies
@@ -143,14 +143,14 @@ export class ADTClient {
    *
    * @memberof ADTClient
    */
-  public async logout() {
-    await this.h.logout()
+  public logout() {
+    return this.h.logout()
   }
-  public async dropSession() {
-    await this.h.dropSession()
+  public dropSession() {
+    return this.h.dropSession()
   }
 
-  public async nodeContents(
+  public nodeContents(
     // tslint:disable: variable-name
     parent_type: NodeParents,
     parent_name?: string,
@@ -173,11 +173,11 @@ export class ADTClient {
     return response.data
   }
 
-  public async transportInfo(objSourceUrl: string, devClass: string) {
+  public transportInfo(objSourceUrl: string, devClass: string) {
     return transportInfo(this.h, objSourceUrl, devClass)
   }
 
-  public async createTransport(
+  public createTransport(
     objSourceUrl: string,
     REQUEST_TEXT: string,
     DEVCLASS: string
@@ -185,42 +185,36 @@ export class ADTClient {
     return createTransport(this.h, objSourceUrl, REQUEST_TEXT, DEVCLASS)
   }
 
-  public async objectStructure(
-    objectUrl: string
-  ): Promise<AbapObjectStructure> {
+  public objectStructure(objectUrl: string): Promise<AbapObjectStructure> {
     return objectStructure(this.h, objectUrl)
   }
 
-  public async activate(
-    objectName: string,
-    objectUrl: string,
-    mainInclude?: string
-  ) {
+  public activate(objectName: string, objectUrl: string, mainInclude?: string) {
     return activate(this.h, objectName, objectUrl, mainInclude)
   }
 
-  public async mainPrograms(includeUrl: string) {
+  public mainPrograms(includeUrl: string) {
     return mainPrograms(this.h, includeUrl)
   }
 
-  public async lock(objectUrl: string, accessMode: string = "MODIFY") {
-    return await lock(this.h, objectUrl, accessMode)
+  public lock(objectUrl: string, accessMode: string = "MODIFY") {
+    return lock(this.h, objectUrl, accessMode)
   }
-  public async unLock(objectUrl: string, lockHandle: string) {
-    return await unLock(this.h, objectUrl, lockHandle)
+  public unLock(objectUrl: string, lockHandle: string) {
+    return unLock(this.h, objectUrl, lockHandle)
   }
 
-  public async getObjectSource(objectSourceUrl: string) {
+  public getObjectSource(objectSourceUrl: string) {
     return getObjectSource(this.h, objectSourceUrl)
   }
 
-  public async setObjectSource(
+  public setObjectSource(
     objectSourceUrl: string,
     source: string,
     lockHandle: string,
     transport?: string
   ) {
-    return await setObjectSource(
+    return setObjectSource(
       this.h,
       objectSourceUrl,
       source,
@@ -229,31 +223,31 @@ export class ADTClient {
     )
   }
 
-  public async searchObject(query: string, objType?: string) {
-    return await searchObject(this.h, query, objType)
+  public searchObject(query: string, objType?: string) {
+    return searchObject(this.h, query, objType)
   }
 
-  public async findObjectPath(objectUrl: string) {
+  public findObjectPath(objectUrl: string) {
     return findObjectPath(this.h, objectUrl)
   }
 
-  public async validateNewObject(options: ValidateOptions) {
+  public validateNewObject(options: ValidateOptions) {
     return validateNewObject(this.h, options)
   }
 
-  public async createObject(options: NewObjectOptions) {
-    return await createObject(this.h, options)
+  public createObject(options: NewObjectOptions) {
+    return createObject(this.h, options)
   }
 
-  public async objectRegistrationInfo(objectUrl: string) {
-    return await objectRegistrationInfo(this.h, objectUrl)
+  public objectRegistrationInfo(objectUrl: string) {
+    return objectRegistrationInfo(this.h, objectUrl)
   }
 
-  public async deleteObject(objectUrl: string, lockHandle: string) {
-    return await deleteObject(this.h, objectUrl, lockHandle)
+  public deleteObject(objectUrl: string, lockHandle: string) {
+    return deleteObject(this.h, objectUrl, lockHandle)
   }
 
-  public async loadTypes() {
-    return await loadTypes(this.h)
+  public loadTypes() {
+    return loadTypes(this.h)
   }
 }
