@@ -1,6 +1,6 @@
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlNodeAttr, xmlRoot, xmlArray } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr, xmlRoot } from "../utilities"
 
 interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean

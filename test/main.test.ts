@@ -269,7 +269,9 @@ test("stateless clone", async () => {
   try {
     clone.stateful = session_types.stateful
     fail("Stateless clone must stay stateless")
-  } catch (e) {}
+  } catch (e) {
+    // ignore
+  }
   expect(clone.stateful).toBe(session_types.stateless)
   const result = await clone.objectRegistrationInfo(
     "/sap/bc/adt/programs/programs/zabapgit"

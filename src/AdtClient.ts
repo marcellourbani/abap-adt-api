@@ -1,4 +1,5 @@
-import { AdtException, adtException } from "./AdtException"
+import { AxiosRequestConfig } from "axios"
+import { adtException } from "./AdtException"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import {
   AbapClassStructure,
@@ -27,7 +28,6 @@ import {
   validateNewObject,
   ValidateOptions
 } from "./api"
-import { AxiosRequestConfig } from "axios"
 
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {

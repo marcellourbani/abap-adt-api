@@ -1,8 +1,8 @@
 import { sprintf } from "sprintf-js"
+import { isString } from "util"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray } from "../utilities"
-import { isString } from "util"
 
 export interface CreatableType {
   validationPath: string
