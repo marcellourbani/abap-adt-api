@@ -1,5 +1,5 @@
 import { Agent } from "https"
-import { ADTClient } from "../src"
+import { ADTClient, createSSLConfig } from "../src"
 import { AdtHTTP } from "../src/AdtHTTP"
 
 export function create() {
@@ -9,11 +9,7 @@ export function create() {
     process.env.ADT_PASS!,
     "",
     "",
-    {
-      httpsAgent: new Agent({
-        rejectUnauthorized: false // not a good idea for production code, required to trust some self-signed certificate
-      })
-    }
+    createSSLConfig(!process.env.ADT_URL!.match(/^http:/i))
   )
 }
 export function createHttp(language: string = "") {
@@ -23,10 +19,6 @@ export function createHttp(language: string = "") {
     process.env.ADT_PASS!,
     "",
     language,
-    {
-      httpsAgent: new Agent({
-        rejectUnauthorized: false // see above
-      })
-    }
+    createSSLConfig(!process.env.ADT_URL!.match(/^http:/i))
   )
 }

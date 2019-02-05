@@ -1,4 +1,5 @@
 import { AxiosRequestConfig } from "axios"
+import { Agent } from "https"
 import { adtException } from "./AdtException"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import {
@@ -36,6 +37,16 @@ const followUrl = (base: string, extra: string) => {
   } else extra.replace(/^\//, "")
   base = base.replace(/\/$/, "")
   return base + "/" + extra
+}
+export function createSSLConfig(
+  allowUnauthorized: boolean,
+  ca?: string
+): AxiosRequestConfig {
+  if (ca || allowUnauthorized) {
+    const httpsAgent = new Agent({ ca, rejectUnauthorized: !allowUnauthorized })
+    return { httpsAgent }
+  }
+  return {}
 }
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
