@@ -1,5 +1,4 @@
 import { AxiosError } from "axios"
-import { parse } from "fast-xml-parser"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import { fullParse } from "./utilities"
 

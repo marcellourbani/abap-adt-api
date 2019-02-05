@@ -2,7 +2,11 @@
 
 This library simplifies access to the ADT REST interface
 
-At the moment only have a few methods, others will come soon
+Supports reading package contents and manipulating ABAP objects
+
+Dedigned for general use, mostly used in [ABAP remote filesystem extension for visual studio code](https://github.com/marcellourbani/vscode_abap_remote_fs)
+
+## Sample usage
 
 ```typescript
 const client = new ADTClient(
@@ -11,7 +15,6 @@ const client = new ADTClient(
   "mypassword"
 )
 
-await client.login()
 const nodes = await client.getNodeContents({
   parent_name: "$TMP",
   parent_type: "DEVC/K"

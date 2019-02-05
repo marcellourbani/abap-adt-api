@@ -67,12 +67,12 @@ function extractTransports(raw: any): TransportHeader[] {
 export async function transportInfo(
   h: AdtHTTP,
   objPath: string,
-  devClass: string
+  devClass?: string
 ): Promise<TransportInfo> {
   ValidateObjectUrl(objPath)
   const response = await h.request("/sap/bc/adt/cts/transportchecks", {
     data: JSON2AbapXML({
-      DEVCLASS: devClass,
+      DEVCLASS: devClass || "",
       URI: objPath
     }),
     method: "POST"

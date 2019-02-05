@@ -130,10 +130,16 @@ test("objectStructure", async () => {
   expect(ADTClient.classIncludes(structure).get("definitions")).toBe(
     "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/includes/definitions"
   )
-  await c.objectStructure(
+  structure = await c.objectStructure(
     "/sap/bc/adt/vit/wb/object_type/trant/object_name/ZABAPGIT"
   )
   expect(structure).toBeDefined()
+  // table, uses relative paths
+  structure = await c.objectStructure("/sap/bc/adt/ddic/tables/zabapgit")
+  expect(structure).toBeDefined()
+  expect(ADTClient.mainInclude(structure)).toBe(
+    "/sap/bc/adt/ddic/tables/zabapgit/source/main"
+  )
 })
 
 test("activateProgram", async () => {

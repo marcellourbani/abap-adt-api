@@ -29,6 +29,14 @@ import {
   ValidateOptions
 } from "./api"
 
+const followUrl = (base: string, extra: string) => {
+  if (extra.match(/^\.\//)) {
+    base = base.replace(/[^\/]*$/, "")
+    extra = extra.replace(/^\.\//, "")
+  } else extra.replace(/^\//, "")
+  base = base.replace(/\/$/, "")
+  return base + "/" + extra
+}
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
     if (isClassStructure(object)) {
@@ -37,12 +45,12 @@ export class ADTClient {
       )
       const mainLink =
         mainInclude && mainInclude.links.find(x => x.type === "text/plain")
-      if (mainLink) return object.objectUrl + "/" + mainLink.href
+      if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     } else {
       const mainLink = object.links.find(x => x.type === "text/plain")
-      if (mainLink) return object.objectUrl + "/" + mainLink.href
+      if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     }
-    return object.objectUrl + "/source/main"
+    return followUrl(object.objectUrl, "/source/main")
   }
 
   public static classIncludes(clas: AbapClassStructure) {
@@ -51,7 +59,7 @@ export class ADTClient {
       const mainLink = i.links.find(x => x.type === "text/plain")
       includes.set(
         i["class:includeType"] as classIncludes,
-        clas.objectUrl + "/" + mainLink!.href
+        followUrl(clas.objectUrl, mainLink!.href)
       )
     }
     return includes
@@ -173,7 +181,7 @@ export class ADTClient {
     return response.data
   }
 
-  public transportInfo(objSourceUrl: string, devClass: string) {
+  public transportInfo(objSourceUrl: string, devClass?: string) {
     return transportInfo(this.h, objSourceUrl, devClass)
   }
 
