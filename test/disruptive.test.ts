@@ -89,3 +89,24 @@ test("write_program", async () => {
     c.dropSession()
   }
 })
+test("save with transport", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const path = "/sap/bc/adt/oo/classes/zcl_foobar/includes/implementations"
+  const contents = ""
+  try {
+    c.stateful = session_types.stateful
+    const handle = await c.lock("/sap/bc/adt/oo/classes/zcl_foobar")
+    const result = await c.setObjectSource(
+      path,
+      contents,
+      handle.LOCK_HANDLE,
+      "NPLK900068"
+    )
+    await c.unLock("/sap/bc/adt/oo/classes/zcl_foobar", handle.LOCK_HANDLE)
+  } catch (e) {
+    throw e
+  } finally {
+    c.dropSession()
+  }
+})

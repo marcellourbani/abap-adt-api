@@ -1,17 +1,20 @@
 import { AxiosRequestConfig } from "axios"
 import { Agent } from "https"
+import { isString } from "util"
 import { adtException } from "./AdtException"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import {
   AbapClassStructure,
   AbapObjectStructure,
   activate,
+  ActivationResult,
   classIncludes,
   createObject,
   createTransport,
   deleteObject,
   findObjectPath,
   getObjectSource,
+  InactiveObject,
   isClassStructure,
   loadTypes,
   lock,
@@ -42,11 +45,8 @@ export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
 ): AxiosRequestConfig {
-  if (ca || allowUnauthorized) {
-    const httpsAgent = new Agent({ ca, rejectUnauthorized: !allowUnauthorized })
-    return { httpsAgent }
-  }
-  return {}
+  const httpsAgent = new Agent({ ca, rejectUnauthorized: !allowUnauthorized })
+  return { httpsAgent }
 }
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
@@ -101,6 +101,12 @@ export class ADTClient {
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
+
+    if (baseUrl.match(/^http:/i)) {
+      // ignore httpsAgent if no SSL
+      const { httpAgent, ...rest } = config
+      this.config = config = rest
+    }
     this.h = new AdtHTTP(baseUrl, username, password, client, language, config)
   }
   public get statelessClone() {
@@ -207,9 +213,22 @@ export class ADTClient {
   public objectStructure(objectUrl: string): Promise<AbapObjectStructure> {
     return objectStructure(this.h, objectUrl)
   }
-
-  public activate(objectName: string, objectUrl: string, mainInclude?: string) {
-    return activate(this.h, objectName, objectUrl, mainInclude)
+  public activate(
+    object: InactiveObject | InactiveObject[]
+  ): Promise<ActivationResult>
+  public activate(
+    objectName: string,
+    objectUrl: string,
+    mainInclude?: string
+  ): Promise<ActivationResult>
+  public activate(
+    objectName: string | InactiveObject | InactiveObject[],
+    objectUrl?: string,
+    mainInclude?: string
+  ) {
+    if (isString(objectName))
+      return activate(this.h, objectName, objectUrl!, mainInclude)
+    else return activate(this.h, objectName)
   }
 
   public mainPrograms(includeUrl: string) {

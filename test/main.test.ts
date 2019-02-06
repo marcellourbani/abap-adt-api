@@ -1,6 +1,11 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import { ADTClient, isClassStructure, objectPath } from "../src"
+import {
+  ADTClient,
+  inactiveObjectsInResults,
+  isClassStructure,
+  objectPath
+} from "../src"
 import { session_types } from "../src/AdtHTTP"
 import { create, createHttp } from "./login"
 
@@ -283,4 +288,17 @@ test("stateless clone", async () => {
     "/sap/bc/adt/programs/programs/zabapgit"
   )
   expect(result).toBeDefined()
+})
+
+// disabled as test case is missing
+test("activate multiple", async () => {
+  return
+  const c = create()
+  let result = await c.activate(
+    "ZCL_FOOBAR",
+    "/sap/bc/adt/oo/classes/zcl_foobar"
+  )
+  const inactive = inactiveObjectsInResults(result)
+  result = await c.activate(inactive)
+  expect(result.success).toBeTruthy()
 })

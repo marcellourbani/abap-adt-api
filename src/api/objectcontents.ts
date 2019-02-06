@@ -29,15 +29,13 @@ export async function setObjectSource(
   ValidateObjectUrl(objectSourceUrl)
   ValidateStateful(h)
   const params: any = { lockHandle }
-  // const params: any = { lockHandle: encodeURIComponent(lockHandle) }
-  if (transport) params.corrNR = transport
-  const response = await h.request(objectSourceUrl, {
+  if (transport) params.corrNr = transport
+  await h.request(objectSourceUrl, {
     data: source,
     headers: { "content-type": "text/plain; charset=utf-8" },
     method: "PUT",
     params
   })
-  return response.data
 }
 
 export async function lock(

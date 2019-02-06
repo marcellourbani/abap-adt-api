@@ -11,6 +11,8 @@ export {
   CreatableTypeIds,
   CreatableTypes,
   GroupTypeIds,
+  InactiveObject,
+  inactiveObjectsInResults,
   isClassMetaData,
   isClassStructure,
   isCreatableTypeId,

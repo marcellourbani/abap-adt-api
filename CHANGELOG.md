@@ -4,6 +4,19 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 0.4.12 2019-02-06
+
+### Fixed
+
+- better handling of SSL options
+- transport assignment on save
+
+## 0.4.11 2019-02-05
+
+### Added
+
+- activate multiple objects at once
+
 ## 0.4.10 2019-02-05
 
 ### Added
