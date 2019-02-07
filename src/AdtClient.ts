@@ -9,6 +9,7 @@ import {
   activate,
   ActivationResult,
   classIncludes,
+  CreatableTypeIds,
   createObject,
   createTransport,
   deleteObject,
@@ -16,6 +17,7 @@ import {
   getObjectSource,
   InactiveObject,
   isClassStructure,
+  isCreatableTypeId,
   loadTypes,
   lock,
   mainPrograms,
@@ -275,16 +277,50 @@ export class ADTClient {
     return validateNewObject(this.h, options)
   }
 
-  public createObject(options: NewObjectOptions) {
-    return createObject(this.h, options)
+  public createObject(
+    objtype: CreatableTypeIds,
+    name: string,
+    parentName: string,
+    description: string,
+    parentPath: string,
+    responsible?: string,
+    transport?: string
+  ): Promise<void>
+  public createObject(options: NewObjectOptions): Promise<void>
+  public createObject(
+    optionsOrType: NewObjectOptions | CreatableTypeIds,
+    name?: string,
+    parentName?: string,
+    description?: string,
+    parentPath?: string,
+    responsible: string = "",
+    transport: string = ""
+  ) {
+    if (isCreatableTypeId(optionsOrType)) {
+      if (!name || !parentName || !parentPath || !description)
+        throw adtException("")
+      return createObject(this.h, {
+        description,
+        name,
+        objtype: optionsOrType as CreatableTypeIds,
+        parentName,
+        parentPath,
+        responsible,
+        transport
+      })
+    } else return createObject(this.h, optionsOrType)
   }
 
   public objectRegistrationInfo(objectUrl: string) {
     return objectRegistrationInfo(this.h, objectUrl)
   }
 
-  public deleteObject(objectUrl: string, lockHandle: string) {
-    return deleteObject(this.h, objectUrl, lockHandle)
+  public deleteObject(
+    objectUrl: string,
+    lockHandle: string,
+    transport?: string
+  ) {
+    return deleteObject(this.h, objectUrl, lockHandle, transport)
   }
 
   public loadTypes() {

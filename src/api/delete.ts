@@ -49,13 +49,14 @@ export async function objectRegistrationInfo(h: AdtHTTP, objectUrl: string) {
 export async function deleteObject(
   h: AdtHTTP,
   objectUrl: string,
-  lockHandle: string
+  lockHandle: string,
+  transport?: string
 ) {
   ValidateObjectUrl(objectUrl)
   ValidateStateful(h)
+  const params: any = { lockHandle }
+  if (transport) params.corrNr = transport
+  const method = "DELETE"
   // no return value, will throw on failure
-  await h.request(objectUrl, {
-    method: "DELETE",
-    params: { lockHandle }
-  })
+  await h.request(objectUrl, { method, params })
 }

@@ -151,11 +151,11 @@ export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   })
 }
 
-export function isGroupType(type: string): type is GroupTypeIds {
+export function isGroupType(type: any): type is GroupTypeIds {
   return type === "FUGR/FF" || type === "FUGR/I"
 }
 
-export function isNonGroupType(type: string): type is NonGroupTypeIds {
+export function isNonGroupType(type: any): type is NonGroupTypeIds {
   return (
     type === "CLAS/OC" ||
     type === "FUGR/F" ||
@@ -165,7 +165,7 @@ export function isNonGroupType(type: string): type is NonGroupTypeIds {
   )
 }
 
-export function isCreatableTypeId(type: string): type is CreatableTypeIds {
+export function isCreatableTypeId(type: any): type is CreatableTypeIds {
   return isGroupType(type) || isNonGroupType(type)
 }
 
@@ -192,7 +192,7 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = [
   {
     creationPath: "oo/interfaces",
     label: "Interface",
-    nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces',
+    nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces"',
     rootName: "intf:abapInterface",
     typeId: "INTF/OI",
     validationPath: "oo/validation/objectname"

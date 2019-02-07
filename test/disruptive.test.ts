@@ -101,12 +101,38 @@ test("save with transport", async () => {
       path,
       contents,
       handle.LOCK_HANDLE,
-      "NPLK900068"
+      "NPLK900058"
     )
     await c.unLock("/sap/bc/adt/oo/classes/zcl_foobar", handle.LOCK_HANDLE)
   } catch (e) {
     throw e
   } finally {
     c.dropSession()
+  }
+})
+
+test("Create and delete interface", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  // first create, then delete
+  const newobject = "/sap/bc/adt/oo/interfaces/YIF_ADTNPM_FOOBAR"
+  await c.createObject(
+    "INTF/OI",
+    "YIF_ADTNPM_FOOBAR",
+    "$TMP",
+    "test object for ADT API",
+    "/sap/bc/adt/packages/$TMP"
+  )
+  // create successful, will try a deletion. Need to lock first
+  // locks only work in stateful sessions
+  try {
+    c.stateful = session_types.stateful
+    const handle = await c.lock(newobject)
+    expect(handle.LOCK_HANDLE).not.toBe("")
+    await c.deleteObject(newobject, handle.LOCK_HANDLE)
+  } catch (e) {
+    fail("Deletion error")
+  } finally {
+    await c.dropSession()
   }
 })

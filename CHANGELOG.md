@@ -4,12 +4,18 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## Unreleased
+## 0.4.13 2019-02-07
+
+### Added
+
+- transport in delete
+- alternate format for create object
 
 ### Fixed
 
 - bug in main link for CDS
 - lock tables and CDS
+- create interface
 
 ## 0.4.12 2019-02-06
 
