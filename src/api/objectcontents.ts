@@ -47,6 +47,10 @@ export async function lock(
   ValidateStateful(h)
   const params = { _action: "LOCK", accessMode }
   const response = await h.request(objectUrl, {
+    headers: {
+      Accept:
+        "application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.lock.result"
+    },
     method: "POST",
     params
   })

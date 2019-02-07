@@ -302,3 +302,16 @@ test("activate multiple", async () => {
   result = await c.activate(inactive)
   expect(result.success).toBeTruthy()
 })
+
+test("lock table", async () => {
+  const c = create()
+  c.stateful = session_types.stateful
+  try {
+    const handle = await c.lock("/sap/bc/adt/ddic/tables/zabapgit")
+    await c.unLock("/sap/bc/adt/ddic/tables/zabapgit", handle.LOCK_HANDLE)
+  } catch (e) {
+    throw e
+  } finally {
+    await c.dropSession()
+  }
+})

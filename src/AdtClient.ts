@@ -37,7 +37,7 @@ const followUrl = (base: string, extra: string) => {
   if (extra.match(/^\.\//)) {
     base = base.replace(/[^\/]*$/, "")
     extra = extra.replace(/^\.\//, "")
-  } else extra.replace(/^\//, "")
+  } else extra = extra.replace(/^\//, "")
   base = base.replace(/\/$/, "")
   return base + "/" + extra
 }
@@ -55,7 +55,9 @@ export class ADTClient {
         x => x["class:includeType"] === "main"
       )
       const mainLink =
-        mainInclude && mainInclude.links.find(x => x.type === "text/plain")
+        mainInclude &&
+        (mainInclude.links.find(x => x.type === "text/plain") ||
+          mainInclude.links.find(x => !x.type)) // CDS have no type for the plain text link...
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     } else {
       const mainLink = object.links.find(x => x.type === "text/plain")
