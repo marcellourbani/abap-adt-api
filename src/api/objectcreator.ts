@@ -57,6 +57,11 @@ export interface ObjectType {
   PARENT_OBJECT_TYPE: string
   URI_TEMPLATE: string
 }
+export interface ValidationResult {
+  success: boolean
+  SEVERITY?: string
+  SHORT_TEXT?: string
+}
 function createBody(options: NewObjectOptions, type: CreatableType) {
   const responsible = options.responsible
     ? `adtcore:responsible="${options.responsible}"`
@@ -130,8 +135,19 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
     params: options
   })
   const raw = fullParse(response.data)
-  const record = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
-  return !!(record[0] && record[0].CHECK_RESULT === "X")
+  const results = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
+  const record = (results && results[0]) || {}
+
+  const { SEVERITY, SHORT_TEXT, CHECK_RESULT } = record
+
+  if (SEVERITY && SEVERITY !== "INFO" && SEVERITY !== "WARNING")
+    throw adtException(record.SHORT_TEXT)
+
+  return {
+    SEVERITY,
+    SHORT_TEXT,
+    success: !!CHECK_RESULT || !!SEVERITY
+  } as ValidationResult
 }
 
 export async function createObject(h: AdtHTTP, options: NewObjectOptions) {

@@ -221,6 +221,18 @@ test("searchObject", async () => {
     sr => sr["adtcore:name"] === "ZABAPGIT" && sr["adtcore:type"] === "PROG/P"
   )
   expect(prog).toBeDefined()
+  const result2 = await c.searchObject("zabap*", "", 4)
+  expect(result2).toBeDefined()
+  expect(result2.length).toBe(4)
+})
+
+test("searchObject by type", async () => {
+  const c = create()
+  const result = await c.searchObject("zabap*", "PROG/P")
+  expect(result).toBeDefined()
+  result.forEach(r =>
+    expect(r["adtcore:type"].replace(/\/.*$/, "")).toBe("PROG")
+  )
 })
 
 test("findObjectPath", async () => {
@@ -240,7 +252,7 @@ test("validateClass", async () => {
     objtype: "CLAS/OC",
     packagename: "$TMP"
   })
-  expect(result).toBeTruthy()
+  expect(result.success).toBeTruthy()
 })
 
 test("validateExistingClass", async () => {
@@ -257,6 +269,17 @@ test("validateExistingClass", async () => {
     //
   }
 })
+test("validate New FM", async () => {
+  const c = create()
+  const result = await c.validateNewObject({
+    description: "a fm",
+    fugrname: "ZAPIDUMMYFOOBAR",
+    objname: "ZFOOBARFEWFWE",
+    objtype: "FUGR/FF"
+  })
+  expect(result.success).toBeTruthy()
+})
+
 test("loadTypes", async () => {
   const c = create()
   const result = await c.loadTypes()

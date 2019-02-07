@@ -20,10 +20,11 @@ export interface PathStep {
 export async function searchObject(
   h: AdtHTTP,
   query: string,
-  objType?: string
+  objType?: string,
+  maxResults: number = 100
 ) {
-  const params: any = { operation: "quickSearch", query }
-  if (objType) params.objType = objType
+  const params: any = { operation: "quickSearch", query, maxResults }
+  if (objType) params.objectType = objType.replace(/\/.*$/, "")
   const response = await h.request(
     `/sap/bc/adt/repository/informationsystem/search`,
     { params }

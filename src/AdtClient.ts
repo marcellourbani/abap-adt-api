@@ -265,8 +265,8 @@ export class ADTClient {
     )
   }
 
-  public searchObject(query: string, objType?: string) {
-    return searchObject(this.h, query, objType)
+  public searchObject(query: string, objType?: string, max: number = 100) {
+    return searchObject(this.h, query, objType, max)
   }
 
   public findObjectPath(objectUrl: string) {

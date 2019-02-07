@@ -33,5 +33,6 @@ export {
   ParentTypeIds,
   SearchResult,
   TransportInfo,
-  ValidateOptions
+  ValidateOptions,
+  ValidationResult
 } from "./api"
