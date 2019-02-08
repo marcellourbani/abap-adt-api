@@ -81,6 +81,14 @@ test("getTransportInfo", async () => {
   )
   expect(info).toBeDefined()
   expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+
+  info = await c.transportInfo(
+    "/sap/bc/adt/functions/groups/ZAPIDUMMYFOOBAR/fmodules/ZBARBAR",
+    // "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zbarbar",
+    "ZAPIDUMMY"
+  )
+  expect(info).toBeDefined()
+  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
 })
 
 test("objectPath", async () => {
@@ -244,6 +252,17 @@ test("findObjectPath", async () => {
   expect(result[1] && result[1]["adtcore:name"]).toBe("$ABAPGIT")
 })
 
+test("validateNewFM", async () => {
+  const c = create()
+  const result = await c.validateNewObject({
+    description: "a fm",
+    fugrname: "ZAPIDUMMYFOOBAR",
+    objname: "ZFOOBARFEWFWE",
+    objtype: "FUGR/FF"
+  })
+  expect(result.success).toBeTruthy()
+})
+
 test("validateClass", async () => {
   const c = create()
   const result = await c.validateNewObject({
@@ -268,16 +287,6 @@ test("validateExistingClass", async () => {
   } catch (e) {
     //
   }
-})
-test("validate New FM", async () => {
-  const c = create()
-  const result = await c.validateNewObject({
-    description: "a fm",
-    fugrname: "ZAPIDUMMYFOOBAR",
-    objname: "ZFOOBARFEWFWE",
-    objtype: "FUGR/FF"
-  })
-  expect(result.success).toBeTruthy()
 })
 
 test("loadTypes", async () => {

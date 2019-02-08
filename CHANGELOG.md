@@ -4,13 +4,14 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## Unreleased
+## 0.4.14 2019-02-08
 
 ### Fixed
 
 - search object by type
 - max results in object search
 - no exception on validation for info messages
+- operation in transport checks
 
 ### Changed
 

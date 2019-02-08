@@ -140,8 +140,7 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
 
   const { SEVERITY, SHORT_TEXT, CHECK_RESULT } = record
 
-  if (SEVERITY && SEVERITY !== "INFO" && SEVERITY !== "WARNING")
-    throw adtException(record.SHORT_TEXT)
+  if (SEVERITY === "ERROR") throw adtException(record.SHORT_TEXT)
 
   return {
     SEVERITY,
