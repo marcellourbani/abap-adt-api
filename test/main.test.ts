@@ -37,6 +37,16 @@ test("badToken", async () => {
   expect(response.data).toBeDefined()
 })
 
+test("discovery", async () => {
+  const c = create()
+  const discovery = await c.adtDiscovery()
+  expect(discovery).toBeDefined()
+  const corediscovery = await c.adtCoreDiscovery()
+  expect(corediscovery).toBeDefined()
+  const graph = await c.adtCompatibiliyGraph()
+  expect(graph).toBeDefined()
+})
+
 test("getNodeContents", async () => {
   const c = create()
   const resp = await c.nodeContents("DEVC/K", "$ABAPGIT")

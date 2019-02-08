@@ -8,6 +8,9 @@ import {
   AbapObjectStructure,
   activate,
   ActivationResult,
+  adtCompatibilityGraph,
+  adtCoreDiscovery,
+  adtDiscovery,
   classIncludes,
   CreatableTypeIds,
   createObject,
@@ -325,5 +328,15 @@ export class ADTClient {
 
   public loadTypes() {
     return loadTypes(this.h)
+  }
+
+  public adtDiscovery() {
+    return adtDiscovery(this.h)
+  }
+  public adtCoreDiscovery() {
+    return adtCoreDiscovery(this.h)
+  }
+  public adtCompatibiliyGraph() {
+    return adtCompatibilityGraph(this.h)
   }
 }
