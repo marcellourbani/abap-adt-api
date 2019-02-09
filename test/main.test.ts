@@ -247,6 +247,7 @@ test("searchObject", async () => {
   const c = create()
   const result = await c.searchObject("ZABAP*", "")
   expect(result).toBeDefined()
+  expect(result[0]["adtcore:description"]).toBeDefined()
   const prog = result.find(
     sr => sr["adtcore:name"] === "ZABAPGIT" && sr["adtcore:type"] === "PROG/P"
   )
@@ -258,7 +259,7 @@ test("searchObject", async () => {
 
 test("searchObject by type", async () => {
   const c = create()
-  const result = await c.searchObject("zabap*", "PROG/P")
+  const result = await c.searchObject("ZABAP*", "PROG/P")
   expect(result).toBeDefined()
   result.forEach(r =>
     expect(r["adtcore:type"].replace(/\/.*$/, "")).toBe("PROG")

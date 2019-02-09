@@ -48,7 +48,7 @@ export interface NewObjectOptions {
   transport?: string
 }
 export interface ObjectType {
-  CAPABILITIES: string
+  CAPABILITIES: string[]
   CATEGORY: string
   CATEGORY_LABEL: string
   OBJECT_TYPE: string
@@ -100,7 +100,9 @@ export async function loadTypes(h: AdtHTTP) {
     "asx:values",
     "DATA",
     "SEU_ADT_OBJECT_TYPE_DESCRIPTOR"
-  ) as ObjectType[]
+  ).map((x: any) => {
+    return { ...x, CAPABILITIES: xmlArray(x, "CAPABILITIES", "SEU_ACTION") }
+  }) as ObjectType[]
 }
 
 export function objectPath(objOptions: NewObjectOptions): string

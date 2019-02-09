@@ -4,9 +4,9 @@ import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 
 export interface SearchResult {
-  "adtcore:description": string
+  "adtcore:description"?: string
   "adtcore:name": string
-  "adtcore:packageName": string
+  "adtcore:packageName"?: string
   "adtcore:type": string
   "adtcore:uri": string
 }
@@ -37,8 +37,12 @@ export async function searchObject(
     "adtcore:objectReference"
   ).map((sr: any) => {
     const result = xmlNodeAttr(sr)
-    const r = result["adtcore:name"] // older systems return things like "ZREPORT (PROGRAM)"...
-    if (isString(r)) result["adtcore:name"] = r.replace(/\s*\(.*/, "")
+    // older systems return things like "ZREPORT (PROGRAM)"...
+    const r = result["adtcore:name"].match(/([^\s]*)\s*\((.*)\)/)
+    if (r) {
+      result["adtcore:name"] = r[1]
+      if (!result["adtcore:description"]) result["adtcore:description"] = r[2]
+    }
     return result
   }) as SearchResult[]
 }
