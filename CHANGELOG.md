@@ -4,11 +4,19 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## Unreleased
+## 0.4.15 2019-02-09
 
 ### Added
 
 - discovery functions
+- sample environment setter
+
+### Fixed
+
+- activation failed test moved to disruptive tests
+- no need for inactive objects in test system
+- moved test constants in environment
+- several issues with older systems (7.31)
 
 ## 0.4.14 2019-02-08
 

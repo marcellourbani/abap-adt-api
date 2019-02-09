@@ -49,7 +49,7 @@ export async function lock(
   const response = await h.request(objectUrl, {
     headers: {
       Accept:
-        "application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.lock.result"
+        "application/*,application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.lock.result"
     },
     method: "POST",
     params

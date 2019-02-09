@@ -1,5 +1,5 @@
 import { parse } from "fast-xml-parser"
-import { ValidateObjectUrl } from "../AdtException"
+import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { JSON2AbapXML, xmlArray, xmlNode } from "../utilities"
 
@@ -34,11 +34,21 @@ export interface TransportInfo {
   AS4USER: string
   PDEVCLASS: string
   DLVUNIT: string
+  MESSAGES?: Array<{
+    SEVERITY: string
+    SPRSL: string
+    ARBGB: string
+    MSGNR: number
+    VARIABLES: string[]
+    TEXT: string
+  }>
   NAMESPACE: string
   RESULT: string
   RECORDING: string
   EXISTING_REQ_ONLY: string
   TRANSPORTS: TransportHeader[]
+  TADIRDEVC?: string
+  URI?: string
   LOCKS?: TransportLock
 }
 
@@ -80,22 +90,43 @@ export async function transportInfo(
     method: "POST"
   })
   // return parsePackageResponse(response.data)
-  const { REQUESTS, LOCKS, ...header } = parse(response.data)["asx:abap"][
-    "asx:values"
-  ].DATA
+  // tslint:disable-next-line: prefer-const
+  let { REQUESTS, LOCKS, MESSAGES, ...header } = parse(response.data)[
+    "asx:abap"
+  ]["asx:values"].DATA
+  if (MESSAGES) {
+    MESSAGES = xmlArray(MESSAGES, "CTS_MESSAGE").map((m: any) => {
+      // tslint:disable-next-line: prefer-const
+      let { VARIABLES, ...rest } = m
+      VARIABLES =
+        (VARIABLES && xmlArray(m, "VARIABLES", "CTS_VARIABLE")).map(
+          (v: any) => v.VARIABLE
+        ) || []
+      return { VARIABLES, ...rest }
+    })
+    MESSAGES.filter((m: any) => m.SEVERITY.match(/[EAX]/)).some((e: any) => {
+      throw adtException(e.TEXT)
+    })
+  }
   const TRANSPORTS = extractTransports(REQUESTS)
   return { ...header, LOCKS: extractLocks(LOCKS), TRANSPORTS }
 }
 export async function createTransport(
   h: AdtHTTP,
-  objPath: string,
+  REF: string,
   REQUEST_TEXT: string,
-  DEVCLASS: string
+  DEVCLASS: string,
+  OPERATION: string = "I"
 ): Promise<string> {
-  ValidateObjectUrl(objPath)
-  const data = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF: objPath })
+  ValidateObjectUrl(REF)
+  const data = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF, OPERATION })
   const response = await h.request("/sap/bc/adt/cts/transports", {
     data,
+    headers: {
+      Accept: "text/plain",
+      "Content-Type":
+        "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.CreateCorrectionRequest"
+    },
     method: "POST"
   })
   const transport = response.data.split("/").pop()

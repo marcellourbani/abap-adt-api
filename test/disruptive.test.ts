@@ -4,6 +4,7 @@
 // will actually change the data on the server, run at your own risk
 import { session_types } from "../src/AdtHTTP"
 import { NewObjectOptions } from "../src/api/objectcreator"
+import { AdtLock } from "./../src/api/objectcontents"
 import { create } from "./login"
 
 function enableWrite(time1: Date) {
@@ -20,7 +21,7 @@ test("createTransport", async () => {
     "creation test",
     "ZAPIDUMMY"
   )
-  expect(transp).toMatch(/NPLK9[\d]*/)
+  expect(transp).toMatch(new RegExp(`${process.env.ADT_SYSTEMID}K9[\d]*`))
 })
 
 test("Create and delete", async () => {
@@ -78,7 +79,7 @@ test("write_program", async () => {
     c.stateful = session_types.stateful
     const handle = await c.lock(path)
     // write the program
-    const wr = await c.setObjectSource(main, source, handle.LOCK_HANDLE)
+    await c.setObjectSource(main, source, handle.LOCK_HANDLE)
     // read it
     const newsource = await c.getObjectSource(main)
     expect(newsource).toMatch(/Hello,World!/m)
@@ -92,18 +93,18 @@ test("write_program", async () => {
 test("save with transport", async () => {
   if (!enableWrite(new Date())) return
   const c = create()
-  const path = "/sap/bc/adt/oo/classes/zcl_foobar/includes/implementations"
+  const path = "/sap/bc/adt/oo/classes/zapidummyfoobar/includes/implementations"
   const contents = ""
   try {
     c.stateful = session_types.stateful
-    const handle = await c.lock("/sap/bc/adt/oo/classes/zcl_foobar")
-    const result = await c.setObjectSource(
+    const handle = await c.lock("/sap/bc/adt/oo/classes/zapidummyfoobar")
+    await c.setObjectSource(
       path,
       contents,
       handle.LOCK_HANDLE,
-      "NPLK900058"
+      process.env.ADT_TRANS
     )
-    await c.unLock("/sap/bc/adt/oo/classes/zcl_foobar", handle.LOCK_HANDLE)
+    await c.unLock("/sap/bc/adt/oo/classes/zapidummyfoobar", handle.LOCK_HANDLE)
   } catch (e) {
     throw e
   } finally {
@@ -132,6 +133,64 @@ test("Create and delete interface", async () => {
     await c.deleteObject(newobject, handle.LOCK_HANDLE)
   } catch (e) {
     fail("Deletion error")
+  } finally {
+    await c.dropSession()
+  }
+})
+
+test("Create inactive and try to activate", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  // first delete just in care there are leftovers
+  // then create, and finally delete
+  const options: NewObjectOptions = {
+    description: "test inactive object for ADT API",
+    name: "zadttestinactive",
+    objtype: "PROG/P",
+    parentName: "$TMP",
+    parentPath: "/sap/bc/adt/packages/$TMP"
+  }
+  const newobject = "/sap/bc/adt/programs/programs/zadttestinactive"
+  // 2 syntax errors
+  const contents = "REPORT zadttestinactive.\nfsdf.\nWRITE:/ 'Hello, World!'"
+  // DELETE:
+  let handle: AdtLock | undefined
+  try {
+    c.stateful = session_types.stateful
+    handle = await c.lock(newobject)
+    await c.deleteObject(newobject, handle.LOCK_HANDLE)
+  } catch (e) {
+    // most probably doesn't exist
+  }
+  await c.dropSession()
+  handle = undefined
+
+  try {
+    // CREATE
+    // use a stateless clone as regular calls leave the backend in a weird state
+    await c.statelessClone.createObject(options)
+    c.stateful = session_types.stateful
+    handle = await c.lock(newobject)
+    expect(handle.LOCK_HANDLE).not.toBe("")
+    // WRITE CONTENTS
+    await c.setObjectSource(
+      newobject + "/source/main",
+      contents,
+      handle.LOCK_HANDLE
+    )
+    await c.unLock(newobject, handle.LOCK_HANDLE)
+    // ACTIVATE
+    const result = await c.activate(
+      "zadttestinactive",
+      "/sap/bc/adt/programs/programs/zadttestinactive"
+    )
+    expect(result).toBeDefined()
+    expect(result.success).toBe(false)
+    handle = await c.lock(newobject)
+    // DELETE
+    await c.deleteObject(newobject, handle.LOCK_HANDLE)
+  } catch (e) {
+    throw e
   } finally {
     await c.dropSession()
   }

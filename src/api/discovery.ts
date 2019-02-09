@@ -56,18 +56,19 @@ export async function adtDiscovery(h: AdtHTTP) {
 export async function adtCoreDiscovery(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/core/discovery")
   const ret = fullParse(response.data)
-  const t: any = xmlArray(ret, "app:service", "app:workspace")[0]
-  const c: any = t && t["app:collection"]
+  const workspaces: any = xmlArray(ret, "app:service", "app:workspace")
 
-  return (t &&
-    c && {
+  return workspaces.map((w: any) => {
+    const collection = w["app:collection"]
+    return {
       collection: {
-        category: c["atom:category"]["@_term"],
-        href: c["@_href"],
-        title: c["atom:title"]
+        category: collection["atom:category"]["@_term"],
+        href: collection["@_href"],
+        title: collection["atom:title"]
       },
-      title: t["atom:title"]
-    }) as AdtCoreDiscoveryResult
+      title: w["atom:title"]
+    }
+  }) as AdtCoreDiscoveryResult[]
 }
 
 export async function adtCompatibilityGraph(h: AdtHTTP) {

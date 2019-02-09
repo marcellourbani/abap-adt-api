@@ -2,12 +2,21 @@
 // will only work if there's one connected and the environment variables are set
 import {
   ADTClient,
-  inactiveObjectsInResults,
+  isAdtError,
   isClassStructure,
+  isHttpError,
   objectPath
 } from "../src"
 import { session_types } from "../src/AdtHTTP"
 import { create, createHttp } from "./login"
+
+// for older systems
+const eat404 = (e: any) => {
+  if (!(isHttpError(e) && e.code === 404)) throw e
+}
+const eatResourceNotFound = (e: any) => {
+  if (!(isAdtError(e) && e.type === "ExceptionResourceNotFound")) throw e
+}
 
 test("login", async () => {
   const c = createHttp()
@@ -41,18 +50,22 @@ test("discovery", async () => {
   const c = create()
   const discovery = await c.adtDiscovery()
   expect(discovery).toBeDefined()
-  const corediscovery = await c.adtCoreDiscovery()
-  expect(corediscovery).toBeDefined()
+  try {
+    const corediscovery = await c.adtCoreDiscovery()
+    expect(corediscovery).toBeDefined()
+  } catch (e) {
+    eatResourceNotFound(e) // for older systems
+  }
   const graph = await c.adtCompatibiliyGraph()
   expect(graph).toBeDefined()
 })
 
 test("getNodeContents", async () => {
   const c = create()
-  const resp = await c.nodeContents("DEVC/K", "$ABAPGIT")
+  const resp = await c.nodeContents("DEVC/K", "BASIS")
   expect(resp).toBeDefined()
   expect(resp.nodes).toBeDefined()
-  const known = resp.nodes.find(x => x.OBJECT_NAME === "ZABAPGIT")
+  const known = resp.nodes.find(x => x.OBJECT_NAME === "S_BUPA_API")
   expect(known).toBeDefined()
 })
 
@@ -64,6 +77,7 @@ test("emptyNodeContents", async () => {
 
 test("getReentranceTicket", async () => {
   const c = create()
+
   const ticket = await c.reentranceTicket()
   expect(ticket).toBeDefined()
   expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
@@ -71,6 +85,7 @@ test("getReentranceTicket", async () => {
 
 test("getTransportInfo", async () => {
   const c = create()
+  const trreg = new RegExp(`${process.env.ADT_SYSTEMID}K9[\d]*`)
   let info = await c.transportInfo(
     "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
     "ZAPIDUMMY"
@@ -84,21 +99,20 @@ test("getTransportInfo", async () => {
   )
   expect(info).toBeDefined()
   expect(info.RECORDING).toEqual("")
-  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
   info = await c.transportInfo(
     "/sap/bc/adt/oo/classes/zapidummylocked",
     "ZAPIDUMMY"
   )
   expect(info).toBeDefined()
-  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
 
   info = await c.transportInfo(
     "/sap/bc/adt/functions/groups/ZAPIDUMMYFOOBAR/fmodules/ZBARBAR",
-    // "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zbarbar",
     "ZAPIDUMMY"
   )
   expect(info).toBeDefined()
-  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(/NPLK9[\d]*/)
+  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
 })
 
 test("objectPath", async () => {
@@ -153,33 +167,34 @@ test("objectStructure", async () => {
   expect(ADTClient.classIncludes(structure).get("definitions")).toBe(
     "/sap/bc/adt/oo/classes/zcl_abapgit_dot_abapgit/includes/definitions"
   )
-  structure = await c.objectStructure(
-    "/sap/bc/adt/vit/wb/object_type/trant/object_name/ZABAPGIT"
-  )
-  expect(structure).toBeDefined()
-  // table, uses relative paths
-  structure = await c.objectStructure("/sap/bc/adt/ddic/tables/zabapgit")
-  expect(structure).toBeDefined()
-  expect(ADTClient.mainInclude(structure)).toBe(
-    "/sap/bc/adt/ddic/tables/zabapgit/source/main"
-  )
+  try {
+    structure = await c.objectStructure(
+      "/sap/bc/adt/vit/wb/object_type/trant/object_name/ZABAPGIT"
+    )
+    expect(structure).toBeDefined()
+  } catch (e) {
+    eatResourceNotFound(e) // for older systems
+  }
+  try {
+    // table, uses relative paths
+    structure = await c.objectStructure("/sap/bc/adt/ddic/tables/zabapgit")
+    expect(structure).toBeDefined()
+    expect(ADTClient.mainInclude(structure)).toBe(
+      "/sap/bc/adt/ddic/tables/zabapgit/source/main"
+    )
+  } catch (e) {
+    eat404(e) // not supported in older systems
+  }
 })
 
 test("activateProgram", async () => {
   const c = create()
-  let result = await c.activate(
+  const result = await c.activate(
     "zabapgit",
     "/sap/bc/adt/programs/programs/zabapgit"
   )
   expect(result).toBeDefined()
   expect(result.success).toBe(true)
-
-  result = await c.activate(
-    "zadttestinactive",
-    "/sap/bc/adt/programs/programs/zadttestinactive"
-  )
-  expect(result).toBeDefined()
-  expect(result.success).toBe(false)
 })
 
 test("getMainPrograms", async () => {
@@ -194,36 +209,33 @@ test("getMainPrograms", async () => {
 
 test("getObjectSource", async () => {
   const c = create()
+
   const result = await c.getObjectSource(
-    "/sap/bc/adt/programs/programs/zadttestinactive/source/main"
+    "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1/source/main"
   )
   expect(result).toBeDefined()
-  expect(result).toMatch(/Hello, World/gm)
+  expect(result).toMatch(/ZADTTESTINCLUDEINC/gim)
 })
 
 test("lock_unlock", async () => {
   const c = create()
+  const target = "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1"
   try {
     try {
-      await c.lock("/sap/bc/adt/programs/programs/zadttestinactive")
+      await c.lock(target)
       fail("lock should be forbidden when client is stateless")
     } catch (e) {
       // ignore
     }
     c.stateful = session_types.stateful
-    const handle = await c.lock(
-      "/sap/bc/adt/programs/programs/zadttestinactive"
-    )
+    const handle = await c.lock(target)
     try {
-      await c.lock("/sap/bc/adt/programs/programs/zadttestinactive")
+      await c.lock(target)
       fail("lock should be forbidden when object already locked")
     } catch (e) {
       // ignore
     }
-    await c.unLock(
-      "/sap/bc/adt/programs/programs/zadttestinactive",
-      handle.LOCK_HANDLE
-    )
+    await c.unLock(target, handle.LOCK_HANDLE)
   } catch (e) {
     throw e
   } finally {
@@ -233,13 +245,13 @@ test("lock_unlock", async () => {
 
 test("searchObject", async () => {
   const c = create()
-  const result = await c.searchObject("zabap*")
+  const result = await c.searchObject("ZABAP*", "")
   expect(result).toBeDefined()
   const prog = result.find(
     sr => sr["adtcore:name"] === "ZABAPGIT" && sr["adtcore:type"] === "PROG/P"
   )
   expect(prog).toBeDefined()
-  const result2 = await c.searchObject("zabap*", "", 4)
+  const result2 = await c.searchObject("ZABAP*", "", 4)
   expect(result2).toBeDefined()
   expect(result2.length).toBe(4)
 })
@@ -259,7 +271,8 @@ test("findObjectPath", async () => {
     "/sap/bc/adt/programs/programs/zabapgit"
   )
   expect(result).toBeDefined()
-  expect(result[1] && result[1]["adtcore:name"]).toBe("$ABAPGIT")
+  const idx = result.length === 3 ? 1 : 0 // in some systems starts at $TMP, in some it doesn't
+  expect(result[idx] && result[idx]["adtcore:name"]).toBe("$ABAPGIT")
 })
 
 test("validateNewFM", async () => {
@@ -333,17 +346,16 @@ test("stateless clone", async () => {
 })
 
 // disabled as test case is missing
-test("activate multiple", async () => {
-  return
-  const c = create()
-  let result = await c.activate(
-    "ZCL_FOOBAR",
-    "/sap/bc/adt/oo/classes/zcl_foobar"
-  )
-  const inactive = inactiveObjectsInResults(result)
-  result = await c.activate(inactive)
-  expect(result.success).toBeTruthy()
-})
+// test("activate multiple", async () => {
+//   const c = create()
+//   let result = await c.activate(
+//     "ZCL_FOOBAR",
+//     "/sap/bc/adt/oo/classes/zcl_foobar"
+//   )
+//   const inactive = inactiveObjectsInResults(result)
+//   result = await c.activate(inactive)
+//   expect(result.success).toBeTruthy()
+// })
 
 test("lock table", async () => {
   const c = create()
@@ -352,7 +364,7 @@ test("lock table", async () => {
     const handle = await c.lock("/sap/bc/adt/ddic/tables/zabapgit")
     await c.unLock("/sap/bc/adt/ddic/tables/zabapgit", handle.LOCK_HANDLE)
   } catch (e) {
-    throw e
+    eat404(e) // not found on older systems
   } finally {
     await c.dropSession()
   }

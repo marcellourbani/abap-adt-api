@@ -268,6 +268,15 @@ export class ADTClient {
     )
   }
 
+  /**
+   * Search object by name pattern
+   *
+   * @param {string} query     case sensitive in older systems, no wildcard added
+   * @param {string} [objType] if passed, only the first part is used i.e. PROG rather than PROG/P
+   * @param {number} [max=100] max number of results
+   * @returns
+   * @memberof ADTClient
+   */
   public searchObject(query: string, objType?: string, max: number = 100) {
     return searchObject(this.h, query, objType, max)
   }

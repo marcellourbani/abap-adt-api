@@ -39,10 +39,17 @@ class AdtHttpException extends Error {
   get typeID(): symbol {
     return HTTPEXTYPEID
   }
+  get code() {
+    return (this.parent.response && this.parent.response.status) || 0
+  }
+  get message() {
+    return this.parent.message
+  }
+  get name() {
+    return this.parent.name
+  }
   constructor(public readonly parent: AxiosError) {
     super()
-    this.message = parent.message
-    this.name = parent.name
   }
 }
 

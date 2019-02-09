@@ -1,3 +1,4 @@
+import { isString } from "util"
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
@@ -27,14 +28,19 @@ export async function searchObject(
   if (objType) params.objectType = objType.replace(/\/.*$/, "")
   const response = await h.request(
     `/sap/bc/adt/repository/informationsystem/search`,
-    { params }
+    { params, headers: { Accept: "application/*" } }
   )
   const raw = fullParse(response.data)
   return xmlArray(
     raw,
     "adtcore:objectReferences",
     "adtcore:objectReference"
-  ).map(xmlNodeAttr) as SearchResult[]
+  ).map((sr: any) => {
+    const result = xmlNodeAttr(sr)
+    const r = result["adtcore:name"] // older systems return things like "ZREPORT (PROGRAM)"...
+    if (isString(r)) result["adtcore:name"] = r.replace(/\s*\(.*/, "")
+    return result
+  }) as SearchResult[]
 }
 
 export async function findObjectPath(h: AdtHTTP, objectUrl: string) {
