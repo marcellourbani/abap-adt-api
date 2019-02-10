@@ -32,6 +32,7 @@ import {
   objectStructure,
   searchObject,
   setObjectSource,
+  syntaxCheck,
   transportInfo,
   unLock,
   validateNewObject,
@@ -347,5 +348,14 @@ export class ADTClient {
   }
   public adtCompatibiliyGraph() {
     return adtCompatibilityGraph(this.h)
+  }
+
+  public syntaxCheck(
+    inclUrl: string,
+    mainUrl: string,
+    content: string,
+    version: string = "active"
+  ) {
+    return syntaxCheck(this.h, inclUrl, mainUrl, content, version)
   }
 }

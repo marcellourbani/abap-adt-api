@@ -370,3 +370,17 @@ test("lock table", async () => {
     await c.dropSession()
   }
 })
+
+test("syntax ckeck", async () => {
+  const c = create()
+  const messages = await c.syntaxCheck(
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop",
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+    `FUNCTION-POOL zapidummyfoobar.\n  DATA foo`
+  )
+  expect(messages).toBeDefined()
+  expect(messages.length).toBe(1)
+  expect(messages[0].offset).toBe(2)
+  expect(messages[0].line).toBe(2)
+  expect(messages[0].severity).toBe("E")
+})

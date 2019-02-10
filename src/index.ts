@@ -36,6 +36,7 @@ export {
   parentTypeId,
   ParentTypeIds,
   SearchResult,
+  SyntaxCheckResult,
   TransportInfo,
   ValidateOptions,
   ValidationResult
