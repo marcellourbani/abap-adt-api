@@ -1,7 +1,7 @@
-import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
-import { SyntaxCheckResult } from "./syntax"
 import { parse } from "fast-xml-parser"
+import { AdtHTTP } from "../AdtHTTP"
+import { fullParse, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { SyntaxCheckResult } from "./syntax"
 
 export interface SyntaxCheckResult {
   uri: string
@@ -58,8 +58,8 @@ export async function syntaxCheck(
       const [uri, line, offset] = matches.slice(1)
       messages.push({
         uri,
-        line: Number.parseInt(line, 10),
-        offset: Number.parseInt(offset, 10),
+        line: toInt(line),
+        offset: toInt(offset),
         severity: m["@_chkrun:type"],
         text: m["@_chkrun:shortText"]
       })
@@ -90,6 +90,23 @@ export interface CompletionProposal {
   SYNTCNTXT: string
 }
 
+export interface CompletionElementInfo {
+  name: string
+  type: string
+  href: string
+  doc: string
+  components: Array<{
+    "adtcore:type": string
+    "adtcore:name": string
+    entries: Array<{ key: string; value: string }>
+  }>
+}
+
+export interface DefinitionLocation {
+  url: string
+  line: number
+  column: number
+}
 export async function codeCompletion(
   h: AdtHTTP,
   url: string,
@@ -152,7 +169,43 @@ export async function codeCompletionElement(
           }
         }
       )
-    }
+    } as CompletionElementInfo
   })
-  return { ...elinfo, doc, href, components }
+  return {
+    name: elinfo["adtcore:name"],
+    type: elinfo["adtcore:type"],
+    doc,
+    href,
+    components
+  }
+}
+
+export async function findDefinition(
+  h: AdtHTTP,
+  url: string,
+  data: string,
+  line: number,
+  firstof: number,
+  lastof: number
+) {
+  const params = {
+    uri: `${url}#start=${line},${firstof}`,
+    end: `${line},${lastof}`,
+    filter: "definition"
+  }
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const response = await h.request("/sap/bc/adt/navigation/target", {
+    method: "POST",
+    params,
+    headers,
+    data
+  })
+  const raw = fullParse(response.data)
+  const rawLink = xmlNode(raw, "adtcore:objectReference", "@_adtcore:uri") || ""
+  const match = rawLink.match(/([^#]+)#start=(\d+),(\d+)/)
+  return {
+    url: (match && match[1]) || "",
+    line: toInt(match && match[2]),
+    column: toInt(match && match[3])
+  } as DefinitionLocation
 }

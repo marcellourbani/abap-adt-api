@@ -18,6 +18,7 @@ import {
   createObject,
   createTransport,
   deleteObject,
+  findDefinition,
   findObjectPath,
   getObjectSource,
   InactiveObject,
@@ -365,16 +366,27 @@ export class ADTClient {
     sourceUrl: string,
     source: string,
     line: number,
-    offset: number
+    column: number
   ) {
-    return codeCompletion(this.h, sourceUrl, source, line, offset)
+    return codeCompletion(this.h, sourceUrl, source, line, column)
   }
+
   public codeCompletionElement(
     sourceUrl: string,
     source: string,
     line: number,
-    offset: number
+    column: number
   ) {
-    return codeCompletionElement(this.h, sourceUrl, source, line, offset)
+    return codeCompletionElement(this.h, sourceUrl, source, line, column)
+  }
+
+  public findDefinition(
+    url: string,
+    source: string,
+    line: number,
+    startCol: number,
+    endCol: number
+  ) {
+    return findDefinition(this.h, url, source, line, startCol, endCol)
   }
 }

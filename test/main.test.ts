@@ -404,8 +404,19 @@ test("code completion elements", async () => {
   const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table`
   const include =
     "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
-  // const proposal = await c.codeCompletion(include, source, 2, 30)
   const info = await c.codeCompletionElement(include, source, 2, 34)
   expect(info).toBeDefined()
   expect(info.components!.length).toBeGreaterThan(1)
+})
+
+test("code references", async () => {
+  const c = create()
+  const source = `FUNCTION-POOL zapidummyfoobar.\ndata:grid type ref to cl_salv_table.\nif grid is bound.endif.`
+  const include =
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
+  const definitionLocation = await c.findDefinition(include, source, 3, 3, 7)
+  expect(definitionLocation).toBeDefined()
+  expect(definitionLocation.url).toBe(include)
+  expect(definitionLocation.line).toBe(2)
+  expect(definitionLocation.column).toBe(5)
 })

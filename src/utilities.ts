@@ -40,6 +40,7 @@ export function xmlArray<T>(xml: any, ...path: string[]): T[] {
 
 const ok = Object.keys
 export const xmlRoot = (o: any) => o[ok(o)[0]]
+
 // extract XML attributes of a node from its JSON representation
 export const xmlNodeAttr = (n: any) =>
   ok(n)
@@ -54,3 +55,9 @@ export const fullParse = (xml: string) =>
     ignoreAttributes: false,
     parseAttributeValue: true
   })
+
+export function toInt(x?: string) {
+  if (!x) return 0
+  if (x.match(/^\s*\d*\s*$/)) return Number.parseInt(x, 10)
+  return 0
+}
