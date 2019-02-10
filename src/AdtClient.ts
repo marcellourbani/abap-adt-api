@@ -12,6 +12,8 @@ import {
   adtCoreDiscovery,
   adtDiscovery,
   classIncludes,
+  codeCompletion,
+  codeCompletionElement,
   CreatableTypeIds,
   createObject,
   createTransport,
@@ -357,5 +359,22 @@ export class ADTClient {
     version: string = "active"
   ) {
     return syntaxCheck(this.h, inclUrl, mainUrl, content, version)
+  }
+
+  public codeCompletion(
+    sourceUrl: string,
+    source: string,
+    line: number,
+    offset: number
+  ) {
+    return codeCompletion(this.h, sourceUrl, source, line, offset)
+  }
+  public codeCompletionElement(
+    sourceUrl: string,
+    source: string,
+    line: number,
+    offset: number
+  ) {
+    return codeCompletionElement(this.h, sourceUrl, source, line, offset)
   }
 }

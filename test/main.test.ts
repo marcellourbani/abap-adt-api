@@ -384,3 +384,28 @@ test("syntax ckeck", async () => {
   expect(messages[0].line).toBe(2)
   expect(messages[0].severity).toBe("E")
 })
+
+test("code completion", async () => {
+  const c = create()
+  const proposals = await c.codeCompletion(
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+    `FUNCTION-POOL zapidummyfoobar.\nDAT\ndata:foo.`,
+    2,
+    3
+  )
+  expect(proposals).toBeDefined()
+  expect(proposals.length).toBeGreaterThan(1)
+  const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "DATA")
+  expect(dataprop).toBeDefined()
+})
+
+test("code completion elements", async () => {
+  const c = create()
+  const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table`
+  const include =
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
+  // const proposal = await c.codeCompletion(include, source, 2, 30)
+  const info = await c.codeCompletionElement(include, source, 2, 34)
+  expect(info).toBeDefined()
+  expect(info.components!.length).toBeGreaterThan(1)
+})

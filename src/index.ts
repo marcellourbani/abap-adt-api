@@ -11,6 +11,7 @@ export {
   AdtGraphNode,
   AdtLock,
   classIncludes,
+  CompletionProposal,
   CreatableType,
   CreatableTypeIds,
   CreatableTypes,

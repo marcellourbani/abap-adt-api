@@ -1,6 +1,7 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 import { SyntaxCheckResult } from "./syntax"
+import { parse } from "fast-xml-parser"
 
 export interface SyntaxCheckResult {
   uri: string
@@ -66,4 +67,92 @@ export async function syntaxCheck(
   })
 
   return messages
+}
+export interface CompletionProposal {
+  KIND: string
+  IDENTIFIER: string
+  ICON: string
+  SUBICON: string
+  BOLD: string
+  COLOR: string
+  QUICKINFO_EVENT: string
+  INSERT_EVENT: string
+  IS_META: string
+  PREFIXLENGTH: string
+  ROLE: string
+  LOCATION: string
+  GRADE: string
+  VISIBILITY: string
+  IS_INHERITED: string
+  PROP1: string
+  PROP2: string
+  PROP3: string
+  SYNTCNTXT: string
+}
+
+export async function codeCompletion(
+  h: AdtHTTP,
+  url: string,
+  source: string,
+  line: number,
+  offset: number
+) {
+  const uri = `${url}#start=${line},${offset}`
+  const params = { uri, signalCompleteness: true }
+  const headers = { "Content-Type": "application/*" }
+  const response = await h.request(
+    "/sap/bc/adt/abapsource/codecompletion/proposal",
+    { method: "POST", params, headers, data: source }
+  )
+  const raw = parse(response.data)
+  const proposals = (xmlArray(
+    raw,
+    "asx:abap",
+    "asx:values",
+    "DATA",
+    "SCC_COMPLETION"
+  ) as CompletionProposal[]).filter(p => p.IDENTIFIER)
+  return proposals
+}
+
+export async function codeCompletionElement(
+  h: AdtHTTP,
+  url: string,
+  data: string,
+  line: number,
+  offset: number
+) {
+  const params = { uri: `${url}#start=${line},${offset}` }
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+
+  const response = await h.request(
+    "/sap/bc/adt/abapsource/codecompletion/elementinfo",
+    { method: "POST", params, headers, data }
+  )
+  const raw = fullParse(response.data)
+  const elinfo = xmlNodeAttr(raw["abapsource:elementInfo"])
+  const doc = raw["abapsource:elementInfo"]["abapsource:documentation"]["#text"]
+  const href = raw["abapsource:elementInfo"]["atom:link"]["@_href"].replace(
+    /\w+:\/\/[^\/]*/,
+    ""
+  )
+
+  const components = xmlArray(
+    raw,
+    "abapsource:elementInfo",
+    "abapsource:elementInfo"
+  ).map((c: any) => {
+    return {
+      ...xmlNodeAttr(c),
+      entries: xmlArray(c, "abapsource:properties", "abapsource:entry").map(
+        (e: any) => {
+          return {
+            value: e["#text"],
+            key: e["@_abapsource:key"]
+          }
+        }
+      )
+    }
+  })
+  return { ...elinfo, doc, href, components }
 }
