@@ -1,5 +1,6 @@
 import { parse } from "fast-xml-parser"
 import { isArray, isObject } from "util"
+import { AllHtmlEntities } from "html-entities"
 
 export function JSON2AbapXML(original: any, root: string = "DATA") {
   // only flat objects for now, might extend later...
@@ -61,3 +62,11 @@ export function toInt(x?: string) {
   if (x.match(/^\s*\d*\s*$/)) return Number.parseInt(x, 10)
   return 0
 }
+
+export const decodeEntity = (() => {
+  let entities: AllHtmlEntities | undefined
+  return (s: string) => {
+    if (!entities) entities = new AllHtmlEntities()
+    return entities.decode(s)
+  }
+})()

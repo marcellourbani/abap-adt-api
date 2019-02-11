@@ -1,6 +1,13 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import {
+  decodeEntity,
+  fullParse,
+  toInt,
+  xmlArray,
+  xmlNode,
+  xmlNodeAttr
+} from "../utilities"
 import { SyntaxCheckResult } from "./syntax"
 
 export interface SyntaxCheckResult {
@@ -10,12 +17,11 @@ export interface SyntaxCheckResult {
   severity: string
   text: string
 }
-// function atob(s: string) {
-//   return Buffer.from(s, "base64").toString()
-// }
+
 function btoa(s: string) {
   return Buffer.from(s).toString("base64")
 }
+
 export async function syntaxCheck(
   h: AdtHTTP,
   inclUrl: string,
@@ -128,10 +134,19 @@ export async function codeCompletion(
     "asx:values",
     "DATA",
     "SCC_COMPLETION"
-  ) as CompletionProposal[]).filter(p => p.IDENTIFIER)
+  ) as CompletionProposal[]).filter(
+    p => p.IDENTIFIER && p.IDENTIFIER !== "@end"
+  )
   return proposals
 }
-
+function extractDocLink(raw: any): string {
+  return decodeEntity(
+    xmlNode(raw, "abapsource:elementInfo", "atom:link", "@_href").replace(
+      /\w+:\/\/[^\/]*/,
+      ""
+    )
+  )
+}
 export async function codeCompletionElement(
   h: AdtHTTP,
   url: string,
@@ -149,10 +164,7 @@ export async function codeCompletionElement(
   const raw = fullParse(response.data)
   const elinfo = xmlNodeAttr(raw["abapsource:elementInfo"])
   const doc = raw["abapsource:elementInfo"]["abapsource:documentation"]["#text"]
-  const href = raw["abapsource:elementInfo"]["atom:link"]["@_href"].replace(
-    /\w+:\/\/[^\/]*/,
-    ""
-  )
+  const href = extractDocLink(raw)
 
   const components = xmlArray(
     raw,
@@ -209,3 +221,8 @@ export async function findDefinition(
     column: toInt(match && match[3])
   } as DefinitionLocation
 }
+// TODO: propose fix
+// TODO: shift-enter
+// TODO: where used
+// TODO: object structures
+// /sap/bc/adt/oo/classes/cl_salv_table/objectstructure?version=active&withShortDescriptions=true

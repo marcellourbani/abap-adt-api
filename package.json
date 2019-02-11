@@ -20,10 +20,12 @@
   "dependencies": {
     "axios": "^0.18.0",
     "fast-xml-parser": "^3.12.12",
+    "html-entities": "^1.2.1",
     "sprintf-js": "^1.1.2",
     "tough-cookie": "^3.0.1"
   },
   "devDependencies": {
+    "@types/html-entities": "^1.2.16",
     "@types/jest": "^24.0.0",
     "@types/node": "^10.12.24",
     "@types/sprintf-js": "^1.1.1",
