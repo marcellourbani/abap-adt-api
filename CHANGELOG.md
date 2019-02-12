@@ -13,6 +13,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - navigate to definition
 - where used list
 - code fix proposals
+- unit test runs
 
 ## 0.4.17 2019-02-09
 

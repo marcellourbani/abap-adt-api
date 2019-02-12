@@ -29,6 +29,28 @@ export function xmlNode(xml: any, ...path: string[]): any {
   return current
 }
 
+export function xmlFlatArray<T>(xml: any, ...path: string[]): T[] {
+  if (!xml) return []
+
+  if (path.length === 0) {
+    if (isArray(xml)) return xml
+    else return [xml]
+  }
+
+  if (isArray(xml))
+    return xml.reduce(
+      (arr, x: any) => [...arr, ...xmlFlatArray(x, ...path)],
+      []
+    )
+
+  if (isObject(xml)) {
+    const [idx, ...rest] = path
+    return xmlFlatArray(xml[idx], ...rest)
+  }
+
+  return []
+}
+
 export function xmlArray<T>(xml: any, ...path: string[]): T[] {
   const node = xmlNode(xml, ...path)
   if (node) {
@@ -44,6 +66,7 @@ export const xmlRoot = (o: any) => o[ok(o)[0]]
 
 // extract XML attributes of a node from its JSON representation
 export const xmlNodeAttr = (n: any) =>
+  n &&
   ok(n)
     .filter(k => k.match(/^(?!@_xmlns)@_/))
     .reduce((part: any, cur) => {

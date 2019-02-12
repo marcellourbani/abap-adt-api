@@ -173,12 +173,9 @@ export async function codeCompletionFull(
 }
 
 function extractDocLink(raw: any): string {
-  return decodeEntity(
-    xmlNode(raw, "abapsource:elementInfo", "atom:link", "@_href").replace(
-      /\w+:\/\/[^\/]*/,
-      ""
-    )
-  )
+  const link =
+    xmlNode(raw, "abapsource:elementInfo", "atom:link", "@_href") || ""
+  return decodeEntity(link.replace(/\w+:\/\/[^\/]*/, ""))
 }
 
 export async function codeCompletionElement(
@@ -196,8 +193,14 @@ export async function codeCompletionElement(
     { method: "POST", params, headers, data }
   )
   const raw = fullParse(response.data)
-  const elinfo = xmlNodeAttr(raw["abapsource:elementInfo"])
-  const doc = raw["abapsource:elementInfo"]["abapsource:documentation"]["#text"]
+  const elinfo = xmlNodeAttr(xmlNode(raw, "abapsource:elementInfo"))
+  const doc =
+    xmlNode(
+      raw,
+      "abapsource:elementInfo",
+      "abapsource:documentation",
+      "#text"
+    ) || ""
   const href = extractDocLink(raw)
 
   const components = xmlArray(

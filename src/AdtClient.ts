@@ -43,7 +43,8 @@ import {
   unLock,
   usageReferences,
   validateNewObject,
-  ValidateOptions
+  ValidateOptions,
+  runUnitTest
 } from "./api"
 
 const followUrl = (base: string, extra: string) => {
@@ -390,6 +391,18 @@ export class ADTClient {
       patternKey
     )
   }
+
+  /**
+   * Read code completion elements
+   * Will fail on older systems where this returns HTML fragments rather than XML
+   *
+   * @param {string} sourceUrl
+   * @param {string} source
+   * @param {number} line
+   * @param {number} column
+   * @returns
+   * @memberof ADTClient
+   */
   public codeCompletionElement(
     sourceUrl: string,
     source: string,
@@ -420,5 +433,9 @@ export class ADTClient {
     column: number
   ) {
     return fixProposals(this.h, url, source, line, column)
+  }
+
+  public runUnitTest(url: string) {
+    return runUnitTest(this.h, url)
   }
 }

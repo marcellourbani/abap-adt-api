@@ -42,6 +42,8 @@ export {
   SearchResult,
   SyntaxCheckResult,
   TransportInfo,
+  UnitTestClass,
+  UnitTestMethod,
   UsageReference,
   ValidateOptions,
   ValidationResult

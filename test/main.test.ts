@@ -394,7 +394,7 @@ test("code completion", async () => {
     3
   )
   expect(proposals).toBeDefined()
-  expect(proposals.length).toBeGreaterThan(1)
+  expect(proposals.length).toBeGreaterThan(0)
   const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "DATA")
   expect(dataprop).toBeDefined()
 })
@@ -458,4 +458,13 @@ test("fix proposals", async () => {
   expect(fixProposals).toBeDefined()
   expect(fixProposals.length).toBeGreaterThan(0)
   expect(fixProposals[0]["adtcore:type"]).toBe("add_unimplemented_method")
+})
+
+test("unit test", async () => {
+  const c = create()
+  const testResults = await c.runUnitTest(
+    "/sap/bc/adt/oo/classes/zcl_abapgit_git_pack"
+  )
+  expect(testResults).toBeDefined()
+  expect(testResults.length).toBeGreaterThan(0)
 })
