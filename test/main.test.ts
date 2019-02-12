@@ -399,6 +399,19 @@ test("code completion", async () => {
   expect(dataprop).toBeDefined()
 })
 
+test("code completion full", async () => {
+  const c = create()
+  const result = await c.codeCompletionFull(
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+    `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table.\nform x.\ncreate object foo`,
+    4,
+    17,
+    "FOO"
+  )
+  expect(result).toBeDefined()
+  expect(result).toMatch(/container/gi)
+})
+
 test("code completion elements", async () => {
   const c = create()
   const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table`
@@ -419,4 +432,30 @@ test("code references", async () => {
   expect(definitionLocation.url).toBe(include)
   expect(definitionLocation.line).toBe(2)
   expect(definitionLocation.column).toBe(5)
+})
+
+test("Usage references", async () => {
+  const c = create()
+  const include = "/sap/bc/adt/oo/classes/zcl_abapgit_gui"
+  const references = await c.usageReferences(include)
+
+  expect(references).toBeDefined()
+  expect(references.length).toBeGreaterThan(2)
+
+  const references2 = await c.usageReferences(include, 1, 5)
+
+  expect(references2).toBeDefined()
+  expect(references2.length).toBeGreaterThan(2)
+})
+
+test("fix proposals", async () => {
+  const c = create()
+  const source = `FUNCTION-POOL zapidummyfoobar.\nclass fo definition.\npublic section.
+  methods bar.\nendclass.\nclass fo implementation.\nendclass."<`
+  const include =
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
+  const fixProposals = await c.fixProposals(include, source, 4, 10)
+  expect(fixProposals).toBeDefined()
+  expect(fixProposals.length).toBeGreaterThan(0)
+  expect(fixProposals[0]["adtcore:type"]).toBe("add_unimplemented_method")
 })

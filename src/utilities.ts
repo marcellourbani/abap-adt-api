@@ -63,10 +63,20 @@ export function toInt(x?: string) {
   return 0
 }
 
-export const decodeEntity = (() => {
+export const [decodeEntity, encodeEntity] = (() => {
   let entities: AllHtmlEntities | undefined
-  return (s: string) => {
-    if (!entities) entities = new AllHtmlEntities()
-    return entities.decode(s)
-  }
+  return [
+    (s: string) => {
+      if (!entities) entities = new AllHtmlEntities()
+      return entities.decode(s)
+    },
+    (s: string) => {
+      if (!entities) entities = new AllHtmlEntities()
+      return entities.encode(s)
+    }
+  ]
 })()
+
+export function btoa(s: string) {
+  return Buffer.from(s).toString("base64")
+}

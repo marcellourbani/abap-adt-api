@@ -17,6 +17,7 @@ export {
   CreatableTypeIds,
   CreatableTypes,
   DefinitionLocation,
+  FixProposal,
   GroupTypeIds,
   InactiveObject,
   inactiveObjectsInResults,
@@ -41,6 +42,7 @@ export {
   SearchResult,
   SyntaxCheckResult,
   TransportInfo,
+  UsageReference,
   ValidateOptions,
   ValidationResult
 } from "./api"

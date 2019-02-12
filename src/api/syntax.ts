@@ -1,12 +1,14 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
 import {
+  btoa,
   decodeEntity,
   fullParse,
   toInt,
   xmlArray,
   xmlNode,
-  xmlNodeAttr
+  xmlNodeAttr,
+  encodeEntity
 } from "../utilities"
 import { SyntaxCheckResult } from "./syntax"
 
@@ -18,8 +20,20 @@ export interface SyntaxCheckResult {
   text: string
 }
 
-function btoa(s: string) {
-  return Buffer.from(s).toString("base64")
+export interface UsageReference {
+  uri: string
+  parentUri: string
+  isResult: boolean
+  canHaveChildren: boolean
+  usageInformation: string
+  "adtcore:responsible": string
+  "adtcore:name": string
+  "adtcore:type"?: string
+  "adtcore:description"?: string
+  packageRef: {
+    "adtcore:uri": string
+    "adtcore:name": string
+  }
 }
 
 export async function syntaxCheck(
@@ -116,7 +130,7 @@ export interface DefinitionLocation {
 export async function codeCompletion(
   h: AdtHTTP,
   url: string,
-  source: string,
+  data: string,
   line: number,
   offset: number
 ) {
@@ -125,7 +139,7 @@ export async function codeCompletion(
   const headers = { "Content-Type": "application/*" }
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/proposal",
-    { method: "POST", params, headers, data: source }
+    { method: "POST", params, headers, data }
   )
   const raw = parse(response.data)
   const proposals = (xmlArray(
@@ -139,6 +153,25 @@ export async function codeCompletion(
   )
   return proposals
 }
+
+export async function codeCompletionFull(
+  h: AdtHTTP,
+  url: string,
+  data: string,
+  line: number,
+  offset: number,
+  patternKey: string
+) {
+  const uri = `${url}#start=${line},${offset}`
+  const params = { uri, patternKey }
+  const headers = { "Content-Type": "application/*" }
+  const response = await h.request(
+    "/sap/bc/adt/abapsource/codecompletion/insertion",
+    { method: "POST", params, headers, data }
+  )
+  return response.data
+}
+
 function extractDocLink(raw: any): string {
   return decodeEntity(
     xmlNode(raw, "abapsource:elementInfo", "atom:link", "@_href").replace(
@@ -147,6 +180,7 @@ function extractDocLink(raw: any): string {
     )
   )
 }
+
 export async function codeCompletionElement(
   h: AdtHTTP,
   url: string,
@@ -221,8 +255,48 @@ export async function findDefinition(
     column: toInt(match && match[3])
   } as DefinitionLocation
 }
-// TODO: propose fix
-// TODO: shift-enter
-// TODO: where used
+
+export async function usageReferences(
+  h: AdtHTTP,
+  url: string,
+  line?: number,
+  column?: number
+) {
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const uri = line && column ? `${url}#start=${line},${column}` : url
+  const params = { uri }
+  const data = `<?xml version="1.0" encoding="ASCII"?>
+  <usagereferences:usageReferenceRequest xmlns:usagereferences="http://www.sap.com/adt/ris/usageReferences">
+    <usagereferences:affectedObjects/>
+  </usagereferences:usageReferenceRequest>`
+  const response = await h.request(
+    "/sap/bc/adt/repository/informationsystem/usageReferences",
+    {
+      method: "POST",
+      params,
+      headers,
+      data
+    }
+  )
+  const raw = fullParse(response.data)
+  const rawreferences = xmlArray(
+    raw,
+    "usageReferences:usageReferenceResult",
+    "usageReferences:referencedObjects",
+    "usageReferences:referencedObject"
+  )
+  const references = rawreferences.map((r: any) => {
+    return {
+      ...xmlNodeAttr(r),
+      ...xmlNodeAttr(xmlNode(r, "usageReferences:adtObject") || {}),
+      packageRef: xmlNodeAttr(
+        xmlNode(r, "usageReferences:adtObject", "adtcore:packageRef") || {}
+      )
+    }
+  })
+  return references as UsageReference[]
+}
+
+// TODO: unit test
 // TODO: object structures
 // /sap/bc/adt/oo/classes/cl_salv_table/objectstructure?version=active&withShortDescriptions=true

@@ -11,6 +11,8 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - syntax check
 - code completion
 - navigate to definition
+- where used list
+- code fix proposals
 
 ## 0.4.17 2019-02-09
 

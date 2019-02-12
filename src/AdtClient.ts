@@ -14,12 +14,15 @@ import {
   classIncludes,
   codeCompletion,
   codeCompletionElement,
+  codeCompletionFull,
   CreatableTypeIds,
   createObject,
   createTransport,
   deleteObject,
   findDefinition,
   findObjectPath,
+  FixProposal,
+  fixProposals,
   getObjectSource,
   InactiveObject,
   isClassStructure,
@@ -38,6 +41,7 @@ import {
   syntaxCheck,
   transportInfo,
   unLock,
+  usageReferences,
   validateNewObject,
   ValidateOptions
 } from "./api"
@@ -370,7 +374,22 @@ export class ADTClient {
   ) {
     return codeCompletion(this.h, sourceUrl, source, line, column)
   }
-
+  public codeCompletionFull(
+    sourceUrl: string,
+    source: string,
+    line: number,
+    column: number,
+    patternKey: string
+  ) {
+    return codeCompletionFull(
+      this.h,
+      sourceUrl,
+      source,
+      line,
+      column,
+      patternKey
+    )
+  }
   public codeCompletionElement(
     sourceUrl: string,
     source: string,
@@ -388,5 +407,18 @@ export class ADTClient {
     endCol: number
   ) {
     return findDefinition(this.h, url, source, line, startCol, endCol)
+  }
+
+  public usageReferences(url: string, line?: number, column?: number) {
+    return usageReferences(this.h, url, line, column)
+  }
+
+  public fixProposals(
+    url: string,
+    source: string,
+    line: number,
+    column: number
+  ) {
+    return fixProposals(this.h, url, source, line, column)
   }
 }
