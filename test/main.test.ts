@@ -468,3 +468,18 @@ test("unit test", async () => {
   expect(testResults).toBeDefined()
   expect(testResults.length).toBeGreaterThan(0)
 })
+
+test("class components", async () => {
+  const c = create()
+  const structure = await c.classComponents(
+    "/sap/bc/adt/oo/classes/zcl_abapgit_git_pack"
+  )
+  expect(structure).toBeDefined()
+  expect(structure["adtcore:name"]).toBe("ZCL_ABAPGIT_GIT_PACK")
+  const met = structure.components.find(
+    co =>
+      co["adtcore:type"] === "CLAS/OM" && co["adtcore:name"] === "ENCODE_TAG"
+  )
+  expect(met).toBeDefined()
+  expect(met && met.links && met.links.length).toBeGreaterThan(0)
+})

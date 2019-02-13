@@ -38,7 +38,7 @@ interface ClassMetaData extends GenericMetaData {
   "class:visibility": string
 }
 
-interface Link {
+export interface Link {
   etag?: number
   href: string
   rel: string

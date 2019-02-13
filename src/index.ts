@@ -10,6 +10,7 @@ export {
   AdtDiscoveryResult,
   AdtGraphNode,
   AdtLock,
+  ClassComponent,
   classIncludes,
   CompletionElementInfo,
   CompletionProposal,

@@ -1,6 +1,6 @@
 import { parse } from "fast-xml-parser"
-import { isArray, isObject } from "util"
 import { AllHtmlEntities } from "html-entities"
+import { isArray, isObject } from "util"
 
 export function JSON2AbapXML(original: any, root: string = "DATA") {
   // only flat objects for now, might extend later...

@@ -1,6 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
-
-import { fullParse, xmlArray, xmlNodeAttr, xmlNode } from "../utilities"
+import { fullParse, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 
 export interface FixProposal {
   "adtcore:uri": string

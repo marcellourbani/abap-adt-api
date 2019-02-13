@@ -1,4 +1,5 @@
 import { parse } from "fast-xml-parser"
+import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
@@ -7,9 +8,9 @@ import {
   toInt,
   xmlArray,
   xmlNode,
-  xmlNodeAttr,
-  encodeEntity
+  xmlNodeAttr
 } from "../utilities"
+import { Link } from "./objectstructure"
 import { SyntaxCheckResult } from "./syntax"
 
 export interface SyntaxCheckResult {
@@ -300,6 +301,35 @@ export async function usageReferences(
   return references as UsageReference[]
 }
 
-// TODO: unit test
-// TODO: object structures
-// /sap/bc/adt/oo/classes/cl_salv_table/objectstructure?version=active&withShortDescriptions=true
+export interface ClassComponent {
+  "adtcore:name": string
+  "adtcore:type": string
+  links: Link[]
+  visibility: string
+  "xml:base": string
+  components: ClassComponent[]
+}
+
+const parseElement = (e: any): ClassComponent => {
+  const attrs = xmlNodeAttr(e)
+  const links = xmlArray(e, "atom:link").map(xmlNodeAttr)
+  const components = xmlArray(e, "abapsource:objectStructureElement").map(
+    parseElement
+  )
+  return { ...attrs, links, components }
+}
+export async function classComponents(h: AdtHTTP, url: string) {
+  ValidateObjectUrl(url)
+  const uri = `${url}/objectstructure`
+  const params = { version: "active", withShortDescriptions: true }
+  const headers = { "Content-Type": "application/*" }
+  const response = await h.request(uri, { params, headers })
+  const raw = fullParse(response.data)
+  const header = parseElement(xmlNode(raw, "abapsource:objectStructureElement"))
+  const components = xmlArray(
+    raw,
+    "abapsource:objectStructureElement",
+    "abapsource:objectStructureElement"
+  ).map(parseElement)
+  return header as ClassComponent
+}

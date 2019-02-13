@@ -11,6 +11,7 @@ import {
   adtCompatibilityGraph,
   adtCoreDiscovery,
   adtDiscovery,
+  classComponents,
   classIncludes,
   codeCompletion,
   codeCompletionElement,
@@ -36,6 +37,7 @@ import {
   NodeStructure,
   objectRegistrationInfo,
   objectStructure,
+  runUnitTest,
   searchObject,
   setObjectSource,
   syntaxCheck,
@@ -43,8 +45,7 @@ import {
   unLock,
   usageReferences,
   validateNewObject,
-  ValidateOptions,
-  runUnitTest
+  ValidateOptions
 } from "./api"
 
 const followUrl = (base: string, extra: string) => {
@@ -437,5 +438,9 @@ export class ADTClient {
 
   public runUnitTest(url: string) {
     return runUnitTest(this.h, url)
+  }
+
+  public classComponents(url: string) {
+    return classComponents(this.h, url)
   }
 }
