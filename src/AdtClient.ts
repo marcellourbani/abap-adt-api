@@ -24,6 +24,7 @@ import {
   findObjectPath,
   FixProposal,
   fixProposals,
+  fragmentMappings,
   getObjectSource,
   InactiveObject,
   isClassStructure,
@@ -442,5 +443,9 @@ export class ADTClient {
 
   public classComponents(url: string) {
     return classComponents(this.h, url)
+  }
+
+  public fragmentMappings(url: string, type: string, name: string) {
+    return fragmentMappings(this.h, url, type, name)
   }
 }

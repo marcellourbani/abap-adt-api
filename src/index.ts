@@ -19,6 +19,7 @@ export {
   CreatableTypes,
   DefinitionLocation,
   FixProposal,
+  FragmentLocation,
   GroupTypeIds,
   InactiveObject,
   inactiveObjectsInResults,

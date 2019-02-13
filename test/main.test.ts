@@ -483,3 +483,14 @@ test("class components", async () => {
   expect(met).toBeDefined()
   expect(met && met.links && met.links.length).toBeGreaterThan(0)
 })
+
+test("source fragments", async () => {
+  const c = create()
+  const fragment = await c.fragmentMappings(
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+    "FUGR/PD",
+    "FOO"
+  )
+  expect(fragment).toBeDefined()
+  expect(fragment.line).toBe(4)
+})

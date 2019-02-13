@@ -1,6 +1,6 @@
 import { parse } from "fast-xml-parser"
 import { AllHtmlEntities } from "html-entities"
-import { isArray, isObject } from "util"
+import { isArray, isObject, isString } from "util"
 
 export function JSON2AbapXML(original: any, root: string = "DATA") {
   // only flat objects for now, might extend later...
@@ -102,4 +102,10 @@ export const [decodeEntity, encodeEntity] = (() => {
 
 export function btoa(s: string) {
   return Buffer.from(s).toString("base64")
+}
+
+export function parts(whole: any, pattern: RegExp): string[] {
+  if (!isString(whole)) return []
+  const match = whole.match(pattern)
+  return match ? match.slice(1) : []
 }

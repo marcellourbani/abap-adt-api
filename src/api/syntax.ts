@@ -1,10 +1,12 @@
 import { parse } from "fast-xml-parser"
-import { ValidateObjectUrl } from "../AdtException"
+import { isString } from "util"
+import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
   decodeEntity,
   fullParse,
+  parts,
   toInt,
   xmlArray,
   xmlNode,
@@ -318,6 +320,7 @@ const parseElement = (e: any): ClassComponent => {
   )
   return { ...attrs, links, components }
 }
+
 export async function classComponents(h: AdtHTTP, url: string) {
   ValidateObjectUrl(url)
   const uri = `${url}/objectstructure`
@@ -332,4 +335,36 @@ export async function classComponents(h: AdtHTTP, url: string) {
     "abapsource:objectStructureElement"
   ).map(parseElement)
   return header as ClassComponent
+}
+
+export interface FragmentLocation {
+  uri: string
+  line: number
+  column: number
+}
+
+export async function fragmentMappings(
+  h: AdtHTTP,
+  url: string,
+  type: string,
+  name: string
+) {
+  ValidateObjectUrl(url)
+  const params = { uri: `${url}#type=${type};name=${name}` }
+  const headers = { "Content-Type": "application/*" }
+  const response = await h.request("/sap/bc/adt/urifragmentmappings", {
+    params,
+    headers
+  })
+  const [sourceUrl, line, column] = parts(
+    response.data,
+    /([^#]*)#start=([\d]+),([\d]+)/
+  )
+  if (!column) throw adtException("Fragment not found")
+  const location: FragmentLocation = {
+    uri: sourceUrl,
+    line: toInt(line),
+    column: toInt(column)
+  }
+  return location
 }
