@@ -376,13 +376,15 @@ test("syntax ckeck", async () => {
   const messages = await c.syntaxCheck(
     "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop",
     "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
-    `FUNCTION-POOL zapidummyfoobar.\n  DATA foo`
+    `FUNCTION-POOL zapidummyfoobar.\n raise exception type cx_root.\n  DATA foo`
   )
   expect(messages).toBeDefined()
-  expect(messages.length).toBe(1)
-  expect(messages[0].offset).toBe(2)
-  expect(messages[0].line).toBe(2)
+  expect(messages.length).toBe(2)
+  expect(messages[1].offset).toBe(2)
+  expect(messages[1].line).toBe(3)
   expect(messages[0].severity).toBe("E")
+  const quoteFound = messages[0].text.includes("&quot;")
+  expect(quoteFound).toBeFalsy()
 })
 
 test("code completion", async () => {
@@ -493,4 +495,17 @@ test("source fragments", async () => {
   )
   expect(fragment).toBeDefined()
   expect(fragment.line).toBe(4)
+})
+
+test("syntax ckeck bis", async () => {
+  const c = create()
+  const messages = await c.syntaxCheck(
+    "/sap/bc/adt/programs/includes/zadttestincludeinc",
+    "/sap/bc/adt/programs/includes/zadttestincludeinc/source/main",
+    `form foo.\nendform.\naaa`,
+    "/sap/bc/adt/programs/programs/zadttestinclude1"
+  )
+  expect(messages).toBeDefined()
+  expect(messages.length).toBe(1)
+  expect(messages[0].severity).toBe("E")
 })

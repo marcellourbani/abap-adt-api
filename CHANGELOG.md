@@ -4,6 +4,16 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 0.4.20 2019-02-16
+
+### Changed
+
+- added main include in object validation
+
+### Fixed
+
+- decode entities in syntax messages
+
 ## 0.4.19 2019-02-13
 
 ### Added

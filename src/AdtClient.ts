@@ -364,9 +364,10 @@ export class ADTClient {
     inclUrl: string,
     mainUrl: string,
     content: string,
+    mainProgram: string = "",
     version: string = "active"
   ) {
-    return syntaxCheck(this.h, inclUrl, mainUrl, content, version)
+    return syntaxCheck(this.h, inclUrl, mainUrl, content, mainProgram, version)
   }
 
   public codeCompletion(

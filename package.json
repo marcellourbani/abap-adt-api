@@ -1,8 +1,8 @@
 {
   "name": "abap-adt-api",
-  "version": "0.4.19",
+  "version": "0.4.20",
   "description": "Interface to Abap Developer Tools webservice",
-  "outDir": "/build",
+  "outDir": "build",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {

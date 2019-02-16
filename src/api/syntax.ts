@@ -10,7 +10,8 @@ import {
   toInt,
   xmlArray,
   xmlNode,
-  xmlNodeAttr
+  xmlNodeAttr,
+  encodeEntity
 } from "../utilities"
 import { Link } from "./objectstructure"
 import { SyntaxCheckResult } from "./syntax"
@@ -42,13 +43,17 @@ export interface UsageReference {
 export async function syntaxCheck(
   h: AdtHTTP,
   inclUrl: string,
-  mainUrl: string,
+  sourceUrl: string,
   content: string,
+  mainProgram: string = "",
   version: string = "active"
 ) {
+  const source = mainProgram
+    ? `${sourceUrl}?context=${encodeEntity(mainProgram)}`
+    : sourceUrl
   const data = `<?xml version="1.0" encoding="UTF-8"?>
   <chkrun:checkObjectList xmlns:chkrun="http://www.sap.com/adt/checkrun" xmlns:adtcore="http://www.sap.com/adt/core">
-  <chkrun:checkObject adtcore:uri="${mainUrl}" chkrun:version="${version}">
+  <chkrun:checkObject adtcore:uri="${source}" chkrun:version="${version}">
     <chkrun:artifacts>
       <chkrun:artifact chkrun:contentType="text/plain; charset=utf-8" chkrun:uri="${inclUrl}">
         <chkrun:content>${btoa(content)}</chkrun:content>
@@ -56,7 +61,12 @@ export async function syntaxCheck(
     </chkrun:artifacts>
   </chkrun:checkObject>
 </chkrun:checkObjectList>`
-
+  const x = `<?xml version="1.0" encoding="UTF-8"?><chkrun:checkObjectList 
+xmlns:chkrun="http://www.sap.com/adt/checkrun" xmlns:adtcore="http://www.sap.com/adt/core">
+<chkrun:checkObject 
+adtcore:uri="?context=%2Fsap%2Fbc%2Fadt%2Fprograms%2Fprograms%2Fzadttestinclude1" 
+chkrun:version="active"/>
+</chkrun:checkObjectList>`
   const headers = {
     // Accept: "application/vnd.sap.adt.checkmessages+xml",
     // "Content-Type": "application/vnd.sap.adt.checkobjects+xml"
@@ -84,7 +94,7 @@ export async function syntaxCheck(
         line: toInt(line),
         offset: toInt(offset),
         severity: m["@_chkrun:type"],
-        text: m["@_chkrun:shortText"]
+        text: decodeEntity(m["@_chkrun:shortText"])
       })
     }
   })
