@@ -1,17 +1,16 @@
 import { parse } from "fast-xml-parser"
-import { isString } from "util"
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
   decodeEntity,
+  encodeEntity,
   fullParse,
   parts,
   toInt,
   xmlArray,
   xmlNode,
-  xmlNodeAttr,
-  encodeEntity
+  xmlNodeAttr
 } from "../utilities"
 import { Link } from "./objectstructure"
 import { SyntaxCheckResult } from "./syntax"
@@ -26,6 +25,7 @@ export interface SyntaxCheckResult {
 
 export interface UsageReference {
   uri: string
+  objectIdentifier: string
   parentUri: string
   isResult: boolean
   canHaveChildren: boolean
@@ -60,12 +60,6 @@ export async function syntaxCheck(
       </chkrun:artifact>
     </chkrun:artifacts>
   </chkrun:checkObject>
-</chkrun:checkObjectList>`
-  const x = `<?xml version="1.0" encoding="UTF-8"?><chkrun:checkObjectList 
-xmlns:chkrun="http://www.sap.com/adt/checkrun" xmlns:adtcore="http://www.sap.com/adt/core">
-<chkrun:checkObject 
-adtcore:uri="?context=%2Fsap%2Fbc%2Fadt%2Fprograms%2Fprograms%2Fzadttestinclude1" 
-chkrun:version="active"/>
 </chkrun:checkObjectList>`
   const headers = {
     // Accept: "application/vnd.sap.adt.checkmessages+xml",
@@ -197,7 +191,7 @@ export async function codeCompletionElement(
   data: string,
   line: number,
   offset: number
-) {
+): Promise<CompletionElementInfo | string> {
   const params = { uri: `${url}#start=${line},${offset}` }
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
 
@@ -206,6 +200,7 @@ export async function codeCompletionElement(
     { method: "POST", params, headers, data }
   )
   const raw = fullParse(response.data)
+  if (!xmlNode(raw, "abapsource:elementInfo")) return response.data
   const elinfo = xmlNodeAttr(xmlNode(raw, "abapsource:elementInfo"))
   const doc =
     xmlNode(
@@ -231,7 +226,7 @@ export async function codeCompletionElement(
           }
         }
       )
-    } as CompletionElementInfo
+    }
   })
   return {
     name: elinfo["adtcore:name"],
@@ -307,10 +302,108 @@ export async function usageReferences(
       ...xmlNodeAttr(xmlNode(r, "usageReferences:adtObject") || {}),
       packageRef: xmlNodeAttr(
         xmlNode(r, "usageReferences:adtObject", "adtcore:packageRef") || {}
-      )
+      ),
+      objectIdentifier: r.objectIdentifier || ""
     }
   })
   return references as UsageReference[]
+}
+interface Location {
+  line: number
+  column: number
+}
+interface ReferenceUri {
+  uri: string
+  context?: string
+  start?: Location
+  end?: Location
+  type?: string
+  name?: string
+}
+export interface UsageReferenceSnippet {
+  objectIdentifier: string
+  snippets: Array<{
+    uri: ReferenceUri
+    matches: string
+    content: string
+    description: string
+  }>
+}
+
+function splitReferenceUri(url: string) {
+  const [uri, context, hash] = parts(
+    url,
+    /([^#\?]*)(?:\?context=([^#]*))?(?:#(.*))/
+  )
+  const uparts: ReferenceUri = { uri, context }
+  if (hash) {
+    hash.split(";").forEach(p => {
+      const [name, value] = p.split("=")
+      if (name === "start" || name === "end") {
+        const [line, column] = value.split(",")
+        if (column) uparts[name] = { line: toInt(line), column: toInt(column) }
+      } else if (name === "type" || name === "name")
+        uparts[name] = decodeURIComponent(value)
+    })
+  }
+  return uparts
+}
+
+export async function usageReferenceSnippets(
+  h: AdtHTTP,
+  references: UsageReference[]
+) {
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const refNodes = references
+    .filter(r => r.objectIdentifier)
+    .reduce(
+      (last: string, current) =>
+        `${last}<usagereferences:objectIdentifier optional="false">${
+          current.objectIdentifier
+        }</usagereferences:objectIdentifier>`,
+      ""
+    )
+  const data = `<?xml version="1.0" encoding="UTF-8"?>
+  <usagereferences:usageSnippetRequest xmlns:usagereferences="http://www.sap.com/adt/ris/usageReferences">
+  <usagereferences:objectIdentifiers>
+  ${refNodes}
+  </usagereferences:objectIdentifiers>
+  <usagereferences:affectedObjects/>
+</usagereferences:usageSnippetRequest>`
+  const response = await h.request(
+    "/sap/bc/adt/repository/informationsystem/usageSnippets",
+    {
+      method: "POST",
+      headers,
+      data
+    }
+  )
+  const raw = fullParse(response.data)
+  const snippetReferences = xmlArray(
+    raw,
+    "usageReferences:usageSnippetResult",
+    "usageReferences:codeSnippetObjects",
+    "usageReferences:codeSnippetObject"
+  ).map((o: any) => {
+    const snippets = xmlArray(
+      o,
+      "usageReferences:codeSnippets",
+      "usageReferences:codeSnippet"
+    ).map((s: any) => {
+      const parms = xmlNodeAttr(s)
+
+      const uri = splitReferenceUri(parms.uri)
+
+      return {
+        uri: splitReferenceUri(parms.uri),
+        matches: parms.matches,
+        content: s.content,
+        description: s.description
+      }
+    })
+    return { objectIdentifier: o.objectIdentifier, snippets }
+  })
+  return snippetReferences as UsageReferenceSnippet[]
 }
 
 export interface ClassComponent {
@@ -339,11 +432,6 @@ export async function classComponents(h: AdtHTTP, url: string) {
   const response = await h.request(uri, { params, headers })
   const raw = fullParse(response.data)
   const header = parseElement(xmlNode(raw, "abapsource:objectStructureElement"))
-  const components = xmlArray(
-    raw,
-    "abapsource:objectStructureElement",
-    "abapsource:objectStructureElement"
-  ).map(parseElement)
   return header as ClassComponent
 }
 

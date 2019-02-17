@@ -1,6 +1,7 @@
 setenv.js
 .vscode
 src/
+build/test
 test/
 *.tgz
 *.md

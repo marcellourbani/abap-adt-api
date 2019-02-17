@@ -2,9 +2,9 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
 // will actually change the data on the server, run at your own risk
-import { session_types } from "../src/AdtHTTP"
-import { NewObjectOptions } from "../src/api/objectcreator"
-import { AdtLock } from "./../src/api/objectcontents"
+import { session_types } from "../"
+import { NewObjectOptions } from "../"
+import { AdtLock } from "../"
 import { create } from "./login"
 
 function enableWrite(time1: Date) {

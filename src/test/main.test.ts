@@ -6,9 +6,10 @@ import {
   isClassStructure,
   isHttpError,
   objectPath
-} from "../src"
-import { session_types } from "../src/AdtHTTP"
+} from "../"
+import { session_types } from "../AdtHTTP"
 import { create, createHttp } from "./login"
+import { isString } from "util"
 
 // for older systems
 const eat404 = (e: any) => {
@@ -78,9 +79,21 @@ test("emptyNodeContents", async () => {
 test("getReentranceTicket", async () => {
   const c = create()
 
-  const ticket = await c.reentranceTicket()
-  expect(ticket).toBeDefined()
-  expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
+  try {
+    const ticket = await c.reentranceTicket()
+    expect(ticket).toBeDefined()
+    expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
+  } catch (e) {
+    // ignore system not configured for SSO tickets
+    if (
+      !(
+        isAdtError(e) &&
+        e.type === "ExceptionSecurityTicketFailure" &&
+        e.message === "This system rejects all logons using SSO tickets"
+      )
+    )
+      throw e
+  }
 })
 
 test("getTransportInfo", async () => {
@@ -414,14 +427,18 @@ test("code completion full", async () => {
   expect(result).toMatch(/container/gi)
 })
 
+// not supported in older releases
 test("code completion elements", async () => {
   const c = create()
   const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table`
   const include =
     "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
   const info = await c.codeCompletionElement(include, source, 2, 34)
-  expect(info).toBeDefined()
-  expect(info.components!.length).toBeGreaterThan(1)
+  if (isString(info)) expect(info.length).toBeGreaterThan(2)
+  else {
+    expect(info).toBeDefined()
+    expect(info.components!.length).toBeGreaterThan(1)
+  }
 })
 
 test("code references", async () => {
@@ -448,6 +465,24 @@ test("Usage references", async () => {
 
   expect(references2).toBeDefined()
   expect(references2.length).toBeGreaterThan(2)
+  expect(references2[1].objectIdentifier.length).toBeGreaterThan(0)
+
+  const snippets = await c.usageReferenceSnippets(references2)
+  expect(snippets).toBeDefined()
+
+  snippets.forEach(o => {
+    {
+      const ref = references2.find(
+        r => r.objectIdentifier === o.objectIdentifier
+      )
+      expect(ref).toBeDefined()
+      o.snippets.forEach(s =>
+        s.uri.start
+          ? expect(s.uri.start.line).toBeDefined()
+          : expect(s.uri.type).toBeDefined()
+      )
+    }
+  })
 })
 
 test("fix proposals", async () => {
@@ -480,7 +515,7 @@ test("class components", async () => {
   expect(structure["adtcore:name"]).toBe("ZCL_ABAPGIT_GIT_PACK")
   const met = structure.components.find(
     co =>
-      co["adtcore:type"] === "CLAS/OM" && co["adtcore:name"] === "ENCODE_TAG"
+      co["adtcore:type"] === "CLAS/OO" && co["adtcore:name"] === "ENCODE_TAG"
   )
   expect(met).toBeDefined()
   expect(met && met.links && met.links.length).toBeGreaterThan(0)

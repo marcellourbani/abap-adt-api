@@ -1,6 +1,6 @@
 import { Agent } from "https"
-import { ADTClient, createSSLConfig } from "../src"
-import { AdtHTTP } from "../src/AdtHTTP"
+import { ADTClient, createSSLConfig } from "../"
+import { AdtHTTP } from "../AdtHTTP"
 
 export function create() {
   return new ADTClient(

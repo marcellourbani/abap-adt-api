@@ -44,7 +44,9 @@ import {
   syntaxCheck,
   transportInfo,
   unLock,
+  UsageReference,
   usageReferences,
+  usageReferenceSnippets,
   validateNewObject,
   ValidateOptions
 } from "./api"
@@ -427,6 +429,10 @@ export class ADTClient {
 
   public usageReferences(url: string, line?: number, column?: number) {
     return usageReferences(this.h, url, line, column)
+  }
+
+  public usageReferenceSnippets(references: UsageReference[]) {
+    return usageReferenceSnippets(this.h, references)
   }
 
   public fixProposals(
