@@ -308,11 +308,11 @@ export async function usageReferences(
   })
   return references as UsageReference[]
 }
-interface Location {
+export interface Location {
   line: number
   column: number
 }
-interface ReferenceUri {
+export interface ReferenceUri {
   uri: string
   context?: string
   start?: Location
