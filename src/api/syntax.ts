@@ -246,11 +246,10 @@ export async function findDefinition(
   lastof: number
 ) {
   const params = {
-    uri: `${url}#start=${line},${firstof}`,
-    end: `${line},${lastof}`,
+    uri: `${url}#start=${line},${firstof};end=${line},${lastof}`,
     filter: "definition"
   }
-  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const headers = { "Content-Type": "text/plain", Accept: "application/*" }
   const response = await h.request("/sap/bc/adt/navigation/target", {
     method: "POST",
     params,
@@ -261,7 +260,7 @@ export async function findDefinition(
   const rawLink = xmlNode(raw, "adtcore:objectReference", "@_adtcore:uri") || ""
   const match = rawLink.match(/([^#]+)#start=(\d+),(\d+)/)
   return {
-    url: (match && match[1]) || "",
+    url: (match && match[1]) || rawLink,
     line: toInt(match && match[2]),
     column: toInt(match && match[3])
   } as DefinitionLocation

@@ -1,5 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
+import { isString } from "util"
 import {
   ADTClient,
   isAdtError,
@@ -9,7 +10,6 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { create, createHttp } from "./login"
-import { isString } from "util"
 
 // for older systems
 const eat404 = (e: any) => {
@@ -515,7 +515,8 @@ test("class components", async () => {
   expect(structure["adtcore:name"]).toBe("ZCL_ABAPGIT_GIT_PACK")
   const met = structure.components.find(
     co =>
-      co["adtcore:type"] === "CLAS/OO" && co["adtcore:name"] === "ENCODE_TAG"
+      !!co["adtcore:type"].match(/CLAS\/OO|M/) &&
+      co["adtcore:name"] === "ENCODE_TAG"
   )
   expect(met).toBeDefined()
   expect(met && met.links && met.links.length).toBeGreaterThan(0)
@@ -543,4 +544,23 @@ test("syntax ckeck bis", async () => {
   expect(messages).toBeDefined()
   expect(messages.length).toBe(1)
   expect(messages[0].severity).toBe("E")
+})
+
+test("FM definition", async () => {
+  const c = create()
+  const source =
+    "*&---------------------------------------------------------------------*\n" +
+    "*& Report ZADTTESTINCLUDE1\n" +
+    "*&---------------------------------------------------------------------*\n" +
+    "*&\n" +
+    "*&---------------------------------------------------------------------*\n" +
+    "REPORT ZADTTESTINCLUDE1.\n" +
+    "include ZADTTESTINCLUDEINC.\n" +
+    "START-OF-SELECTION.\n" +
+    "PERFORM foo.\n" +
+    "call FUNCTION 'ZBARFM'."
+  const include = "/sap/bc/adt/programs/programs/zadttestinclude1/source/main"
+  const definitionLocation = await c.findDefinition(include, source, 10, 15, 21)
+  expect(definitionLocation).toBeDefined()
+  expect(definitionLocation.url.length).toBeGreaterThan(1)
 })
