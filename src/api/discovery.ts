@@ -1,3 +1,4 @@
+import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 import { AdtDiscoveryResult } from "./discovery"
@@ -31,7 +32,7 @@ export interface AdtCompatibilityGraph {
 
 export async function adtDiscovery(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/discovery")
-  const ret = fullParse(response.data)
+  const ret = fullParse(response.body)
   const objects = xmlArray(ret, "app:service", "app:workspace").map(
     (o: any) => {
       return {
@@ -55,7 +56,7 @@ export async function adtDiscovery(h: AdtHTTP) {
 
 export async function adtCoreDiscovery(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/core/discovery")
-  const ret = fullParse(response.data)
+  const ret = fullParse(response.body)
   const workspaces: any = xmlArray(ret, "app:service", "app:workspace")
 
   return workspaces.map((w: any) => {
@@ -73,7 +74,7 @@ export async function adtCoreDiscovery(h: AdtHTTP) {
 
 export async function adtCompatibilityGraph(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/compatibility/graph")
-  const ret = fullParse(response.data)
+  const ret = fullParse(response.body)
   const edges = xmlArray(ret, "compatibility:graph", "edges", "edge").map(
     (e: any) => {
       return {
@@ -86,4 +87,43 @@ export async function adtCompatibilityGraph(h: AdtHTTP) {
     xmlNodeAttr
   )
   return { edges, nodes } as AdtCompatibilityGraph
+}
+
+export interface ObjectTypeDescriptor {
+  name: string
+  description: string
+  type: string
+  usedBy: string[]
+}
+export async function objectTypes(h: AdtHTTP): Promise<ObjectTypeDescriptor[]> {
+  const qs = { maxItemCount: 999, name: "*", data: "usedByProvider" }
+  const response = await h.request(
+    "/sap/bc/adt/repository/informationsystem/objecttypes",
+    { qs }
+  )
+  const ret = parse(response.body)
+  const types: ObjectTypeDescriptor[] = xmlArray(
+    ret,
+    "nameditem:namedItemList",
+    "nameditem:namedItem"
+  )
+    .map((n: any) => {
+      const data = n["nameditem:data"] || ""
+      const fields = data.split(";").reduce((acc: any, cur: string) => {
+        const parts = cur.split(":", 2)
+        acc[parts[0]] = parts[1] || ""
+        return acc
+      }, {})
+      let o: ObjectTypeDescriptor | undefined
+      if (fields.type && fields.usedBy)
+        o = {
+          name: n["nameditem:name"],
+          description: n["nameditem:description"],
+          type: fields.type,
+          usedBy: fields.usedBy.split(",")
+        }
+      return o
+    })
+    .filter(x => x) as ObjectTypeDescriptor[]
+  return types
 }

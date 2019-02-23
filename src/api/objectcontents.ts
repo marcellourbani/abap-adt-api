@@ -16,7 +16,7 @@ export interface AdtLock {
 export async function getObjectSource(h: AdtHTTP, objectSourceUrl: string) {
   ValidateObjectUrl(objectSourceUrl)
   const response = await h.request(objectSourceUrl)
-  return response.data
+  return response.body
 }
 
 export async function setObjectSource(
@@ -28,13 +28,13 @@ export async function setObjectSource(
 ) {
   ValidateObjectUrl(objectSourceUrl)
   ValidateStateful(h)
-  const params: any = { lockHandle }
-  if (transport) params.corrNr = transport
+  const qs: any = { lockHandle }
+  if (transport) qs.corrNr = transport
   await h.request(objectSourceUrl, {
-    data: source,
+    body: source,
     headers: { "content-type": "text/plain; charset=utf-8" },
     method: "PUT",
-    params
+    qs
   })
 }
 
@@ -45,16 +45,16 @@ export async function lock(
 ) {
   ValidateObjectUrl(objectUrl)
   ValidateStateful(h)
-  const params = { _action: "LOCK", accessMode }
+  const qs = { _action: "LOCK", accessMode }
   const response = await h.request(objectUrl, {
     headers: {
       Accept:
         "application/*,application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.lock.result"
     },
     method: "POST",
-    params
+    qs
   })
-  const raw = parse(response.data)
+  const raw = parse(response.body)
   const locks = xmlArray(raw, "asx:abap", "asx:values", "DATA")
   return locks[0] as AdtLock
 }
@@ -65,13 +65,13 @@ export async function unLock(
   lockHandle: string
 ) {
   ValidateObjectUrl(objectUrl)
-  const params = {
+  const qs = {
     _action: "UNLOCK",
     lockHandle: encodeURIComponent(lockHandle)
   }
   const response = await h.request(objectUrl, {
     method: "POST",
-    params
+    qs
   })
-  return response.data
+  return response.body
 }

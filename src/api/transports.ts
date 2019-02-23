@@ -82,16 +82,16 @@ export async function transportInfo(
 ): Promise<TransportInfo> {
   ValidateObjectUrl(URI)
   const response = await h.request("/sap/bc/adt/cts/transportchecks", {
-    data: JSON2AbapXML({
+    body: JSON2AbapXML({
       DEVCLASS,
       OPERATION,
       URI
     }),
     method: "POST"
   })
-  // return parsePackageResponse(response.data)
+  // return parsePackageResponse(response.body)
   // tslint:disable-next-line: prefer-const
-  let { REQUESTS, LOCKS, MESSAGES, ...header } = parse(response.data)[
+  let { REQUESTS, LOCKS, MESSAGES, ...header } = parse(response.body)[
     "asx:abap"
   ]["asx:values"].DATA
   if (MESSAGES) {
@@ -119,9 +119,9 @@ export async function createTransport(
   OPERATION: string = "I"
 ): Promise<string> {
   ValidateObjectUrl(REF)
-  const data = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF, OPERATION })
+  const body = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF, OPERATION })
   const response = await h.request("/sap/bc/adt/cts/transports", {
-    data,
+    body,
     headers: {
       Accept: "text/plain",
       "Content-Type":
@@ -129,6 +129,6 @@ export async function createTransport(
     },
     method: "POST"
   })
-  const transport = response.data.split("/").pop()
+  const transport = response.body.split("/").pop()
   return transport
 }

@@ -101,7 +101,7 @@ export async function objectStructure(
 ): Promise<AbapObjectStructure> {
   ValidateObjectUrl(objectUrl)
   const response = await h.request(objectUrl)
-  const res = fullParse(response.data)
+  const res = fullParse(response.body)
   // return type depends on object type, but always have a single root
   const root = xmlRoot(res)
   const attr = xmlNodeAttr(root)

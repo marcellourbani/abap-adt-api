@@ -13,20 +13,20 @@ export interface FixProposal {
 export async function fixProposals(
   h: AdtHTTP,
   uri: string,
-  data: string,
+  body: string,
   line: number,
   column: number
 ) {
-  const params = { uri: `${uri}#start=${line},${column}` }
+  const qs = { uri: `${uri}#start=${line},${column}` }
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
 
   const response = await h.request("/sap/bc/adt/quickfixes/evaluation", {
     method: "POST",
-    params,
+    qs,
     headers,
-    data
+    body
   })
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   return xmlArray(raw, "qf:evaluationResults", "evaluationResult")
     .map(x => xmlNodeAttr(xmlNode(x, "adtcore:objectReference")))
     .map(x => ({

@@ -39,6 +39,7 @@ export {
   NonGroupTypeIds,
   objectPath,
   ObjectType,
+  ObjectTypeDescriptor,
   PathStep,
   parentTypeId,
   ParentTypeIds,

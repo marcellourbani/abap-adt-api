@@ -18,22 +18,22 @@
     "url": "https://github.com/marcellourbani/abap-adt-api"
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "@types/request": "^2.48.1",
     "fast-xml-parser": "^3.12.12",
     "html-entities": "^1.2.1",
+    "request": "^2.88.0",
     "sprintf-js": "^1.1.2",
     "tough-cookie": "^3.0.1"
   },
   "devDependencies": {
     "@types/html-entities": "^1.2.16",
-    "@types/jest": "^24.0.3",
-    "@types/jest-diff": "^20.0.0",
-    "@types/node": "^11.9.2",
-    "@types/sprintf-js": "^1.1.1",
+    "@types/jest": "^24.0.6",
+    "@types/node": "^11.9.4",
+    "@types/sprintf-js": "^1.1.2",
     "@types/tough-cookie": "^2.3.5",
-    "jest": "^23.6.0",
-    "ts-jest": "^23.10.5",
+    "jest": "^24.1.0",
+    "ts-jest": "^24.0.0",
     "tslint": "^5.12.1",
-    "typescript": "^3.3.3"
+    "typescript": "^3.3.3333"
   }
 }

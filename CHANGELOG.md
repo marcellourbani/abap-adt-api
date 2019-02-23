@@ -4,6 +4,19 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 0.5.0 2019-02-23
+
+### Changed
+
+- replaced Axios with request for HTTP client
+
+### Added
+
+- better test for stateless clone
+- proper https support
+- object types
+- check types
+
 ## 0.4.22 2019-02-19
 
 ### Fixed

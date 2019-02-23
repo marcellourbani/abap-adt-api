@@ -11,7 +11,7 @@ function enableWrite(time1: Date) {
   // will always return false. Switch in debug to run tests
   const time2 = new Date()
   const diff = time2.getTime() - time1.getTime()
-  return diff > 1000
+  return diff > 1000 || process.env.ADT_ENABLE_ALL === "YES"
 }
 test("createTransport", async () => {
   if (!enableWrite(new Date())) return

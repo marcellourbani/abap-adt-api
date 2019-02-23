@@ -36,9 +36,9 @@ export interface RegistrationInfo {
 export async function objectRegistrationInfo(h: AdtHTTP, objectUrl: string) {
   ValidateObjectUrl(objectUrl)
   const response = await h.request("/sap/bc/adt/sscr/registration/objects", {
-    params: { uri: objectUrl }
+    qs: { uri: objectUrl }
   })
-  const raw = fullParse(response.data)["reg:objectRegistrationResponse"]
+  const raw = fullParse(response.body)["reg:objectRegistrationResponse"]
   return {
     developer: xmlNodeAttr(raw["reg:developer"]),
     object: xmlNodeAttr(raw["reg:object"]),
@@ -54,9 +54,9 @@ export async function deleteObject(
 ) {
   ValidateObjectUrl(objectUrl)
   ValidateStateful(h)
-  const params: any = { lockHandle }
-  if (transport) params.corrNr = transport
+  const qs: any = { lockHandle }
+  if (transport) qs.corrNr = transport
   const method = "DELETE"
   // no return value, will throw on failure
-  await h.request(objectUrl, { method, params })
+  await h.request(objectUrl, { method, qs })
 }

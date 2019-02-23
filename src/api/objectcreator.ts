@@ -93,7 +93,7 @@ export async function loadTypes(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/repository/typestructure", {
     method: "POST"
   })
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   return xmlArray(
     raw,
     "asx:abap",
@@ -134,9 +134,9 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   if (!ot) throw adtException("Unsupported object type")
   const response = await h.request("/sap/bc/adt/" + ot.validationPath, {
     method: "POST",
-    params: options
+    qs: options
   })
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   const results = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
   const record = (results && results[0]) || {}
 
@@ -155,16 +155,16 @@ export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
   const url = "/sap/bc/adt/" + sprintf(ot.creationPath, options.parentName)
-  const data = createBody(options, ot)
-  const params: any = {}
-  if (options.transport) params.corrNr = options.transport
+  const body = createBody(options, ot)
+  const qs: any = {}
+  if (options.transport) qs.corrNr = options.transport
 
   // will raise exceptions on failure
   await h.request(url, {
-    data,
+    body,
     headers: { "Content-Type": "application/*" },
     method: "POST",
-    params
+    qs
   })
 }
 

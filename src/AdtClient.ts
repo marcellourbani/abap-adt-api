@@ -1,5 +1,4 @@
-import { AxiosRequestConfig } from "axios"
-import { Agent } from "https"
+import { CoreOptions } from "request"
 import { isString } from "util"
 import { adtException } from "./AdtException"
 import { AdtHTTP, session_types } from "./AdtHTTP"
@@ -38,10 +37,12 @@ import {
   NodeStructure,
   objectRegistrationInfo,
   objectStructure,
+  objectTypes,
   runUnitTest,
   searchObject,
   setObjectSource,
   syntaxCheck,
+  syntaxCheckTypes,
   transportInfo,
   unLock,
   UsageReference,
@@ -62,9 +63,8 @@ const followUrl = (base: string, extra: string) => {
 export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
-): AxiosRequestConfig {
-  const httpsAgent = new Agent({ ca, rejectUnauthorized: !allowUnauthorized })
-  return { httpsAgent }
+): CoreOptions {
+  return { ca, rejectUnauthorized: !allowUnauthorized }
 }
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
@@ -115,18 +115,12 @@ export class ADTClient {
     password: string,
     client: string = "",
     language: string = "",
-    private config: AxiosRequestConfig = {}
+    private config: CoreOptions = {}
   ) {
     if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-
-    if (baseUrl.match(/^http:/i)) {
-      // ignore httpsAgent if no SSL
-      const { httpAgent, ...rest } = config
-      this.config = config = rest
-    }
     this.h = new AdtHTTP(baseUrl, username, password, client, language, config)
   }
   public get statelessClone() {
@@ -215,7 +209,7 @@ export class ADTClient {
     const response = await this.h.request(
       "/sap/bc/adt/security/reentranceticket"
     )
-    return response.data
+    return response.body
   }
 
   public transportInfo(objSourceUrl: string, devClass?: string) {
@@ -362,6 +356,10 @@ export class ADTClient {
     return adtCompatibilityGraph(this.h)
   }
 
+  public syntaxCheckTypes() {
+    return syntaxCheckTypes(this.h)
+  }
+
   public syntaxCheck(
     inclUrl: string,
     mainUrl: string,
@@ -454,5 +452,9 @@ export class ADTClient {
 
   public fragmentMappings(url: string, type: string, name: string) {
     return fragmentMappings(this.h, url, type, name)
+  }
+
+  public objectTypes() {
+    return objectTypes(this.h)
   }
 }

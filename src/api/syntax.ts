@@ -39,7 +39,19 @@ export interface UsageReference {
     "adtcore:name": string
   }
 }
-
+export async function syntaxCheckTypes(h: AdtHTTP) {
+  const response = await h.request("/sap/bc/adt/checkruns/reporters")
+  const raw = fullParse(response.body)
+  const reporters = xmlArray(
+    raw,
+    "chkrun:checkReporters",
+    "chkrun:reporter"
+  ).reduce((acc: Map<string, string[]>, cur: any) => {
+    acc.set(cur["@_chkrun:name"], xmlArray(cur, "chkrun:supportedType"))
+    return acc
+  }, new Map<string, string[]>())
+  return reporters
+}
 export async function syntaxCheck(
   h: AdtHTTP,
   inclUrl: string,
@@ -51,7 +63,7 @@ export async function syntaxCheck(
   const source = mainProgram
     ? `${sourceUrl}?context=${encodeEntity(mainProgram)}`
     : sourceUrl
-  const data = `<?xml version="1.0" encoding="UTF-8"?>
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
   <chkrun:checkObjectList xmlns:chkrun="http://www.sap.com/adt/checkrun" xmlns:adtcore="http://www.sap.com/adt/core">
   <chkrun:checkObject adtcore:uri="${source}" chkrun:version="${version}">
     <chkrun:artifacts>
@@ -68,9 +80,9 @@ export async function syntaxCheck(
   }
   const response = await h.request(
     "/sap/bc/adt/checkruns?reporters=abapCheckRun",
-    { method: "POST", headers, data }
+    { method: "POST", headers, body }
   )
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   const messages = [] as SyntaxCheckResult[]
   xmlArray(
     raw,
@@ -137,18 +149,18 @@ export interface DefinitionLocation {
 export async function codeCompletion(
   h: AdtHTTP,
   url: string,
-  data: string,
+  body: string,
   line: number,
   offset: number
 ) {
   const uri = `${url}#start=${line},${offset}`
-  const params = { uri, signalCompleteness: true }
+  const qs = { uri, signalCompleteness: true }
   const headers = { "Content-Type": "application/*" }
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/proposal",
-    { method: "POST", params, headers, data }
+    { method: "POST", qs, headers, body }
   )
-  const raw = parse(response.data)
+  const raw = parse(response.body)
   const proposals = (xmlArray(
     raw,
     "asx:abap",
@@ -164,19 +176,19 @@ export async function codeCompletion(
 export async function codeCompletionFull(
   h: AdtHTTP,
   url: string,
-  data: string,
+  body: string,
   line: number,
   offset: number,
   patternKey: string
 ) {
   const uri = `${url}#start=${line},${offset}`
-  const params = { uri, patternKey }
+  const qs = { uri, patternKey }
   const headers = { "Content-Type": "application/*" }
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/insertion",
-    { method: "POST", params, headers, data }
+    { method: "POST", qs, headers, body }
   )
-  return response.data
+  return response.body
 }
 
 function extractDocLink(raw: any): string {
@@ -188,19 +200,19 @@ function extractDocLink(raw: any): string {
 export async function codeCompletionElement(
   h: AdtHTTP,
   url: string,
-  data: string,
+  body: string,
   line: number,
   offset: number
 ): Promise<CompletionElementInfo | string> {
-  const params = { uri: `${url}#start=${line},${offset}` }
+  const qs = { uri: `${url}#start=${line},${offset}` }
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
 
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/elementinfo",
-    { method: "POST", params, headers, data }
+    { method: "POST", qs, headers, body }
   )
-  const raw = fullParse(response.data)
-  if (!xmlNode(raw, "abapsource:elementInfo")) return response.data
+  const raw = fullParse(response.body)
+  if (!xmlNode(raw, "abapsource:elementInfo")) return response.body
   const elinfo = xmlNodeAttr(xmlNode(raw, "abapsource:elementInfo"))
   const doc =
     xmlNode(
@@ -240,23 +252,23 @@ export async function codeCompletionElement(
 export async function findDefinition(
   h: AdtHTTP,
   url: string,
-  data: string,
+  body: string,
   line: number,
   firstof: number,
   lastof: number
 ) {
-  const params = {
+  const qs = {
     uri: `${url}#start=${line},${firstof};end=${line},${lastof}`,
     filter: "definition"
   }
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }
   const response = await h.request("/sap/bc/adt/navigation/target", {
     method: "POST",
-    params,
+    qs,
     headers,
-    data
+    body
   })
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   const rawLink = xmlNode(raw, "adtcore:objectReference", "@_adtcore:uri") || ""
   const match = rawLink.match(/([^#]+)#start=(\d+),(\d+)/)
   return {
@@ -274,8 +286,8 @@ export async function usageReferences(
 ) {
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const uri = line && column ? `${url}#start=${line},${column}` : url
-  const params = { uri }
-  const data = `<?xml version="1.0" encoding="ASCII"?>
+  const qs = { uri }
+  const body = `<?xml version="1.0" encoding="ASCII"?>
   <usagereferences:usageReferenceRequest xmlns:usagereferences="http://www.sap.com/adt/ris/usageReferences">
     <usagereferences:affectedObjects/>
   </usagereferences:usageReferenceRequest>`
@@ -283,12 +295,12 @@ export async function usageReferences(
     "/sap/bc/adt/repository/informationsystem/usageReferences",
     {
       method: "POST",
-      params,
+      qs,
       headers,
-      data
+      body
     }
   )
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   const rawreferences = xmlArray(
     raw,
     "usageReferences:usageReferenceResult",
@@ -362,7 +374,7 @@ export async function usageReferenceSnippets(
         }</usagereferences:objectIdentifier>`,
       ""
     )
-  const data = `<?xml version="1.0" encoding="UTF-8"?>
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
   <usagereferences:usageSnippetRequest xmlns:usagereferences="http://www.sap.com/adt/ris/usageReferences">
   <usagereferences:objectIdentifiers>
   ${refNodes}
@@ -374,10 +386,10 @@ export async function usageReferenceSnippets(
     {
       method: "POST",
       headers,
-      data
+      body
     }
   )
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   const snippetReferences = xmlArray(
     raw,
     "usageReferences:usageSnippetResult",
@@ -426,10 +438,10 @@ const parseElement = (e: any): ClassComponent => {
 export async function classComponents(h: AdtHTTP, url: string) {
   ValidateObjectUrl(url)
   const uri = `${url}/objectstructure`
-  const params = { version: "active", withShortDescriptions: true }
+  const qs = { version: "active", withShortDescriptions: true }
   const headers = { "Content-Type": "application/*" }
-  const response = await h.request(uri, { params, headers })
-  const raw = fullParse(response.data)
+  const response = await h.request(uri, { qs, headers })
+  const raw = fullParse(response.body)
   const header = parseElement(xmlNode(raw, "abapsource:objectStructureElement"))
   return header as ClassComponent
 }
@@ -447,14 +459,14 @@ export async function fragmentMappings(
   name: string
 ) {
   ValidateObjectUrl(url)
-  const params = { uri: `${url}#type=${type};name=${name}` }
+  const qs = { uri: `${url}#type=${type};name=${name}` }
   const headers = { "Content-Type": "application/*" }
   const response = await h.request("/sap/bc/adt/urifragmentmappings", {
-    params,
+    qs,
     headers
   })
   const [sourceUrl, line, column] = parts(
-    response.data,
+    response.body,
     /([^#]*)#start=([\d]+),([\d]+)/
   )
   if (!column) throw adtException("Fragment not found")

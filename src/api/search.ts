@@ -24,13 +24,13 @@ export async function searchObject(
   objType?: string,
   maxResults: number = 100
 ) {
-  const params: any = { operation: "quickSearch", query, maxResults }
-  if (objType) params.objectType = objType.replace(/\/.*$/, "")
+  const qs: any = { operation: "quickSearch", query, maxResults }
+  if (objType) qs.objectType = objType.replace(/\/.*$/, "")
   const response = await h.request(
     `/sap/bc/adt/repository/informationsystem/search`,
-    { params, headers: { Accept: "application/*" } }
+    { qs, headers: { Accept: "application/*" } }
   )
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   return xmlArray(
     raw,
     "adtcore:objectReferences",
@@ -49,12 +49,12 @@ export async function searchObject(
 
 export async function findObjectPath(h: AdtHTTP, objectUrl: string) {
   ValidateObjectUrl(objectUrl)
-  const params = { uri: objectUrl }
+  const qs = { uri: objectUrl }
   const response = await h.request(`/sap/bc/adt/repository/nodepath`, {
     method: "POST",
-    params
+    qs
   })
-  const raw = fullParse(response.data)
+  const raw = fullParse(response.body)
   return xmlArray(
     raw,
     "projectexplorer:nodepath",

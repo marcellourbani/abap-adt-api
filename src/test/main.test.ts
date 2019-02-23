@@ -41,10 +41,10 @@ test("badToken", async () => {
   c.csrfToken = "bad" // will trigger a bad login
   const response = await c.request("/sap/bc/adt/repository/nodestructure", {
     method: "POST",
-    params: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
+    qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
   })
   expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
-  expect(response.data).toBeDefined()
+  expect(response.body).toBeDefined()
 })
 
 test("discovery", async () => {
@@ -344,19 +344,31 @@ test("objectRegistration", async () => {
 
 test("stateless clone", async () => {
   const c = create()
-  const clone = c.statelessClone
-  expect(clone.statelessClone).toBe(clone)
+  const obj = "/sap/bc/adt/programs/programs/zabapgit"
+  c.stateful = session_types.stateful
   try {
-    clone.stateful = session_types.stateful
-    fail("Stateless clone must stay stateless")
-  } catch (e) {
-    // ignore
+    const clone = c.statelessClone
+    expect(clone.statelessClone).toBe(clone)
+    try {
+      clone.stateful = session_types.stateful
+      fail("Stateless clone must stay stateless")
+    } catch (e) {
+      // ignore
+    }
+    const lock = await c.lock(obj)
+    await clone.objectStructure(obj)
+    try {
+      const lock2 = await c.lock(obj)
+      fail("lock didn't survive read on stateless clone")
+    } catch (e) {
+      // ignore
+    }
+    expect(clone.stateful).toBe(session_types.stateless)
+    const result = await clone.objectRegistrationInfo(obj)
+    expect(result).toBeDefined()
+  } finally {
+    c.dropSession()
   }
-  expect(clone.stateful).toBe(session_types.stateless)
-  const result = await clone.objectRegistrationInfo(
-    "/sap/bc/adt/programs/programs/zabapgit"
-  )
-  expect(result).toBeDefined()
 })
 
 // disabled as test case is missing
@@ -563,4 +575,19 @@ test("FM definition", async () => {
   const definitionLocation = await c.findDefinition(include, source, 10, 15, 21)
   expect(definitionLocation).toBeDefined()
   expect(definitionLocation.url.length).toBeGreaterThan(1)
+})
+
+test("Object types", async () => {
+  const c = create()
+  const types = await c.objectTypes()
+  const type = types.find(x => x.type === "PROG/P")
+  expect(type && type.name).toBe("REPO")
+})
+
+test("check types", async () => {
+  const c = create()
+  const types = await c.syntaxCheckTypes()
+  expect(types).toBeDefined()
+  const type = types.get("abapCheckRun")
+  expect(type && type.find(x => !!x.match("PROG"))).toBeDefined()
 })

@@ -1,4 +1,4 @@
-import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
+import request, { CoreOptions, OptionsWithUrl, Response } from "request"
 import { CookieJar } from "tough-cookie"
 import { fromException, isCsrfError } from "./AdtException"
 
@@ -12,8 +12,7 @@ export enum session_types {
 }
 
 export class AdtHTTP {
-  private axios: AxiosInstance
-  private jar: CookieJar
+  private options: CoreOptions
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -23,33 +22,33 @@ export class AdtHTTP {
   }
   private currentSession = session_types.stateless
   public get stateful(): session_types {
-    return this.axios.defaults.headers[SESSION_HEADER]
+    return this.options.headers![SESSION_HEADER]
   }
   public set stateful(stateful: session_types) {
-    this.axios.defaults.headers[SESSION_HEADER] = stateful
+    this.options.headers![SESSION_HEADER] = stateful
   }
   public get csrfToken() {
-    return this.axios.defaults.headers[CSRF_TOKEN_HEADER]
+    return this.options.headers![CSRF_TOKEN_HEADER]
   }
   public set csrfToken(token: string) {
-    this.axios.defaults.headers[CSRF_TOKEN_HEADER] = token
+    this.options.headers![CSRF_TOKEN_HEADER] = token
   }
   private get loggedin() {
     return this.csrfToken !== FETCH_CSRF_TOKEN
   }
   public get baseUrl() {
-    return this.axios.defaults.baseURL!
+    return this.options.baseUrl!
   }
   public get username() {
-    return (this.axios.defaults.auth && this.axios.defaults.auth.username) || ""
+    return (this.options.auth && this.options.auth.username) || ""
   }
   public get password() {
-    return (this.axios.defaults.auth && this.axios.defaults.auth.password) || ""
+    return (this.options.auth && this.options.auth.password) || ""
   }
 
   /**
    * Creates an instance of AdtHTTP.
-   * @param {string} baseURL  Base url, i.e. http://vhcalnplci.local:8000
+   * @param {string} baseUrl  Base url, i.e. http://vhcalnplci.local:8000
    * @param {string} username SAP logon user
    * @param {string} password Password
    * @param {string} client   login client
@@ -58,18 +57,18 @@ export class AdtHTTP {
    * @memberof AdtHTTP
    */
   constructor(
-    baseURL: string,
+    baseUrl: string,
     username: string,
     password: string,
     readonly client: string,
     readonly language: string,
-    config: AxiosRequestConfig = {}
+    config: CoreOptions = {}
   ) {
-    if (!(baseURL && username && password))
+    if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-    const headers = {
+    const headers: any = {
       ...config.headers,
       Accept: "*/*",
       "Cache-Control": "no-cache",
@@ -77,32 +76,28 @@ export class AdtHTTP {
       "x-csrf-token": FETCH_CSRF_TOKEN
     }
     headers[SESSION_HEADER] = session_types.stateless
-    const options: AxiosRequestConfig = {
+    this.options = {
       ...config,
       auth: { username, password },
-      baseURL,
-      headers
+      baseUrl,
+      headers,
+      jar: request.jar()
     }
-    this.jar = new CookieJar(undefined, {
-      looseMode: true,
-      rejectPublicSuffixes: false
-    })
-    this.axios = Axios.create(options)
   }
   /**
    * Logs on an ADT server. parameters provided on creation
    */
   public async login() {
-    const params: any = {}
-    if (this.client) params["sap-client"] = this.client
-    if (this.language) params["sap-language"] = this.language
+    const qs: any = {}
+    if (this.client) qs["sap-client"] = this.client
+    if (this.language) qs["sap-language"] = this.language
     this.csrfToken = FETCH_CSRF_TOKEN
-    await this._request("/sap/bc/adt/compatibility/graph", { params })
+    await this._request("/sap/bc/adt/compatibility/graph", { qs })
   }
   public async logout() {
     await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
-    this.axios.defaults.auth = undefined
+    this.options.auth = undefined
   }
 
   public async dropSession() {
@@ -119,7 +114,7 @@ export class AdtHTTP {
    * @param url URL suffix
    * @param config request options
    */
-  public async request(url: string, config?: AxiosRequestConfig) {
+  public async request(url: string, config?: CoreOptions): Promise<Response> {
     let autologin = false
     try {
       if (!this.loggedin) {
@@ -154,25 +149,23 @@ export class AdtHTTP {
    * HTTP request without automated login / retry
    *
    * @param url URL suffix
-   * @param config request options
+   * @param options request options
    */
-  private async _request(url: string, config: AxiosRequestConfig) {
-    // config.headers = { Cookie: this.jar.getCookiesSync(this.baseUrl + url) }
-    const response = await this.axios(url, config)
-    if (this.stateful !== session_types.keep)
-      this.currentSession = this.stateful
-    const newtoken = response.headers[CSRF_TOKEN_HEADER]
-    if (typeof newtoken === "string" && this.csrfToken === FETCH_CSRF_TOKEN) {
-      this.csrfToken = newtoken
-    }
-    const cookie = response.headers["set-cookie"] as string[] | undefined
-
-    if (cookie) {
-      cookie.forEach(k => this.jar.setCookieSync(k, this.follow(url)))
-      this.axios.defaults.headers.Cookie = this.jar.getCookieStringSync(
-        this.follow(url)
-      )
-    }
-    return response
+  private _request(url: string, options: CoreOptions) {
+    let headers = this.options.headers || {}
+    if (options.headers) headers = { ...headers, ...options.headers }
+    const uo: OptionsWithUrl = { ...this.options, ...options, headers, url }
+    return new Promise<Response>((resolve, reject) => {
+      request(uo, async (error, response, body) => {
+        if (error) reject(error)
+        else if (response.statusCode < 400) {
+          if (this.csrfToken === FETCH_CSRF_TOKEN) {
+            const newtoken = response.headers[CSRF_TOKEN_HEADER]
+            if (typeof newtoken === "string") this.csrfToken = newtoken
+          }
+          resolve(response)
+        } else reject(fromException(response))
+      })
+    })
   }
 }

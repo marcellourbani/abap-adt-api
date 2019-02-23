@@ -87,23 +87,23 @@ export async function activate(
         }" adtcore:name="${i["adtcore:name"]}"/>`
     )
   }
-  const params = { method: "activate", preauditRequested: true }
+  const qs = { method: "activate", preauditRequested: true }
 
-  const data =
+  const body =
     `<?xml version="1.0" encoding="UTF-8"?>` +
     `<adtcore:objectReferences xmlns:adtcore="http://www.sap.com/adt/core">` +
     objects.join(`\n`) +
     `</adtcore:objectReferences>`
   const response = await h.request("/sap/bc/adt/activation", {
-    data,
+    body,
     method: "POST",
-    params
+    qs
   })
   let messages: ActivationResultMessage[] = []
   let success = true
   let inactive: InactiveObjectRecord[] = []
-  if (response.data) {
-    const raw = fullParse(response.data)
+  if (response.body) {
+    const raw = fullParse(response.body)
     inactive = xmlArray(raw, "ioc:inactiveObjects", "ioc:entry").map(
       (obj: any) => {
         return {
@@ -130,7 +130,7 @@ export async function activate(
 export async function mainPrograms(h: AdtHTTP, IncludeUrl: string) {
   ValidateObjectUrl(IncludeUrl)
   const response = await h.request(`${IncludeUrl}/mainprograms`)
-  const parsed = fullParse(response.data)
+  const parsed = fullParse(response.body)
   const includes = xmlArray(
     parsed["adtcore:objectReferences"],
     "adtcore:objectReference"
