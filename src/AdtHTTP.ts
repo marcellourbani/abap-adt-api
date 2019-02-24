@@ -13,6 +13,7 @@ export enum session_types {
 
 export class AdtHTTP {
   private options: CoreOptions
+  private loginPromise?: Promise<any>
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -88,11 +89,19 @@ export class AdtHTTP {
    * Logs on an ADT server. parameters provided on creation
    */
   public async login() {
+    if (this.loginPromise) return this.loginPromise
     const qs: any = {}
     if (this.client) qs["sap-client"] = this.client
     if (this.language) qs["sap-language"] = this.language
     this.csrfToken = FETCH_CSRF_TOKEN
-    await this._request("/sap/bc/adt/compatibility/graph", { qs })
+    try {
+      this.loginPromise = this._request("/sap/bc/adt/compatibility/graph", {
+        qs
+      })
+      await this.loginPromise
+    } finally {
+      this.loginPromise = undefined
+    }
   }
   public async logout() {
     await this._request("/sap/public/bc/icf/logoff", {})

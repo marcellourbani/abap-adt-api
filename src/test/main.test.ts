@@ -70,6 +70,15 @@ test("getNodeContents", async () => {
   expect(known).toBeDefined()
 })
 
+test("getNodeContents $TMP", async () => {
+  const c = create()
+  const resp = await c.nodeContents("DEVC/K", "$TMP")
+  expect(resp).toBeDefined()
+  expect(resp.nodes).toBeDefined()
+  const known = resp.nodes.find(x => x.OBJECT_NAME === "ZADTTESTINCLUDE1")
+  expect(known).toBeDefined()
+})
+
 test("emptyNodeContents", async () => {
   const c = create()
   const resp = await c.nodeContents("DEVC/K", "/FOO/BARFOOFOOTERTQWERWER")

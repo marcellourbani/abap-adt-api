@@ -4,7 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 0.5.0 2019-02-23
+## [0.5.1] 2019-02-24
+
+### Fixed
+
+- race condition in login
+
+## [0.5.0] 2019-02-23
 
 ### Changed
 
@@ -17,19 +23,19 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - object types
 - check types
 
-## 0.4.22 2019-02-19
+## [0.4.22] 2019-02-19
 
 ### Fixed
 
 - definition lookup
 
-## 0.4.22 2019-02-17
+## [0.4.22] 2019-02-17
 
 ### Fixed
 
 - exports
 
-## 0.4.21 2019-02-17
+## [0.4.21] 2019-02-17
 
 ### Added
 
@@ -42,7 +48,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - enhanced a few tests
 - moved tests to improve debugging
 
-## 0.4.20 2019-02-16
+## [0.4.20] 2019-02-16
 
 ### Changed
 
@@ -52,13 +58,13 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 
 - decode entities in syntax messages
 
-## 0.4.19 2019-02-13
+## [0.4.19] 2019-02-13
 
 ### Added
 
 - code fragment lookup
 
-## 0.4.18 2019-02-13
+## [0.4.18] 2019-02-13
 
 ### Added
 
@@ -70,20 +76,20 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - unit test runs
 - class/interface components
 
-## 0.4.17 2019-02-09
+## [0.4.17] 2019-02-09
 
 ### Fixed
 
 - types list capabilities
 - search results type
 
-## 0.4.16 2019-02-09
+## [0.4.16] 2019-02-09
 
 ### Fixed
 
 - better search results for older systems
 
-## 0.4.15 2019-02-09
+## [0.4.15] 2019-02-09
 
 ### Added
 
@@ -97,7 +103,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - moved test constants in environment
 - several issues with older systems (7.31)
 
-## 0.4.14 2019-02-08
+## [0.4.14] 2019-02-08
 
 ### Fixed
 
@@ -111,7 +117,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - validation results format
 - raise exception when validation fails
 
-## 0.4.13 2019-02-07
+## [0.4.13] 2019-02-07
 
 ### Added
 
@@ -124,33 +130,33 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - lock tables and CDS
 - create interface
 
-## 0.4.12 2019-02-06
+## [0.4.12] 2019-02-06
 
 ### Fixed
 
 - better handling of SSL options
 - transport assignment on save
 
-## 0.4.11 2019-02-05
+## [0.4.11] 2019-02-05
 
 ### Added
 
 - activate multiple objects at once
 
-## 0.4.10 2019-02-05
+## [0.4.10] 2019-02-05
 
 ### Added
 
 - easier SSL support
 
-## 0.4.9 2019-02-05
+## [0.4.9] 2019-02-05
 
 ### Fixed
 
 - relative paths
 - optional package in transport detail
 
-## 0.4.8 2019-02-04
+## [0.4.8] 2019-02-04
 
 ### Fixed
 
@@ -158,7 +164,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - date parsing
 - empty links in metadata
 
-## 0.4.7 2019-02-03
+## [0.4.7] 2019-02-03
 
 ### Changed
 
@@ -169,14 +175,14 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - node details
 - more types exported
 
-## 0.4.6 2019-02-03
+## [0.4.6] 2019-02-03
 
 ### Fixed
 
 - exports
 - minor API changes
 
-## 0.4.5 2019-02-01
+## [0.4.5] 2019-02-01
 
 ### Added
 
@@ -185,64 +191,64 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - object URL from name
 - exported more object types
 
-## 0.4.4 2019-02-01
+## [0.4.4] 2019-02-01
 
 ### Added
 
 - label in creatable object types
 
-## 0.4.3 2019-01-31
+## [0.4.3] 2019-01-31
 
 ### Fixed
 
 - cookies/session handling
 - self-signed certificates support
 
-## 0.4.2 2019-01-29
+## [0.4.2] 2019-01-29
 
 ### Fixed
 
 - exports
 
-## 0.4.1 2019-01-29
+## [0.4.1] 2019-01-29
 
 ### Fixed
 
 - exports
 
-## 0.4.0 2019-01-29
+## [0.4.0] 2019-01-29
 
 ### Changed
 
 - nodecontents API signature
 
-## 0.3.3 2019-01-28
+## [0.3.3] 2019-01-28
 
 ### Fixed
 
 - cookie jar support
 
-## 0.3.2 0.3.3 2019-01-27
+## [0.3.2][0.3.3] 2019-01-27
 
 ### Fixed
 
 - message text in activation
 - added .npmignore
 
-## 0.3.1 2019-01-26
+## [0.3.1] 2019-01-26
 
 ### Fixed
 
 - deployment (took a few iterations)
 - build on publish
 
-## 0.2.8 2019-01-26
+## [0.2.8] 2019-01-26
 
 ### Changed
 
 - renamed a couple of API methods
 
-## 0.2.8 2019-01-26
+## [0.2.8] 2019-01-26
 
 ### Added
 
@@ -257,7 +263,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - session handling
 - code writing
 
-## 0.2.7 2019-01-25
+## [0.2.7] 2019-01-25
 
 ### Added
 
