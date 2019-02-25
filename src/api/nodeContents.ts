@@ -1,4 +1,5 @@
 import { parse } from "fast-xml-parser"
+import { isString } from "util"
 import { AdtHTTP } from "../AdtHTTP"
 import { xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F"
@@ -60,6 +61,11 @@ const parsePackageResponse = (data: string): NodeStructure => {
     const xml = parse(data)
     const root = xml["asx:abap"]["asx:values"].DATA
     nodes = xmlArray(root, "TREE_CONTENT", "SEU_ADT_REPOSITORY_OBJ_NODE")
+    for (const node of nodes)
+      if (!isString(node.OBJECT_NAME)) {
+        node.OBJECT_NAME = (node.OBJECT_NAME || "").toString()
+        node.TECH_NAME = (node.TECH_NAME || "").toString()
+      }
     categories = xmlArray(root, "CATEGORIES", "SEU_ADT_OBJECT_CATEGORY_INFO")
     objectTypes = xmlArray(root, "OBJECT_TYPES", "SEU_ADT_OBJECT_TYPE_INFO")
   }

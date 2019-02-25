@@ -600,3 +600,14 @@ test("check types", async () => {
   const type = types.get("abapCheckRun")
   expect(type && type.find(x => !!x.match("PROG"))).toBeDefined()
 })
+
+test("transport selection for older boxes", async () => {
+  const c = create()
+  const info = await c.transportInfo(
+    "/sap/bc/adt/programs/programs/ztestmu2/source/main",
+    "",
+    ""
+  )
+  expect(info).toBeDefined()
+  expect(info.TRANSPORTS.length).toBeGreaterThan(1)
+})

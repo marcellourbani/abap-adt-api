@@ -212,8 +212,12 @@ export class ADTClient {
     return response.body
   }
 
-  public transportInfo(objSourceUrl: string, devClass?: string) {
-    return transportInfo(this.h, objSourceUrl, devClass)
+  public transportInfo(
+    objSourceUrl: string,
+    devClass?: string,
+    operation: string = "I"
+  ) {
+    return transportInfo(this.h, objSourceUrl, devClass, operation)
   }
 
   public createTransport(

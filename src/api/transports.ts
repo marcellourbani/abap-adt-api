@@ -81,13 +81,22 @@ export async function transportInfo(
   OPERATION: string = "I"
 ): Promise<TransportInfo> {
   ValidateObjectUrl(URI)
+  const body = JSON2AbapXML({
+    DEVCLASS,
+    OPERATION,
+    URI
+  })
+
+  const headers = {
+    Accept:
+      "application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.transport.service.checkData",
+    "Content-Type":
+      "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.transport.service.checkData"
+  }
   const response = await h.request("/sap/bc/adt/cts/transportchecks", {
-    body: JSON2AbapXML({
-      DEVCLASS,
-      OPERATION,
-      URI
-    }),
-    method: "POST"
+    body,
+    method: "POST",
+    headers
   })
   // return parsePackageResponse(response.body)
   // tslint:disable-next-line: prefer-const

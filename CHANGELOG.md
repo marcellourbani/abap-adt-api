@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.2] 2019-02-25
+
+### Fixed
+
+- operation in transport selection
+- force object name to string in node contents
+
 ## [0.5.1] 2019-02-24
 
 ### Fixed
@@ -228,7 +235,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 
 - cookie jar support
 
-## [0.3.2][0.3.3] 2019-01-27
+## [0.3.3] 2019-01-27
 
 ### Fixed
 
