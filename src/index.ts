@@ -29,6 +29,7 @@ export {
   isGroupType,
   isNodeParent,
   isNonGroupType,
+  Link,
   Location,
   MainInclude,
   NewObjectOptions,

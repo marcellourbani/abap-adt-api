@@ -308,16 +308,24 @@ export async function usageReferences(
     "usageReferences:referencedObject"
   )
   const references = rawreferences.map((r: any) => {
-    return {
+    const reference = {
       ...xmlNodeAttr(r),
       ...xmlNodeAttr(xmlNode(r, "usageReferences:adtObject") || {}),
       packageRef: xmlNodeAttr(
         xmlNode(r, "usageReferences:adtObject", "adtcore:packageRef") || {}
       ),
       objectIdentifier: r.objectIdentifier || ""
+    } as UsageReference
+
+    // older systems hide the type in the URI
+    if (!reference["adtcore:type"]) {
+      const uriParts = splitReferenceUri(reference.uri, "")
+      reference["adtcore:type"] = uriParts.type
     }
+
+    return reference
   })
-  return references as UsageReference[]
+  return references
 }
 export interface Location {
   line: number
@@ -341,7 +349,7 @@ export interface UsageReferenceSnippet {
   }>
 }
 
-function splitReferenceUri(url: string) {
+function splitReferenceUri(url: string, matches: string) {
   const [uri, context, hash] = parts(
     url,
     /([^#\?]*)(?:\?context=([^#]*))?(?:#(.*))/
@@ -352,11 +360,19 @@ function splitReferenceUri(url: string) {
       const [name, value] = p.split("=")
       if (name === "start" || name === "end") {
         const [line, column] = value.split(",")
-        if (column) uparts[name] = { line: toInt(line), column: toInt(column) }
+        if (line) uparts[name] = { line: toInt(line), column: toInt(column) }
       } else if (name === "type" || name === "name")
         uparts[name] = decodeURIComponent(value)
     })
   }
+  const [start, end] = parts(matches, /(\d+)-(\d+)/)
+  if (!uparts.start) uparts.start = { line: 0, column: toInt(start) }
+  if (!uparts.start.column) uparts.start.column = toInt(start)
+  if (!uparts.end)
+    uparts.end = {
+      line: uparts.start.line,
+      column: toInt(end) || uparts.start.column
+    }
   return uparts
 }
 
@@ -403,10 +419,10 @@ export async function usageReferenceSnippets(
     ).map((s: any) => {
       const parms = xmlNodeAttr(s)
 
-      const uri = splitReferenceUri(parms.uri)
+      const uri = splitReferenceUri(parms.uri, parms.matches)
 
       return {
-        uri: splitReferenceUri(parms.uri),
+        uri,
         matches: parms.matches,
         content: s.content,
         description: s.description
@@ -424,8 +440,10 @@ export interface ClassComponent {
   visibility: string
   "xml:base": string
   components: ClassComponent[]
+  constant?: boolean
+  level?: string
+  readOnly?: boolean
 }
-
 const parseElement = (e: any): ClassComponent => {
   const attrs = xmlNodeAttr(e)
   const links = xmlArray(e, "atom:link").map(xmlNodeAttr)

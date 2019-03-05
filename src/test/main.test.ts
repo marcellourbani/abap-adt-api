@@ -488,19 +488,18 @@ test("Usage references", async () => {
   expect(references2.length).toBeGreaterThan(2)
   expect(references2[1].objectIdentifier.length).toBeGreaterThan(0)
 
-  const snippets = await c.usageReferenceSnippets(references2)
+  const snippets = await c.usageReferenceSnippets(references)
   expect(snippets).toBeDefined()
 
   snippets.forEach(o => {
     {
-      const ref = references2.find(
+      const ref = references.find(
         r => r.objectIdentifier === o.objectIdentifier
       )
       expect(ref).toBeDefined()
+      expect(ref && ref["adtcore:type"]).toBeTruthy()
       o.snippets.forEach(s =>
-        s.uri.start
-          ? expect(s.uri.start.line).toBeDefined()
-          : expect(s.uri.type).toBeDefined()
+        expect(s.uri.start && s.uri.start.line).toBeDefined()
       )
     }
   })
@@ -609,5 +608,6 @@ test("transport selection for older boxes", async () => {
     ""
   )
   expect(info).toBeDefined()
-  expect(info.TRANSPORTS.length).toBeGreaterThan(1)
+  if (process.env.ADT_OLDSYSTEM)
+    expect(info.TRANSPORTS.length).toBeGreaterThan(1)
 })
