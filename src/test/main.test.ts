@@ -611,3 +611,11 @@ test("transport selection for older boxes", async () => {
   if (process.env.ADT_OLDSYSTEM)
     expect(info.TRANSPORTS.length).toBeGreaterThan(1)
 })
+
+test("pretty printer", async () => {
+  const c = create()
+  const unformatted = "report hello.write:/, 'Hello,world'."
+  const formatted = await c.prettyPrinter(unformatted)
+  expect(formatted).toBeDefined()
+  expect(formatted).toMatch(/REPORT/)
+})

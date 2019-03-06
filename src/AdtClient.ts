@@ -38,9 +38,13 @@ import {
   objectRegistrationInfo,
   objectStructure,
   objectTypes,
+  prettyPrinter,
+  prettyPrinterSetting,
+  PrettyPrinterStyle,
   runUnitTest,
   searchObject,
   setObjectSource,
+  setPrettyPrinterSetting,
   syntaxCheck,
   syntaxCheckTypes,
   transportInfo,
@@ -460,5 +464,17 @@ export class ADTClient {
 
   public objectTypes() {
     return objectTypes(this.h)
+  }
+
+  public prettyPrinterSetting() {
+    return prettyPrinterSetting(this.h)
+  }
+
+  public setPrettyPrinterSetting(indent: boolean, style: PrettyPrinterStyle) {
+    return setPrettyPrinterSetting(this.h, indent, style)
+  }
+
+  public prettyPrinter(source: string) {
+    return prettyPrinter(this.h, source)
   }
 }

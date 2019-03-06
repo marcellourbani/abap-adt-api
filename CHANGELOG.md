@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.4] 2019-03-06
+
+### Added
+
+- Pretty print
+- Pretty Print Settings
+
 ## [0.5.3] 2019-03-05
 
 ### Fixed

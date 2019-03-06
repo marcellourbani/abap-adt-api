@@ -44,6 +44,8 @@ export {
   PathStep,
   parentTypeId,
   ParentTypeIds,
+  PrettyPrinterSettings,
+  PrettyPrinterStyle,
   ReferenceUri,
   SearchResult,
   SyntaxCheckResult,

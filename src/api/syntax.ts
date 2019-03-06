@@ -495,3 +495,50 @@ export async function fragmentMappings(
   }
   return location
 }
+
+export type PrettyPrinterStyle =
+  | "toLower"
+  | "toUpper"
+  | "keywordUpper"
+  | "keywordLower"
+  | "keywordAuto"
+  | "none"
+export interface PrettyPrinterSettings {
+  "abapformatter:indentation": boolean
+  "abapformatter:style": PrettyPrinterStyle
+}
+
+export async function prettyPrinterSetting(h: AdtHTTP) {
+  const response = await h.request(
+    "/sap/bc/adt/abapsource/prettyprinter/settings"
+  )
+  const raw = fullParse(response.body)
+  const settings = xmlNodeAttr(raw["abapformatter:PrettyPrinterSettings"])
+  return settings as PrettyPrinterSettings
+}
+
+export async function setPrettyPrinterSetting(
+  h: AdtHTTP,
+  indent: boolean,
+  style: PrettyPrinterStyle
+) {
+  const headers = { "Content-Type": "application/*" }
+  const body = `<?xml version="1.0" encoding="UTF-8"?><prettyprintersettings:PrettyPrinterSettings
+xmlns:prettyprintersettings="http://www.sap.com/adt/prettyprintersettings"
+prettyprintersettings:indentation="${indent}" prettyprintersettings:style="${style}"/>`
+  const response = await h.request(
+    "/sap/bc/adt/abapsource/prettyprinter/settings",
+    { method: "PUT", headers, body }
+  )
+  return response.body || ""
+}
+
+export async function prettyPrinter(h: AdtHTTP, body: string) {
+  const headers = { "Content-Type": "text/plain", Accept: "text/plain" }
+  const response = await h.request("/sap/bc/adt/abapsource/prettyprinter", {
+    method: "POST",
+    body
+  })
+
+  return (response.body || body).toString()
+}

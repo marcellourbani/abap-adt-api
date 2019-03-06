@@ -195,3 +195,27 @@ test("Create inactive and try to activate", async () => {
     await c.dropSession()
   }
 })
+
+test("pretty printer settings", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const settings = await c.prettyPrinterSetting()
+  expect(settings).toBeDefined()
+  expect(settings["abapformatter:indentation"]).toBe(true)
+
+  const newStyle =
+    settings["abapformatter:style"] === "toUpper" ? "toLower" : "toUpper"
+  // change
+  await c.setPrettyPrinterSetting(
+    settings["abapformatter:indentation"],
+    newStyle
+  )
+  const changed = await c.prettyPrinterSetting()
+  // restore
+  await c.setPrettyPrinterSetting(
+    settings["abapformatter:indentation"],
+    settings["abapformatter:style"]
+  )
+  expect(changed).toBeDefined()
+  expect(changed["abapformatter:style"]).toBe(newStyle)
+})
