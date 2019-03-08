@@ -108,25 +108,25 @@ export async function syntaxCheck(
   return messages
 }
 export interface CompletionProposal {
-  KIND: string
+  KIND: number
   IDENTIFIER: string
-  ICON: string
-  SUBICON: string
-  BOLD: string
-  COLOR: string
-  QUICKINFO_EVENT: string
-  INSERT_EVENT: string
-  IS_META: string
-  PREFIXLENGTH: string
-  ROLE: string
-  LOCATION: string
-  GRADE: string
-  VISIBILITY: string
-  IS_INHERITED: string
-  PROP1: string
-  PROP2: string
-  PROP3: string
-  SYNTCNTXT: string
+  ICON: number
+  SUBICON: number
+  BOLD: number
+  COLOR: number
+  QUICKINFO_EVENT: number
+  INSERT_EVENT: number
+  IS_META: number
+  PREFIXLENGTH: number
+  ROLE: number
+  LOCATION: number
+  GRADE: number
+  VISIBILITY: number
+  IS_INHERITED: number
+  PROP1: number
+  PROP2: number
+  PROP3: number
+  SYNTCNTXT: number
 }
 
 export interface CompletionElementInfo {
@@ -161,15 +161,18 @@ export async function codeCompletion(
     { method: "POST", qs, headers, body }
   )
   const raw = parse(response.body)
-  const proposals = (xmlArray(
+  const proposals = xmlArray(
     raw,
     "asx:abap",
     "asx:values",
     "DATA",
     "SCC_COMPLETION"
-  ) as CompletionProposal[]).filter(
-    p => p.IDENTIFIER && p.IDENTIFIER !== "@end"
   )
+    .filter((p: any) => p.IDENTIFIER && p.IDENTIFIER !== "@end")
+    .map((p: any) => ({
+      ...p,
+      IDENTIFIER: decodeEntity(p.IDENTIFIER)
+    })) as CompletionProposal[]
   return proposals
 }
 

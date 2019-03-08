@@ -435,6 +435,21 @@ test("code completion", async () => {
   expect(dataprop).toBeDefined()
 })
 
+test("code completion field-symbol", async () => {
+  const c = create()
+  const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo.field-symbols:<foo> type any.\nassign foo to     `
+  const proposals = await c.codeCompletion(
+    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+    source,
+    3,
+    14
+  )
+  expect(proposals).toBeDefined()
+  expect(proposals.length).toBeGreaterThan(0)
+  const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "<FOO>")
+  expect(dataprop).toBeDefined()
+})
+
 test("code completion full", async () => {
   const c = create()
   const result = await c.codeCompletionFull(

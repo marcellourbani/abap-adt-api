@@ -4,6 +4,12 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.5] 2019-03-08
+
+### Fixed
+
+- Completion format and HTML entity removal
+
 ## [0.5.4] 2019-03-06
 
 ### Added
