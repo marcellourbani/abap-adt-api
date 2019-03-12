@@ -634,3 +634,22 @@ test("pretty printer", async () => {
   expect(formatted).toBeDefined()
   expect(formatted).toMatch(/REPORT/)
 })
+
+test("code references2", async () => {
+  const c = create()
+  const src = `REPORT zstatetest.
+  DATA:foo TYPE TABLE OF string.
+  FIELD-SYMBOLS:<fs> LIKE LINE OF foo.
+  LOOP AT foo ASSIGNING <fs>.
+    cl_http_utility=>escape_html( '' ).
+    cl_http_utility=>if_http_utility~escape_html( '' ).
+  ENDLOOP.`
+  const incl = "/sap/bc/adt/programs/programs/zstatetest/source/main"
+  const definitionLocation = await c.findDefinition(incl, src, 5, 21, 32, true)
+  expect(definitionLocation).toBeDefined()
+  expect(definitionLocation.url).toBe(
+    "/sap/bc/adt/oo/classes/cl_http_utility/source/main"
+  )
+  expect(definitionLocation.line).toBe(460)
+  expect(definitionLocation.column).toBe(7)
+})

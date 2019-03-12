@@ -428,9 +428,18 @@ export class ADTClient {
     source: string,
     line: number,
     startCol: number,
-    endCol: number
+    endCol: number,
+    implementation = false
   ) {
-    return findDefinition(this.h, url, source, line, startCol, endCol)
+    return findDefinition(
+      this.h,
+      url,
+      source,
+      line,
+      startCol,
+      endCol,
+      implementation
+    )
   }
 
   public usageReferences(url: string, line?: number, column?: number) {

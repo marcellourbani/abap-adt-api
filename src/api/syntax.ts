@@ -258,11 +258,12 @@ export async function findDefinition(
   body: string,
   line: number,
   firstof: number,
-  lastof: number
+  lastof: number,
+  implementation: boolean
 ) {
   const qs = {
     uri: `${url}#start=${line},${firstof};end=${line},${lastof}`,
-    filter: "definition"
+    filter: implementation ? "implementation" : "definition"
   }
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }
   const response = await h.request("/sap/bc/adt/navigation/target", {
