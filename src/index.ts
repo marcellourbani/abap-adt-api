@@ -50,8 +50,12 @@ export {
   SearchResult,
   SyntaxCheckResult,
   TransportInfo,
+  UnitTestAlert,
+  UnitTestAlertKind,
   UnitTestClass,
   UnitTestMethod,
+  UnitTestSeverity,
+  UnitTestStackEntry,
   UsageReference,
   ValidateOptions,
   ValidationResult

@@ -1,6 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import { isString } from "util"
+import { isArray, isString } from "util"
 import {
   ADTClient,
   isAdtError,
@@ -531,14 +531,40 @@ test("fix proposals", async () => {
   expect(fixProposals.length).toBeGreaterThan(0)
   expect(fixProposals[0]["adtcore:type"]).toBe("add_unimplemented_method")
 })
-
+const findBy = <T, K extends keyof T>(
+  array: T[],
+  fname: K,
+  value: T[K],
+  cs = false
+): T | undefined => {
+  if (!isArray(array) || !isString(value)) return
+  return cs
+    ? array.find(e => e[fname] === value)
+    : array.find(e => {
+        const cur = e[fname]
+        return isString(cur) && cur.toUpperCase() === value.toUpperCase()
+      })
+}
 test("unit test", async () => {
   const c = create()
   const testResults = await c.runUnitTest(
-    "/sap/bc/adt/oo/classes/zcl_abapgit_git_pack"
+    "/sap/bc/adt/programs/programs/zadtunitcases"
   )
   expect(testResults).toBeDefined()
-  expect(testResults.length).toBeGreaterThan(0)
+  expect(testResults.length).toBe(2)
+  // expect some test methods to be ok, some to fail
+  const class1 = findBy(testResults, "adtcore:name", "LCL_TEST1")
+  expect(class1).toBeDefined()
+  if (class1) {
+    const testok = findBy(class1.testmethods, "adtcore:name", "TEST_OK")
+    expect(testok).toBeDefined()
+    expect(testok!.alerts.length).toBe(0)
+    const testfail = findBy(class1.testmethods, "adtcore:name", "TEST_FAILURE")
+    expect(testfail).toBeDefined()
+    expect(testfail!.alerts.length).toBe(2)
+    const failure = findBy(testfail!.alerts, "kind", "failedAssertion")
+    expect(failure).toBeDefined()
+  }
 })
 
 test("class components", async () => {
