@@ -6,7 +6,8 @@ import {
   isAdtError,
   isClassStructure,
   isHttpError,
-  objectPath
+  objectPath,
+  UnitTestAlertKind
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { create, createHttp } from "./login"
@@ -545,6 +546,7 @@ const findBy = <T, K extends keyof T>(
         return isString(cur) && cur.toUpperCase() === value.toUpperCase()
       })
 }
+
 test("unit test", async () => {
   const c = create()
   const testResults = await c.runUnitTest(
@@ -562,8 +564,13 @@ test("unit test", async () => {
     const testfail = findBy(class1.testmethods, "adtcore:name", "TEST_FAILURE")
     expect(testfail).toBeDefined()
     expect(testfail!.alerts.length).toBe(2)
-    const failure = findBy(testfail!.alerts, "kind", "failedAssertion")
+    const failure = findBy(
+      testfail!.alerts,
+      "kind",
+      UnitTestAlertKind.failedAssertion
+    )
     expect(failure).toBeDefined()
+    expect(failure!.stack[0]).toBeDefined()
   }
 })
 

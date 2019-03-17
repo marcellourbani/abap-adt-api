@@ -13,8 +13,18 @@ export interface UnitTestStackEntry {
   "adtcore:name": string
   "adtcore:description": string
 }
-export type UnitTestAlertKind = "exception" | "failedAssertion" | "warning"
-export type UnitTestSeverity = "critical" | "fatal" | "tolerable" | "tolerant"
+
+export enum UnitTestAlertKind {
+  exception = "exception",
+  failedAssertion = "failedAssertion",
+  warning = "warning"
+}
+export enum UnitTestSeverity {
+  critical = "critical",
+  fatal = "fatal",
+  tolerable = "tolerable",
+  tolerant = "tolerant"
+}
 export interface UnitTestAlert {
   kind: UnitTestAlertKind
   severity: UnitTestSeverity
@@ -72,12 +82,11 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
       decodeEntity((d && d["@_text"]) || "")
     )
   const parseStack = (alert: any) =>
-    xmlArray(alert, "stack", "stackEntry")
-      .map(xmlNodeAttr)
-      .map(x => {
-        const entry = xmlNodeAttr(x)
-        x["adtcore:description"] = decodeEntity(x["adtcore:description"])
-      })
+    xmlArray(alert, "stack", "stackEntry").map(x => {
+      const entry = xmlNodeAttr(x)
+      entry["adtcore:description"] = decodeEntity(entry["adtcore:description"])
+      return entry
+    })
   const parseAlert = (alert: any) => ({
     ...xmlNodeAttr(alert),
     details: parseDetail(alert),

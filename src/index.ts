@@ -51,12 +51,12 @@ export {
   SyntaxCheckResult,
   TransportInfo,
   UnitTestAlert,
-  UnitTestAlertKind,
   UnitTestClass,
   UnitTestMethod,
   UnitTestSeverity,
   UnitTestStackEntry,
   UsageReference,
   ValidateOptions,
-  ValidationResult
+  ValidationResult,
+  UnitTestAlertKind
 } from "./api"
