@@ -19,6 +19,10 @@ export type NonGroupTypeIds =
   | "INTF/OI"
   | "PROG/I"
   | "PROG/P"
+  | "DCLS/DL"
+  | "DDLS/DF"
+  | "DDLX/EX"
+  | "DDLA/ADF"
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
@@ -172,14 +176,10 @@ export function isGroupType(type: any): type is GroupTypeIds {
   return type === "FUGR/FF" || type === "FUGR/I"
 }
 
+export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map()
+
 export function isNonGroupType(type: any): type is NonGroupTypeIds {
-  return (
-    type === "CLAS/OC" ||
-    type === "FUGR/F" ||
-    type === "INTF/OI" ||
-    type === "PROG/I" ||
-    type === "PROG/P"
-  )
+  return CreatableTypes.has(type) && !isGroupType(type)
 }
 
 export function isCreatableTypeId(type: any): type is CreatableTypeIds {
@@ -189,7 +189,8 @@ export function isCreatableTypeId(type: any): type is CreatableTypeIds {
 export function parentTypeId(type: CreatableTypeIds): ParentTypeIds {
   return isGroupType(type) ? "FUGR/F" : "DEVC/K"
 }
-export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = [
+
+const ctypes: CreatableType[] = [
   {
     creationPath: "programs/programs",
     label: "Program",
@@ -245,8 +246,38 @@ export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = [
     rootName: "finclude:abapFunctionGroupInclude",
     typeId: "FUGR/I",
     validationPath: "functions/validation"
+  },
+  {
+    creationPath: "ddic/ddl/sources",
+    label: "CDS Data Definitions",
+    nameSpace: 'xmlns:ddl="http://www.sap.com/adt/ddic/ddlsources"',
+    rootName: "ddl:ddlSource",
+    typeId: "DDLS/DF",
+    validationPath: "ddic/ddl/validation"
+  },
+  {
+    creationPath: "acm/dcl/sources",
+    label: "CDS Access Control",
+    nameSpace: 'xmlns:dcl="http://www.sap.com/adt/acm/dclsources"',
+    rootName: "dcl:dclSource",
+    typeId: "DCLS/DL",
+    validationPath: "acm/dcl/validation"
+  },
+  {
+    creationPath: "ddic/ddlx/sources",
+    label: "CDS metadata extensions",
+    nameSpace: 'xmlns:ddlx="http://www.sap.com/adt/ddic/ddlxsources"',
+    rootName: "ddlx:ddlxSource",
+    typeId: "DDLX/EX",
+    validationPath: "ddic/ddlx/sources/validation"
+  },
+  {
+    creationPath: "ddic/ddla/sources",
+    label: "CDS Annotation definitions",
+    nameSpace: 'xmlns:ddla="http://www.sap.com/adt/ddic/ddlasources"',
+    rootName: "ddla:ddlaSource",
+    typeId: "DDLA/ADF",
+    validationPath: "ddic/ddla/sources/validation"
   }
-].reduce((m, i) => {
-  m.set(i.typeId, i)
-  return m
-}, new Map())
+]
+ctypes.forEach(v => CreatableTypes.set(v.typeId, v))

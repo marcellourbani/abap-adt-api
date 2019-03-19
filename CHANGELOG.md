@@ -4,6 +4,12 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.9] 2019-03-19
+
+### Added
+
+- create CDS objects
+
 ## [0.5.8] 2019-03-17
 
 ### Changed

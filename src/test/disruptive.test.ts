@@ -5,6 +5,8 @@
 import { session_types } from "../"
 import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
+import { ADTClient } from "./../AdtClient"
+import { isGroupType } from "./../api/objectcreator"
 import { create } from "./login"
 
 function enableWrite(time1: Date) {
@@ -218,4 +220,84 @@ test("pretty printer settings", async () => {
   )
   expect(changed).toBeDefined()
   expect(changed["abapformatter:style"]).toBe(newStyle)
+})
+
+async function deleteObj(object: string, c: ADTClient) {
+  let result
+  try {
+    c.stateful = session_types.stateful
+    const handle = await c.lock(object)
+    result = await c.deleteObject(object, handle.LOCK_HANDLE)
+  } catch (e) {
+    // most probably doesn't exist
+  }
+  await c.dropSession()
+  return result
+}
+
+async function createObj(
+  options: NewObjectOptions,
+  newobject: string,
+  c: ADTClient
+) {
+  if (isGroupType(options.objtype)) return
+  const vresult = await c.validateNewObject({
+    objtype: options.objtype,
+    objname: options.name,
+    packagename: options.parentName,
+    description: options.description
+  })
+  expect(vresult).toBeDefined()
+  expect(vresult.success).toBeTruthy()
+  // use a stateless clone as regular calls leave the backend in a weird state
+  await c.statelessClone.createObject(options)
+  return await c.objectStructure(newobject)
+}
+
+test("Create CDS objects", async () => {
+  if (!enableWrite(new Date())) fail("dummy")
+  const c = create()
+  const options: NewObjectOptions = {
+    description: "test CDS AC creation",
+    name: "zadttestcdsaccon",
+    objtype: "DCLS/DL",
+    parentName: "$TMP",
+    parentPath: "/sap/bc/adt/packages/$TMP"
+  }
+  const acconobj = `/sap/bc/adt/acm/dcl/sources/zadttestcdsaccon`
+  const metaobj = `/sap/bc/adt/ddic/ddlx/sources/zadttestcdsmeta`
+  const ddefobj = `/sap/bc/adt/ddic/ddl/sources/ZADT_TEST_DD`
+  // DELETE:
+  await deleteObj(acconobj, c)
+  await deleteObj(metaobj, c)
+  await deleteObj(ddefobj, c)
+  try {
+    // CREATE
+    const result = await createObj(options, acconobj, c)
+    expect(result).toBeDefined()
+    expect(result!.objectUrl).toBeDefined()
+
+    options.name = "zadttestcdsmeta"
+    options.objtype = "DDLX/EX"
+    const res2 = await createObj(options, acconobj, c)
+    expect(res2).toBeDefined()
+    expect(res2!.objectUrl).toBeDefined()
+
+    options.name = "ZADT_TEST_DD"
+    options.objtype = "DDLS/DF"
+    const res3 = await createObj(options, acconobj, c)
+    expect(res3).toBeDefined()
+    expect(res3!.objectUrl).toBeDefined()
+
+    await deleteObj(acconobj, c)
+    await deleteObj(metaobj, c)
+    await deleteObj(ddefobj, c)
+  } catch (e) {
+    throw e
+  } finally {
+    await c.dropSession()
+    await deleteObj(acconobj, c)
+    await deleteObj(metaobj, c)
+    await deleteObj(ddefobj, c)
+  }
 })
