@@ -541,8 +541,64 @@ export async function prettyPrinter(h: AdtHTTP, body: string) {
   const headers = { "Content-Type": "text/plain", Accept: "text/plain" }
   const response = await h.request("/sap/bc/adt/abapsource/prettyprinter", {
     method: "POST",
+    headers,
     body
   })
 
   return (response.body || body).toString()
+}
+
+export interface HierarchyNode {
+  hasDefOrImpl: boolean
+  uri: string
+  line: number
+  character: number
+  type: string
+  name: string
+  parentUri: string
+  description: string
+}
+
+export async function typeHierarchy(
+  h: AdtHTTP,
+  url: string,
+  body: string,
+  line: number,
+  offset: number,
+  superTypes = false
+) {
+  const qs = {
+    uri: `${url}#start=${line},${offset}`,
+    type: superTypes ? "superTypes" : "subTypes"
+  }
+  const headers = { "Content-Type": "text/plain", Accept: "application/*" }
+  const response = await h.request("/sap/bc/adt/abapsource/typehierarchy", {
+    method: "POST",
+    qs,
+    headers,
+    body
+  })
+
+  const raw = fullParse(response.body)
+  const hierarchy = xmlArray(raw, "hierarchy:info", "entries", "entry").map(
+    he => {
+      const rawh = xmlNodeAttr(he)
+      const [uri, srcline, character] = parts(
+        rawh["adtcore:uri"],
+        /([^#]+)(?:#start=(\d+)(?:,(\d+))?)?/
+      )
+      const node: HierarchyNode = {
+        hasDefOrImpl: rawh.hasDefOrImpl,
+        uri,
+        line: toInt(srcline),
+        character: toInt(character),
+        type: rawh["adtcore:type"] || "",
+        name: rawh["adtcore:name"] || "",
+        parentUri: rawh["adtcore:parentUri"] || "",
+        description: rawh["adtcore:description"] || ""
+      }
+      return node
+    }
+  )
+  return hierarchy
 }

@@ -48,6 +48,7 @@ import {
   syntaxCheck,
   syntaxCheckTypes,
   transportInfo,
+  typeHierarchy,
   unLock,
   UsageReference,
   usageReferences,
@@ -485,5 +486,15 @@ export class ADTClient {
 
   public prettyPrinter(source: string) {
     return prettyPrinter(this.h, source)
+  }
+
+  public typeHierarchy(
+    url: string,
+    body: string,
+    line: number,
+    offset: number,
+    superTypes = false
+  ) {
+    return typeHierarchy(this.h, url, body, line, offset, superTypes)
   }
 }

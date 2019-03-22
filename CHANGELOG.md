@@ -4,6 +4,17 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## Unreleased
+
+### Added
+
+- type hierarchy
+
+### Fixed
+
+- added test cases for object components
+- error creating namespaced objects
+
 ## [0.5.9] 2019-03-19
 
 ### Added

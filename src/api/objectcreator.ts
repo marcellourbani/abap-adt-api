@@ -127,10 +127,17 @@ export function objectPath(
       typeIdOrObjectOptions.name,
       typeIdOrObjectOptions.parentName
     )
-  if (typeIdOrObjectOptions === "DEVC/K") return `/sap/bc/adt/packages/${name}`
+  const encodedname = encodeURIComponent(name || "")
+  if (typeIdOrObjectOptions === "DEVC/K")
+    return `/sap/bc/adt/packages/${encodedname}`
   const ot = CreatableTypes.get(typeIdOrObjectOptions)
   if (!ot) return ""
-  return "/sap/bc/adt/" + sprintf(ot.creationPath, parentName) + "/" + name
+  return (
+    "/sap/bc/adt/" +
+    sprintf(ot.creationPath, encodeURIComponent(parentName || "")) +
+    "/" +
+    encodedname
+  )
 }
 
 export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {

@@ -6,6 +6,7 @@ import {
   isAdtError,
   isClassStructure,
   isHttpError,
+  NodeParents,
   objectPath,
   UnitTestAlertKind
 } from "../"
@@ -84,6 +85,47 @@ test("emptyNodeContents", async () => {
   const c = create()
   const resp = await c.nodeContents("DEVC/K", "/FOO/BARFOOFOOTERTQWERWER")
   expect(resp.nodes.length).toBe(0)
+})
+
+test("NodeContents prog", async () => {
+  const c = create()
+  const resp = await c.nodeContents("PROG/P", "ZABAPGIT")
+  let fragment = await c.fragmentMappings(
+    "/sap/bc/adt/programs/programs/zabapgit/source/main",
+    "PROG/PD",
+    "1001"
+  )
+  expect(fragment).toBeDefined()
+  expect(fragment.line).toBe(29)
+  fragment = await c.fragmentMappings(
+    "/sap/bc/adt/programs/programs/zabapgit/source/main",
+    "PROG/PE",
+    "AT ... ON EXIT-COMMAND"
+  )
+  expect(fragment).toBeDefined()
+  expect(fragment.line).toBe(66)
+  expect(resp.nodes.length).toBeGreaterThan(5) // 19?
+})
+
+test("NodeContents include", async () => {
+  const c = create()
+  // really a PROG/I, but only works if we lie...
+  const resp = await c.nodeContents("PROG/PI", "ZABAPGIT_PASSWORD_DIALOG")
+  let fragment = await c.fragmentMappings(
+    "/sap/bc/adt/programs/programs/zabapgit_password_dialog/source/main",
+    "PROG/PLA",
+    "LCL_PASSWORD_DIALOG           GV_CONFIRM"
+  )
+  expect(fragment).toBeDefined()
+  expect(fragment.line).toBe(47)
+  fragment = await c.fragmentMappings(
+    "/sap/bc/adt/programs/programs/zabapgit_password_dialog/source/main",
+    "PROG/PD",
+    "P_URL"
+  )
+  expect(fragment).toBeDefined()
+  expect(fragment.line).toBe(9)
+  expect(resp.nodes.length).toBeGreaterThan(5) // 19?
 })
 
 test("getReentranceTicket", async () => {
@@ -685,4 +727,55 @@ test("code references2", async () => {
   )
   expect(definitionLocation.line).toBe(460)
   expect(definitionLocation.column).toBe(7)
+})
+
+test("type hierarchy children", async () => {
+  const c = create()
+  const source = `INTERFACE zif_abapgit_comparison_result PUBLIC.
+  METHODS: show_confirmation_dialog,
+    is_result_complete_halt RETURNING VALUE(rv_response) TYPE abap_bool.
+ENDINTERFACE.`
+  const descendents = await c.typeHierarchy(
+    "/sap/bc/adt/oo/interfaces/zif_abapgit_comparison_result/source/main",
+    source,
+    1,
+    11
+  )
+  expect(descendents).toBeDefined()
+  expect(
+    descendents.find(
+      n => n.name.toUpperCase() === "ZCL_ABAPGIT_COMPARISON_NULL"
+    )
+  ).toBeDefined()
+})
+
+test("type hierarchy parents", async () => {
+  const c = create()
+  const source = `CLASS zcl_abapgit_comparison_null DEFINITION PUBLIC FINAL CREATE PUBLIC.
+  PUBLIC SECTION.
+    INTERFACES zif_abapgit_comparison_result .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+CLASS ZCL_ABAPGIT_COMPARISON_NULL IMPLEMENTATION.
+  METHOD zif_abapgit_comparison_result~is_result_complete_halt.
+    rv_response = abap_false.
+  ENDMETHOD.
+  METHOD zif_abapgit_comparison_result~show_confirmation_dialog.
+    RETURN.
+  ENDMETHOD.
+ENDCLASS.`
+  const descendents = await c.typeHierarchy(
+    "/sap/bc/adt/oo/classes/zcl_abapgit_comparison_null/source/main",
+    source,
+    1,
+    11,
+    true
+  )
+  expect(descendents).toBeDefined()
+  expect(
+    descendents.find(
+      n => n.name.toLowerCase() === "zif_abapgit_comparison_result"
+    )
+  ).toBeDefined()
 })
