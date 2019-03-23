@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 ### Added
 
 - type hierarchy
+- user transports
 
 ### Fixed
 

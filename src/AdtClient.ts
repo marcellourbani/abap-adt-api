@@ -53,6 +53,7 @@ import {
   UsageReference,
   usageReferences,
   usageReferenceSnippets,
+  userTransports,
   validateNewObject,
   ValidateOptions
 } from "./api"
@@ -496,5 +497,9 @@ export class ADTClient {
     superTypes = false
   ) {
     return typeHierarchy(this.h, url, body, line, offset, superTypes)
+  }
+
+  public async userTransports(user: string, targets = true) {
+    return userTransports(this.h, user, targets)
   }
 }

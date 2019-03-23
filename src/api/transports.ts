@@ -1,7 +1,14 @@
 import { parse } from "fast-xml-parser"
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { JSON2AbapXML, xmlArray, xmlNode } from "../utilities"
+import {
+  fullParse,
+  JSON2AbapXML,
+  xmlArray,
+  xmlNode,
+  xmlNodeAttr
+} from "../utilities"
+import { Link } from "./objectstructure"
 
 interface TransportHeader {
   TRKORR: string
@@ -120,6 +127,7 @@ export async function transportInfo(
   const TRANSPORTS = extractTransports(REQUESTS)
   return { ...header, LOCKS: extractLocks(LOCKS), TRANSPORTS }
 }
+
 export async function createTransport(
   h: AdtHTTP,
   REF: string,
@@ -140,4 +148,77 @@ export async function createTransport(
   })
   const transport = response.body.split("/").pop()
   return transport
+}
+
+export interface TransportObject {
+  "tm:pgmid": string
+  "tm:type": string
+  "tm:name": string
+  "tm:dummy_uri": string
+  "tm:obj_info": string
+}
+export interface TransportTask {
+  "tm:number": string
+  "tm:owner": string
+  "tm:desc": string
+  "tm:status": string
+  "tm:uri": string
+  links: Link[]
+  objects: TransportObject[]
+}
+
+export interface TransportRequest extends TransportTask {
+  tasks: TransportTask[]
+}
+
+export interface TransportTarget {
+  "tm:name": string
+  "tm:desc": string
+  modifiable: TransportRequest[]
+  released: TransportRequest[]
+}
+
+export interface TransportsOfUser {
+  workbench: TransportTarget[]
+  customizing: TransportTarget[]
+}
+
+export async function userTransports(h: AdtHTTP, user: string, targets = true) {
+  const response = await h.request("/sap/bc/adt/cts/transportrequests", {
+    qs: { user, targets }
+  })
+  const parseTask = (t: any) => {
+    const task = {
+      ...xmlNodeAttr(t),
+      links: xmlArray(t, "atom:link").map(xmlNodeAttr),
+      objects: xmlArray(t, "tm:abap_object").map(xmlNodeAttr)
+    }
+    return task as TransportTask
+  }
+  const parseRequest = (r: any) => {
+    const request: TransportRequest = {
+      ...parseTask(r),
+      tasks: xmlArray(r, "tm:task").map(parseTask)
+    }
+    return request
+  }
+  const parseTargets = (s: any) => ({
+    ...xmlNodeAttr(s),
+    modifiable: xmlArray(s, "tm:modifiable", "tm:request").map(parseRequest),
+    released: xmlArray(s, "tm:released", "tm:request").map(parseRequest)
+  })
+
+  const raw = fullParse(response.body)
+  const workbench = xmlArray(raw, "tm:root", "tm:workbench", "tm:target").map(
+    parseTargets
+  )
+  const customizing = xmlArray(
+    raw,
+    "tm:root",
+    "tm:customizing",
+    "tm:target"
+  ).map(parseTargets)
+
+  const retval: TransportsOfUser = { workbench, customizing }
+  return retval
 }

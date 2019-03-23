@@ -779,3 +779,15 @@ ENDCLASS.`
     )
   ).toBeDefined()
 })
+
+test("user transports", async () => {
+  const c = create()
+  const transports = await c.userTransports(process.env.ADT_USER!)
+  expect(transports.workbench.length).toBeGreaterThan(0)
+  let hit
+  for (const s of transports.workbench)
+    for (const t of s.modifiable)
+      if (t["tm:number"] === process.env.ADT_TRANS) hit = t
+  expect(hit).toBeDefined()
+  expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
+})
