@@ -791,3 +791,12 @@ test("user transports", async () => {
   expect(hit).toBeDefined()
   expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
 })
+
+test("System users", async () => {
+  const c = create()
+  const users = await c.systemUsers()
+  expect(users.length).toBeGreaterThan(0)
+  expect(
+    users.find(u => u.id.toUpperCase() === process.env.ADT_USER!.toUpperCase())
+  ).toBeDefined()
+})

@@ -4,12 +4,16 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## Unreleased
+## [0.5.10] 2019-03-23
 
 ### Added
 
 - type hierarchy
 - user transports
+- delete transport / task
+- release transport / task
+- add user to transport
+- system users list
 
 ### Fixed
 

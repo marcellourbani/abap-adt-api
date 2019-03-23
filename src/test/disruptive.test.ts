@@ -5,6 +5,7 @@
 import { session_types } from "../"
 import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
+import { TransportsOfUser } from "../api"
 import { ADTClient } from "./../AdtClient"
 import { isGroupType } from "./../api/objectcreator"
 import { create } from "./login"
@@ -15,6 +16,7 @@ function enableWrite(time1: Date) {
   const diff = time2.getTime() - time1.getTime()
   return diff > 1000 || process.env.ADT_ENABLE_ALL === "YES"
 }
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 test("createTransport", async () => {
   if (!enableWrite(new Date())) return
   const c = create()
@@ -299,5 +301,85 @@ test("Create CDS objects", async () => {
     await deleteObj(acconobj, c)
     await deleteObj(metaobj, c)
     await deleteObj(ddefobj, c)
+  }
+})
+
+test("Release a transport", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const transp = await c.createTransport(
+    "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
+    "release test",
+    "ZAPIDUMMY"
+  )
+  expect(transp).toBeDefined()
+
+  const result = await c.statelessClone.transportRelease(transp)
+
+  expect(result.length).toBeGreaterThan(0)
+  expect(result[0]["chkrun:status"]).toBe("released")
+})
+const findTrans = (transports: TransportsOfUser, target: string) => {
+  for (const s of transports.workbench)
+    for (const t of s.modifiable) if (t["tm:number"] === target) return t
+}
+
+test("Delete a transport", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const transp = await c.createTransport(
+    "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
+    "transport delete test",
+    "ZAPIDUMMY"
+  )
+  expect(transp).toBeDefined()
+
+  let result = await c.userTransports(process.env.ADT_USER!)
+
+  expect(findTrans(result, transp)).toBeDefined()
+
+  await c.statelessClone.transportDelete(transp)
+  result = await c.userTransports(process.env.ADT_USER!)
+
+  expect(findTrans(result, transp)).toBeUndefined()
+})
+
+test("Transport user changes", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const transp = await c.createTransport(
+    "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
+    "transport user change",
+    "ZAPIDUMMY"
+  )
+  expect(transp).toBeDefined()
+  const resp = await c.transportSetOwner(transp, "DDIC")
+  expect(resp["tm:targetuser"]).toBe("DDIC")
+  // reset user to allow deletion
+  try {
+    await c.statelessClone.transportDelete(transp)
+    fail("Allowed to delete a transport after owner change")
+  } catch (e) {
+    // nothing to do...
+  }
+})
+
+test("", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const transp = await c.createTransport(
+    "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
+    "transport user add",
+    "ZAPIDUMMY"
+  )
+  expect(transp).toBeDefined()
+  try {
+    const resp = await c.transportAddUser(transp, "DDIC")
+    expect(resp["tm:number"].length).toBe(10)
+    expect(resp["tm:targetuser"]).toBe("DDIC")
+    expect(resp["tm:number"]).not.toBe(transp)
+  } finally {
+    // cleanup
+    await c.statelessClone.transportDelete(transp)
   }
 })

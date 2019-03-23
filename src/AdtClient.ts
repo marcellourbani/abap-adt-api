@@ -47,7 +47,12 @@ import {
   setPrettyPrinterSetting,
   syntaxCheck,
   syntaxCheckTypes,
+  systemUsers,
+  transportAddUser,
+  transportDelete,
   transportInfo,
+  transportRelease,
+  transportSetOwner,
   typeHierarchy,
   unLock,
   UsageReference,
@@ -501,5 +506,29 @@ export class ADTClient {
 
   public async userTransports(user: string, targets = true) {
     return userTransports(this.h, user, targets)
+  }
+
+  public async transportDelete(transportNumber: string) {
+    return transportDelete(this.h, transportNumber)
+  }
+
+  public async transportRelease(
+    transportNumber: string,
+    ignoreLocks = false,
+    IgnoreATC = false
+  ) {
+    return transportRelease(this.h, transportNumber, ignoreLocks, IgnoreATC)
+  }
+
+  public async transportSetOwner(transportNumber: string, targetuser: string) {
+    return transportSetOwner(this.h, transportNumber, targetuser)
+  }
+
+  public async transportAddUser(transportNumber: string, user: string) {
+    return transportAddUser(this.h, transportNumber, user)
+  }
+
+  public async systemUsers() {
+    return systemUsers(this.h)
   }
 }

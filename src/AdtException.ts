@@ -6,6 +6,14 @@ const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
 const HTTPEXTYPEID = Symbol()
 
+export enum SAPRC {
+  Success = "S",
+  Info = "I",
+  Warning = "W",
+  Error = "E",
+  CriticalError = "A",
+  Exception = "X"
+}
 class AdtErrorException extends Error {
   get typeID(): symbol {
     return ADTEXTYPEID

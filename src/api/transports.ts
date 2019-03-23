@@ -1,5 +1,6 @@
 import { parse } from "fast-xml-parser"
 import { adtException, ValidateObjectUrl } from "../AdtException"
+import { SAPRC } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   fullParse,
@@ -182,30 +183,30 @@ export interface TransportsOfUser {
   workbench: TransportTarget[]
   customizing: TransportTarget[]
 }
+const parseTask = (t: any) => {
+  const task = {
+    ...xmlNodeAttr(t),
+    links: xmlArray(t, "atom:link").map(xmlNodeAttr),
+    objects: xmlArray(t, "tm:abap_object").map(xmlNodeAttr)
+  }
+  return task as TransportTask
+}
+const parseRequest = (r: any) => {
+  const request: TransportRequest = {
+    ...parseTask(r),
+    tasks: xmlArray(r, "tm:task").map(parseTask)
+  }
+  return request
+}
+const parseTargets = (s: any) => ({
+  ...xmlNodeAttr(s),
+  modifiable: xmlArray(s, "tm:modifiable", "tm:request").map(parseRequest),
+  released: xmlArray(s, "tm:released", "tm:request").map(parseRequest)
+})
 
 export async function userTransports(h: AdtHTTP, user: string, targets = true) {
   const response = await h.request("/sap/bc/adt/cts/transportrequests", {
     qs: { user, targets }
-  })
-  const parseTask = (t: any) => {
-    const task = {
-      ...xmlNodeAttr(t),
-      links: xmlArray(t, "atom:link").map(xmlNodeAttr),
-      objects: xmlArray(t, "tm:abap_object").map(xmlNodeAttr)
-    }
-    return task as TransportTask
-  }
-  const parseRequest = (r: any) => {
-    const request: TransportRequest = {
-      ...parseTask(r),
-      tasks: xmlArray(r, "tm:task").map(parseTask)
-    }
-    return request
-  }
-  const parseTargets = (s: any) => ({
-    ...xmlNodeAttr(s),
-    modifiable: xmlArray(s, "tm:modifiable", "tm:request").map(parseRequest),
-    released: xmlArray(s, "tm:released", "tm:request").map(parseRequest)
   })
 
   const raw = fullParse(response.body)
@@ -221,4 +222,135 @@ export async function userTransports(h: AdtHTTP, user: string, targets = true) {
 
   const retval: TransportsOfUser = { workbench, customizing }
   return retval
+}
+
+function validateTransport(transportNumber: string) {
+  if (transportNumber.length !== 10 || !transportNumber.match(/^[a-z]\w\wk/i))
+    adtException("Invalid transport number:" + transportNumber)
+}
+
+export async function transportDelete(h: AdtHTTP, transportNumber: string) {
+  validateTransport(transportNumber)
+
+  await h.request("/sap/bc/adt/cts/transportrequests/" + transportNumber, {
+    method: "DELETE",
+    headers: { Accept: "application/*" }
+  })
+}
+export interface TransportReleaseMessage {
+  "chkrun:uri": string
+  "chkrun:type": SAPRC
+  "chkrun:shortText": string
+}
+export interface TransportReleaseReport {
+  "chkrun:reporter": string
+  "chkrun:triggeringUri": string
+  "chkrun:status": "released" | "abortrelapifail" // perhaps other values?
+  "chkrun:statusText": string
+  messages: TransportReleaseMessage[]
+}
+
+export async function transportRelease(
+  h: AdtHTTP,
+  transportNumber: string,
+  ignoreLocks = false,
+  IgnoreATC = false
+) {
+  validateTransport(transportNumber)
+  const action = IgnoreATC
+    ? "relObjigchkatc"
+    : ignoreLocks
+    ? "relwithignlock"
+    : "newreleasejobs"
+  const response = await h.request(
+    `/sap/bc/adt/cts/transportrequests/${transportNumber}/${action}`,
+    {
+      method: "POST",
+      headers: { Accept: "application/*" }
+    }
+  )
+  const raw = fullParse(response.body)
+  const reports = xmlArray(
+    raw,
+    "tm:root",
+    "tm:releasereports",
+    "chkrun:checkReport"
+  ).map((r: any) => {
+    return {
+      ...xmlNodeAttr(r),
+      messages: xmlArray(
+        r,
+        "chkrun:checkMessageList",
+        "chkrun:checkMessage"
+      ).map(xmlNodeAttr)
+    }
+  })
+  return reports as TransportReleaseReport[]
+}
+export interface TransportOwnerResponse {
+  "tm:targetuser": string
+  "tm:number": string
+}
+
+export async function transportSetOwner(
+  h: AdtHTTP,
+  transportNumber: string,
+  targetuser: string
+) {
+  validateTransport(transportNumber)
+
+  const response = await h.request(
+    "/sap/bc/adt/cts/transportrequests/" + transportNumber,
+    {
+      method: "PUT",
+      headers: { Accept: "application/*" },
+      qs: { targetuser }
+    }
+  )
+  const raw = fullParse(response.body)
+  return xmlNodeAttr(xmlNode(raw, "tm:root")) as TransportOwnerResponse
+}
+
+export interface TransportAddUserResponse {
+  "tm:number": string
+  "tm:targetuser": string
+  "tm:uri": string
+  "tm:useraction": string
+}
+export async function transportAddUser(
+  h: AdtHTTP,
+  transportNumber: string,
+  user: string
+) {
+  validateTransport(transportNumber)
+
+  const body = `<?xml version="1.0" encoding="ASCII"?>
+  <tm:root xmlns:tm="http://www.sap.com/cts/adt/tm" tm:number="${transportNumber}"
+  tm:targetuser="${user}" tm:useraction="newtask"/>`
+
+  const response = await h.request(
+    "/sap/bc/adt/cts/transportrequests/" + transportNumber + "/tasks",
+    {
+      method: "POST",
+      body,
+      headers: { Accept: "application/*", "Content-Type": "text/plain" }
+    }
+  )
+  const raw = fullParse(response.body)
+  return xmlNodeAttr(xmlNode(raw, "tm:root")) as TransportAddUserResponse
+}
+
+export interface SystemUser {
+  id: string
+  title: string
+}
+
+export async function systemUsers(h: AdtHTTP) {
+  const response = await h.request("/sap/bc/adt/system/users", {
+    headers: { Accept: "application/*" }
+  })
+  const raw = parse(response.body)
+  return xmlArray(raw, "atom:feed", "atom:entry").map(
+    (r: any): SystemUser => ({ id: r["atom:id"], title: r["atom:title"] })
+  )
 }
