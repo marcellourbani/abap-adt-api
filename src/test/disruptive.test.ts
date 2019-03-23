@@ -383,3 +383,42 @@ test("", async () => {
     await c.statelessClone.transportDelete(transp)
   }
 })
+
+test("Create a test classes", async () => {
+  if (!enableWrite(new Date())) return
+  const c = create()
+  const clas = "ZADTFOOBARTESTTCINCL"
+  const clasurl = "/sap/bc/adt/oo/classes/" + clas.toLowerCase()
+  try {
+    // preventive cleanup
+    c.stateful = session_types.stateful
+    const lock = await c.lock(clasurl)
+    await c.deleteObject(clasurl, lock.LOCK_HANDLE)
+    await c.dropSession()
+  } catch (e) {
+    // ignore
+  }
+  await c.createObject(
+    "CLAS/OC",
+    clas,
+    "$TMP",
+    "test with test classes include",
+    "/sap/bc/adt/packages/$TMP"
+  )
+  // I got there => class created
+  try {
+    c.stateful = session_types.stateful
+    const lock = await c.lock(clasurl)
+    await c.createTestInclude(clas, lock.LOCK_HANDLE)
+    await c.dropSession()
+    const source = await c.getObjectSource(clasurl + "/includes/testclasses")
+    expect(source).toBeDefined()
+  } finally {
+    // cleanup
+    await c.dropSession()
+    c.stateful = session_types.stateful
+    const lock = await c.lock(clasurl)
+    await c.deleteObject(clasurl, lock.LOCK_HANDLE)
+    await c.dropSession()
+  }
+})

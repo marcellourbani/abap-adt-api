@@ -179,6 +179,22 @@ export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   })
 }
 
+export async function createTestInclude(
+  h: AdtHTTP,
+  clas: string,
+  lockHandle: string
+) {
+  const body = `<?xml version="1.0" encoding="UTF-8"?><class:abapClassInclude
+  xmlns:class="http://www.sap.com/adt/oo/classes" xmlns:adtcore="http://www.sap.com/adt/core" 
+  adtcore:name="dummy" class:includeType="testclasses"/>`
+  await h.request(`/sap/bc/adt/oo/classes/${clas}/includes`, {
+    body,
+    headers: { "Content-Type": "application/*" },
+    method: "POST",
+    qs: { lockHandle }
+  })
+}
+
 export function isGroupType(type: any): type is GroupTypeIds {
   return type === "FUGR/FF" || type === "FUGR/I"
 }

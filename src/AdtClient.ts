@@ -17,6 +17,7 @@ import {
   codeCompletionFull,
   CreatableTypeIds,
   createObject,
+  createTestInclude,
   createTransport,
   deleteObject,
   findDefinition,
@@ -345,6 +346,10 @@ export class ADTClient {
     } else return createObject(this.h, optionsOrType)
   }
 
+  public createTestInclude(clas: string, lockHandle: string) {
+    return createTestInclude(this.h, clas, lockHandle)
+  }
+
   public objectRegistrationInfo(objectUrl: string) {
     return objectRegistrationInfo(this.h, objectUrl)
   }
@@ -504,15 +509,15 @@ export class ADTClient {
     return typeHierarchy(this.h, url, body, line, offset, superTypes)
   }
 
-  public async userTransports(user: string, targets = true) {
+  public userTransports(user: string, targets = true) {
     return userTransports(this.h, user, targets)
   }
 
-  public async transportDelete(transportNumber: string) {
+  public transportDelete(transportNumber: string) {
     return transportDelete(this.h, transportNumber)
   }
 
-  public async transportRelease(
+  public transportRelease(
     transportNumber: string,
     ignoreLocks = false,
     IgnoreATC = false
@@ -520,15 +525,15 @@ export class ADTClient {
     return transportRelease(this.h, transportNumber, ignoreLocks, IgnoreATC)
   }
 
-  public async transportSetOwner(transportNumber: string, targetuser: string) {
+  public transportSetOwner(transportNumber: string, targetuser: string) {
     return transportSetOwner(this.h, transportNumber, targetuser)
   }
 
-  public async transportAddUser(transportNumber: string, user: string) {
+  public transportAddUser(transportNumber: string, user: string) {
     return transportAddUser(this.h, transportNumber, user)
   }
 
-  public async systemUsers() {
+  public systemUsers() {
     return systemUsers(this.h)
   }
 }
