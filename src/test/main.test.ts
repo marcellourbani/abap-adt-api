@@ -800,3 +800,14 @@ test("System users", async () => {
     users.find(u => u.id.toUpperCase() === process.env.ADT_USER!.toUpperCase())
   ).toBeDefined()
 })
+
+test("Transportable object", async () => {
+  const c = create()
+  const reference = await c.transportReference(
+    "R3TR",
+    "CLAS",
+    "ZCL_ABAPGIT_AUTH"
+  )
+
+  expect(reference).toBe("/sap/bc/adt/oo/classes/zcl_abapgit_auth")
+})

@@ -24,7 +24,8 @@ class AdtErrorException extends Error {
     public readonly message: string,
     public readonly parent?: Error,
     public readonly namespace?: string,
-    public readonly localizedMessage?: string
+    public readonly localizedMessage?: string,
+    public readonly response?: Response
   ) {
     super()
   }
@@ -107,7 +108,15 @@ export function fromException(errOrResp: Error | Response): AdtException {
     } else return new AdtHttpException(errOrResp)
   } catch (e) {
     return isResponse(errOrResp)
-      ? adtException("Unknown error in adt client")
+      ? new AdtErrorException(
+          0,
+          "",
+          "Unknown error in adt client",
+          undefined,
+          undefined,
+          undefined,
+          errOrResp
+        )
       : new AdtHttpException(errOrResp)
   }
 }

@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.11] 2019-03-26
+
+### Added
+
+- transportable object to uri
+- raw response in some exceptions
+
 ## [0.5.10] 2019-03-23
 
 ### Added

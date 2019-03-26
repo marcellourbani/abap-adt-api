@@ -61,7 +61,8 @@ import {
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions
+  ValidateOptions,
+  transportReference
 } from "./api"
 
 const followUrl = (base: string, extra: string) => {
@@ -535,5 +536,12 @@ export class ADTClient {
 
   public systemUsers() {
     return systemUsers(this.h)
+  }
+  public transportReference(
+    pgmid: string,
+    obj_wbtype: string,
+    obj_name: string
+  ) {
+    return transportReference(this.h, pgmid, obj_wbtype, obj_name)
   }
 }

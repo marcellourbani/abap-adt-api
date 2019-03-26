@@ -354,3 +354,22 @@ export async function systemUsers(h: AdtHTTP) {
     (r: any): SystemUser => ({ id: r["atom:id"], title: r["atom:title"] })
   )
 }
+
+// tslint:disable: variable-name
+export async function transportReference(
+  h: AdtHTTP,
+  pgmid: string,
+  obj_wbtype: string,
+  obj_name: string
+) {
+  const response = await h.request(
+    "/sap/bc/adt/cts/transportrequests/reference",
+    {
+      headers: { Accept: "application/*" },
+      qs: { obj_name, obj_wbtype, pgmid }
+    }
+  )
+  const raw = fullParse(response.body)
+  const link = xmlNodeAttr(xmlNode(raw, "tm:root", "atom:link"))
+  return link.href as string
+}
