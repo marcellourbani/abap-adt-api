@@ -165,7 +165,9 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
 export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
-  const url = "/sap/bc/adt/" + sprintf(ot.creationPath, options.parentName)
+  const url =
+    "/sap/bc/adt/" +
+    sprintf(ot.creationPath, encodeURIComponent(options.parentName))
   const body = createBody(options, ot)
   const qs: any = {}
   if (options.transport) qs.corrNr = options.transport

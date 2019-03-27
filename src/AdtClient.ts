@@ -52,6 +52,7 @@ import {
   transportAddUser,
   transportDelete,
   transportInfo,
+  transportReference,
   transportRelease,
   transportSetOwner,
   typeHierarchy,
@@ -61,8 +62,7 @@ import {
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions,
-  transportReference
+  ValidateOptions
 } from "./api"
 
 const followUrl = (base: string, extra: string) => {
