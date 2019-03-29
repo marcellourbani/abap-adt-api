@@ -22,6 +22,7 @@ import {
   deleteObject,
   findDefinition,
   findObjectPath,
+  fixEdits,
   FixProposal,
   fixProposals,
   fragmentMappings,
@@ -471,7 +472,9 @@ export class ADTClient {
   ) {
     return fixProposals(this.h, url, source, line, column)
   }
-
+  public fixEdits(proposal: FixProposal, source: string) {
+    return fixEdits(this.h, proposal, source)
+  }
   public runUnitTest(url: string) {
     return runUnitTest(this.h, url)
   }

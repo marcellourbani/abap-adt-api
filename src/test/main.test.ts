@@ -394,35 +394,6 @@ test("objectRegistration", async () => {
   expect(result).toBeDefined()
 })
 
-test("stateless clone", async () => {
-  const c = create()
-  const obj = "/sap/bc/adt/programs/programs/zabapgit"
-  c.stateful = session_types.stateful
-  try {
-    const clone = c.statelessClone
-    expect(clone.statelessClone).toBe(clone)
-    try {
-      clone.stateful = session_types.stateful
-      fail("Stateless clone must stay stateless")
-    } catch (e) {
-      // ignore
-    }
-    const lock = await c.lock(obj)
-    await clone.objectStructure(obj)
-    try {
-      const lock2 = await c.lock(obj)
-      fail("lock didn't survive read on stateless clone")
-    } catch (e) {
-      // ignore
-    }
-    expect(clone.stateful).toBe(session_types.stateless)
-    const result = await clone.objectRegistrationInfo(obj)
-    expect(result).toBeDefined()
-  } finally {
-    c.dropSession()
-  }
-})
-
 // disabled as test case is missing
 // test("activate multiple", async () => {
 //   const c = create()
@@ -573,7 +544,14 @@ test("fix proposals", async () => {
   expect(fixProposals).toBeDefined()
   expect(fixProposals.length).toBeGreaterThan(0)
   expect(fixProposals[0]["adtcore:type"]).toBe("add_unimplemented_method")
+  const edits = await c.fixEdits(fixProposals[0], source)
+  expect(edits.length).toBeGreaterThan(0)
+  const edit = edits[0]
+  expect(edit && edit.content.match(/method\s+bar\./)).toBeTruthy()
+  expect(edit && edit.range.start.line).toBe(7)
+  expect(edit && edit.range.start.column).toBe(0)
 })
+
 const findBy = <T, K extends keyof T>(
   array: T[],
   fname: K,
@@ -810,4 +788,33 @@ test("Transportable object", async () => {
   )
 
   expect(reference).toBe("/sap/bc/adt/oo/classes/zcl_abapgit_auth")
+})
+
+test("stateless clone", async () => {
+  const c = create()
+  const obj = "/sap/bc/adt/programs/programs/zabapgit"
+  c.stateful = session_types.stateful
+  try {
+    const clone = c.statelessClone
+    expect(clone.statelessClone).toBe(clone)
+    try {
+      clone.stateful = session_types.stateful
+      fail("Stateless clone must stay stateless")
+    } catch (e) {
+      // ignore
+    }
+    const lock = await c.lock(obj)
+    await clone.objectStructure(obj)
+    try {
+      const lock2 = await c.lock(obj)
+      fail("lock didn't survive read on stateless clone")
+    } catch (e) {
+      // ignore
+    }
+    expect(clone.stateful).toBe(session_types.stateless)
+    const result = await clone.objectRegistrationInfo(obj)
+    expect(result).toBeDefined()
+  } finally {
+    c.dropSession()
+  }
 })
