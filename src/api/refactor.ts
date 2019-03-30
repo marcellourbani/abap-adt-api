@@ -81,7 +81,7 @@ export async function fixEdits(
   const raw = fullParse(response.body)
   const parseDelta = (d: any): Delta => {
     const attr = xmlNodeAttr(xmlNode(d, "adtcore:objectReference"))
-    const content = d.content
+    const content = decodeEntity(d.content)
     const { uri, range } = parseUri(attr["adtcore:uri"])
 
     return {
