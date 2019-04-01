@@ -51,6 +51,7 @@ export {
   PrettyPrinterStyle,
   Range,
   ReferenceUri,
+  Revision,
   SearchResult,
   SyntaxCheckResult,
   SystemUser,

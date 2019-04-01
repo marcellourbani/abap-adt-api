@@ -43,6 +43,7 @@ import {
   prettyPrinter,
   prettyPrinterSetting,
   PrettyPrinterStyle,
+  revisions,
   runUnitTest,
   searchObject,
   setObjectSource,
@@ -63,8 +64,7 @@ import {
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions,
-  revisions
+  ValidateOptions
 } from "./api"
 
 const followUrl = (base: string, extra: string) => {
