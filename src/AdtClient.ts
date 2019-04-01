@@ -63,7 +63,8 @@ import {
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions
+  ValidateOptions,
+  revisions
 } from "./api"
 
 const followUrl = (base: string, extra: string) => {
@@ -546,5 +547,9 @@ export class ADTClient {
     obj_name: string
   ) {
     return transportReference(this.h, pgmid, obj_wbtype, obj_name)
+  }
+
+  public revisions(objectUrl: string) {
+    return revisions(this.h, objectUrl)
   }
 }

@@ -818,3 +818,13 @@ test("stateless clone", async () => {
     c.dropSession()
   }
 })
+
+test("revisions", async () => {
+  const c = create()
+  const obj =
+    "/sap/bc/adt/functions/groups/ztestrevision1/fmodules/ztestrevisionfm2/source/main"
+  const revisions = await c.revisions(obj)
+  expect(revisions).toBeTruthy()
+  expect(revisions[0]).toBeTruthy()
+  expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
+})
