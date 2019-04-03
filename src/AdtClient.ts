@@ -43,6 +43,7 @@ import {
   prettyPrinter,
   prettyPrinterSetting,
   PrettyPrinterStyle,
+  Revision,
   revisions,
   runUnitTest,
   searchObject,
@@ -66,15 +67,8 @@ import {
   validateNewObject,
   ValidateOptions
 } from "./api"
+import { followUrl } from "./utilities"
 
-const followUrl = (base: string, extra: string) => {
-  if (extra.match(/^\.\//)) {
-    base = base.replace(/[^\/]*$/, "")
-    extra = extra.replace(/^\.\//, "")
-  } else extra = extra.replace(/^\//, "")
-  base = base.replace(/\/$/, "")
-  return base + "/" + extra
-}
 export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
@@ -549,7 +543,10 @@ export class ADTClient {
     return transportReference(this.h, pgmid, obj_wbtype, obj_name)
   }
 
-  public revisions(objectUrl: string) {
-    return revisions(this.h, objectUrl)
+  public revisions(
+    objectUrl: string | AbapObjectStructure,
+    clsInclude?: classIncludes
+  ) {
+    return revisions(this.h, objectUrl, clsInclude)
   }
 }

@@ -1,6 +1,20 @@
-import { ValidateObjectUrl } from "../AdtException"
+import { isString } from "util"
+import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import {
+  followUrl,
+  fullParse,
+  xmlArray,
+  xmlNode,
+  xmlNodeAttr
+} from "../utilities"
+import {
+  AbapObjectStructure,
+  classIncludes,
+  isClassStructure,
+  Link,
+  objectStructure
+} from "./objectstructure"
 
 export interface Revision {
   uri: string
@@ -10,11 +24,44 @@ export interface Revision {
   versionTitle: string
 }
 
-export async function revisions(h: AdtHTTP, objectUrl: string) {
-  ValidateObjectUrl(objectUrl)
+function extractRevisionLink(links: Link[]) {
+  return links.find(l => l.rel === "http://www.sap.com/adt/relations/versions")
+}
+
+export function getRevisionLink(
+  struct: AbapObjectStructure,
+  includeName?: classIncludes
+) {
+  let link
+  if (isClassStructure(struct)) {
+    const iname = includeName || "main"
+    const include = struct.includes.find(i => i["class:includeType"] === iname)
+    if (include) link = extractRevisionLink(include.links)
+  } else {
+    link = extractRevisionLink(struct.links)
+  }
+  if (link) return followUrl(struct.objectUrl, link.href)
+  return ""
+}
+
+export async function revisions(
+  h: AdtHTTP,
+  objectUrl: string | AbapObjectStructure,
+  includeName?: classIncludes
+) {
+  const str = isString(objectUrl)
+    ? await objectStructure(h, objectUrl)
+    : objectUrl
+
+  const name = str.metaData["adtcore:name"]
+  const revisionUrl = getRevisionLink(str, includeName)
+
+  if (!revisionUrl)
+    throw adtException(`Revision URL not found for object ${name}`)
+
   const headers = { Accept: "application/*" }
 
-  const response = await h.request(`${objectUrl}/versions`, {
+  const response = await h.request(revisionUrl, {
     method: "GET",
     headers
   })

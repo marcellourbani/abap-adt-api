@@ -109,3 +109,12 @@ export function parts(whole: any, pattern: RegExp): string[] {
   const match = whole.match(pattern)
   return match ? match.slice(1) : []
 }
+
+export const followUrl = (base: string, extra: string) => {
+  if (extra.match(/^\.\//)) {
+    base = base.replace(/[^\/]*$/, "")
+    extra = extra.replace(/^\.\//, "")
+  } else extra = extra.replace(/^\//, "")
+  base = base.replace(/\/$/, "")
+  return base + "/" + extra
+}

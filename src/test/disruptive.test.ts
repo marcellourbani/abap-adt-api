@@ -5,9 +5,8 @@
 import { session_types } from "../"
 import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
-import { TransportsOfUser } from "../api"
-import { ADTClient } from "./../AdtClient"
-import { isGroupType } from "./../api/objectcreator"
+import { ADTClient } from "../AdtClient"
+import { isGroupType, TransportsOfUser } from "../api"
 import { create } from "./login"
 
 function enableWrite(time1: Date) {

@@ -146,14 +146,6 @@ export class AdtHTTP {
     }
   }
 
-  private follow(url: string) {
-    if (!url) return this.baseUrl
-    const rest = url.replace(/^\.?\//, "")
-
-    if (this.baseUrl.match(/\/$/)) return this.baseUrl + rest
-    else return this.baseUrl + "/" + rest
-  }
-
   /**
    * HTTP request without automated login / retry
    *

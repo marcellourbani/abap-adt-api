@@ -11,6 +11,7 @@ import {
   UnitTestAlertKind
 } from "../"
 import { session_types } from "../AdtHTTP"
+import { classIncludes } from "../api"
 import { create, createHttp } from "./login"
 
 // for older systems
@@ -709,52 +710,45 @@ test("code references2", async () => {
 
 test("type hierarchy children", async () => {
   const c = create()
-  const source = `INTERFACE zif_abapgit_comparison_result PUBLIC.
-  METHODS: show_confirmation_dialog,
-    is_result_complete_halt RETURNING VALUE(rv_response) TYPE abap_bool.
+  const source = `INTERFACE z_adt_testcase_intf1 PUBLIC .
+  METHODS dosomething IMPORTING x TYPE string RETURNING VALUE(y) TYPE string.
 ENDINTERFACE.`
   const descendents = await c.typeHierarchy(
-    "/sap/bc/adt/oo/interfaces/zif_abapgit_comparison_result/source/main",
+    "/sap/bc/adt/oo/interfaces/z_adt_testcase_intf1/source/main",
     source,
     1,
     11
   )
   expect(descendents).toBeDefined()
   expect(
-    descendents.find(
-      n => n.name.toUpperCase() === "ZCL_ABAPGIT_COMPARISON_NULL"
-    )
+    descendents.find(n => n.name.toUpperCase() === "Z_ADT_TESTCASE_CLASS1")
   ).toBeDefined()
 })
 
 test("type hierarchy parents", async () => {
   const c = create()
-  const source = `CLASS zcl_abapgit_comparison_null DEFINITION PUBLIC FINAL CREATE PUBLIC.
+  const source = `CLASS z_adt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .
   PUBLIC SECTION.
-    INTERFACES zif_abapgit_comparison_result .
-  PROTECTED SECTION.
-  PRIVATE SECTION.
+    INTERFACES z_adt_testcase_intf1 .
+    DATA lastx TYPE string .
 ENDCLASS.
-CLASS ZCL_ABAPGIT_COMPARISON_NULL IMPLEMENTATION.
-  METHOD zif_abapgit_comparison_result~is_result_complete_halt.
-    rv_response = abap_false.
-  ENDMETHOD.
-  METHOD zif_abapgit_comparison_result~show_confirmation_dialog.
-    RETURN.
+CLASS z_adt_testcase_class1 IMPLEMENTATION.
+  METHOD z_adt_testcase_intf1~dosomething.
+    y = x.
+    TRANSLATE y TO UPPER CASE.
+    lastx = x.
   ENDMETHOD.
 ENDCLASS.`
-  const descendents = await c.typeHierarchy(
-    "/sap/bc/adt/oo/classes/zcl_abapgit_comparison_null/source/main",
+  const ascendents = await c.typeHierarchy(
+    "/sap/bc/adt/oo/classes/z_adt_testcase_class1/source/main",
     source,
     1,
     11,
     true
   )
-  expect(descendents).toBeDefined()
+  expect(ascendents).toBeDefined()
   expect(
-    descendents.find(
-      n => n.name.toLowerCase() === "zif_abapgit_comparison_result"
-    )
+    ascendents.find(n => n.name.toLowerCase() === "z_adt_testcase_intf1")
   ).toBeDefined()
 })
 
@@ -819,12 +813,38 @@ test("stateless clone", async () => {
   }
 })
 
-test("revisions", async () => {
+test("revisions of func by URL", async () => {
   const c = create()
   const obj =
-    "/sap/bc/adt/functions/groups/ztestrevision1/fmodules/ztestrevisionfm2/source/main"
+    "/sap/bc/adt/functions/groups/ztestrevision1/fmodules/ztestrevisionfm2"
   const revisions = await c.revisions(obj)
   expect(revisions).toBeTruthy()
   expect(revisions[0]).toBeTruthy()
   expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
+})
+
+test("revisions of func by structure", async () => {
+  const c = create()
+  const obj =
+    "/sap/bc/adt/functions/groups/ztestrevision1/fmodules/ztestrevisionfm2"
+  const str = await c.objectStructure(obj)
+  const revisions = await c.revisions(str)
+  expect(revisions).toBeTruthy()
+  expect(revisions[0]).toBeTruthy()
+  expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
+})
+
+test("revisions of class includes", async () => {
+  const c = create()
+  const obj = "/sap/bc/adt/oo/classes/z_adt_testcase_class1"
+  const v = async (include?: classIncludes) => {
+    const revisions = await c.revisions(obj, include)
+    expect(revisions).toBeTruthy()
+    expect(revisions[0]).toBeTruthy()
+    expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
+  }
+  await v()
+  await v("main")
+  await v("testclasses")
+  await v("definitions")
 })

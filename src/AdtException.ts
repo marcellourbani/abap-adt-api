@@ -14,10 +14,56 @@ export enum SAPRC {
   CriticalError = "A",
   Exception = "X"
 }
+
+const isResponse = (r: any): r is Response => !!r.statusCode
+
 class AdtErrorException extends Error {
   get typeID(): symbol {
     return ADTEXTYPEID
   }
+
+  public static create(resp: Response): AdtErrorException
+  public static create(
+    err: number,
+    type: string,
+    message: string,
+    parent?: Error,
+    namespace?: string,
+    localizedMessage?: string,
+    response?: Response
+  ): AdtErrorException
+  public static create(
+    errOrResponse: number | Response,
+    type?: string,
+    message?: string,
+    parent?: Error,
+    namespace?: string,
+    localizedMessage?: string,
+    response?: Response
+  ): AdtErrorException {
+    if (isResponse(errOrResponse)) {
+      return this.create(
+        errOrResponse.statusCode,
+        "",
+        errOrResponse.statusMessage || "Unknown error in adt client",
+        undefined,
+        undefined,
+        undefined,
+        errOrResponse
+      )
+    } else {
+      return new AdtErrorException(
+        errOrResponse,
+        type!,
+        message!,
+        parent,
+        namespace,
+        localizedMessage,
+        response
+      )
+    }
+  }
+
   constructor(
     public readonly err: number,
     public readonly type: string,
@@ -77,7 +123,6 @@ export function isHttpError(e: any): e is AdtHttpException {
 export function isAdtException(e: any): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
-const isResponse = (r: any): r is Response => !!r.statusCode
 
 export function fromException(errOrResp: Error | Response): AdtException {
   if (isAdtException(errOrResp)) return errOrResp
@@ -108,15 +153,7 @@ export function fromException(errOrResp: Error | Response): AdtException {
     } else return new AdtHttpException(errOrResp)
   } catch (e) {
     return isResponse(errOrResp)
-      ? new AdtErrorException(
-          0,
-          "",
-          "Unknown error in adt client",
-          undefined,
-          undefined,
-          undefined,
-          errOrResp
-        )
+      ? AdtErrorException.create(errOrResp)
       : new AdtHttpException(errOrResp)
   }
 }
