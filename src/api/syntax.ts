@@ -4,7 +4,6 @@ import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
   decodeEntity,
-  encodeEntity,
   fullParse,
   parts,
   toInt,
@@ -61,7 +60,7 @@ export async function syntaxCheck(
   version: string = "active"
 ) {
   const source = mainProgram
-    ? `${sourceUrl}?context=${encodeEntity(mainProgram)}`
+    ? `${sourceUrl}?context=${encodeURIComponent(mainProgram)}`
     : sourceUrl
   const body = `<?xml version="1.0" encoding="UTF-8"?>
   <chkrun:checkObjectList xmlns:chkrun="http://www.sap.com/adt/checkrun" xmlns:adtcore="http://www.sap.com/adt/core">
