@@ -860,3 +860,16 @@ test("code references in include", async () => {
     "/sap/bc/adt/oo/classes/cl_salv_table/source/main"
   )
 })
+
+test("code references in include with namespace", async () => {
+  const c = create()
+  const s = `form foo./ui5/cl_ui5_app_index_log=>get_instance( ).endform.`
+  const i =
+    "/sap/bc/adt/programs/includes/%2fui5%2f_index_calculate_f01/source/main"
+  const m = "/sap/bc/adt/programs/programs/%2fui5%2fapp_index_calculate"
+  const definitionLocation = await c.findDefinition(i, s, 1, 15, 48, false, m)
+  expect(definitionLocation).toBeDefined()
+  expect(definitionLocation.url).toBe(
+    "/sap/bc/adt/oo/classes/%2fui5%2fcl_ui5_app_index_log/source/main"
+  )
+})

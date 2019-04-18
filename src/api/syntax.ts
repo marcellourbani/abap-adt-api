@@ -261,7 +261,7 @@ export async function findDefinition(
   implementation: boolean,
   mainProgram?: string
 ) {
-  const ctx = mainProgram ? `?context=${mainProgram}` : ""
+  const ctx = mainProgram ? `?context=${encodeURIComponent(mainProgram)}` : ""
   const qs: any = {
     uri: `${url}${ctx}#start=${line},${firstof};end=${line},${lastof}`,
     filter: implementation ? "implementation" : "definition"
