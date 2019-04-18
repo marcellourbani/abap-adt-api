@@ -848,3 +848,15 @@ test("revisions of class includes", async () => {
   await v("testclasses")
   await v("definitions")
 })
+
+test("code references in include", async () => {
+  const c = create()
+  const s = `data:foo type REF TO cl_salv_table.`
+  const i = "/sap/bc/adt/programs/includes/z_adt_testcase_include1/source/main"
+  const m = "/sap/bc/adt/programs/programs/z_adt_testcase_program1"
+  const definitionLocation = await c.findDefinition(i, s, 1, 22, 34, false, m)
+  expect(definitionLocation).toBeDefined()
+  expect(definitionLocation.url).toBe(
+    "/sap/bc/adt/oo/classes/cl_salv_table/source/main"
+  )
+})

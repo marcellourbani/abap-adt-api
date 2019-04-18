@@ -258,10 +258,12 @@ export async function findDefinition(
   line: number,
   firstof: number,
   lastof: number,
-  implementation: boolean
+  implementation: boolean,
+  mainProgram?: string
 ) {
-  const qs = {
-    uri: `${url}#start=${line},${firstof};end=${line},${lastof}`,
+  const ctx = mainProgram ? `?context=${mainProgram}` : ""
+  const qs: any = {
+    uri: `${url}${ctx}#start=${line},${firstof};end=${line},${lastof}`,
     filter: implementation ? "implementation" : "definition"
   }
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }

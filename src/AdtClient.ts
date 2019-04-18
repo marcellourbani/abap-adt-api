@@ -438,7 +438,8 @@ export class ADTClient {
     line: number,
     startCol: number,
     endCol: number,
-    implementation = false
+    implementation = false,
+    mainProgram = ""
   ) {
     return findDefinition(
       this.h,
@@ -447,7 +448,8 @@ export class ADTClient {
       line,
       startCol,
       endCol,
-      implementation
+      implementation,
+      mainProgram
     )
   }
 
