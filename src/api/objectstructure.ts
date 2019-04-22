@@ -2,7 +2,7 @@ import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr, xmlRoot } from "../utilities"
 
-interface GenericMetaData {
+export interface GenericMetaData {
   "abapsource:activeUnicodeCheck": boolean
   "abapsource:fixPointArithmetic": boolean
   "abapsource:sourceUri": string
@@ -20,16 +20,16 @@ interface GenericMetaData {
   "adtcore:version": string
 }
 
-interface ProgramMetaData extends GenericMetaData {
+export interface ProgramMetaData extends GenericMetaData {
   "program:lockedByEditor": boolean
   "program:programType": string
 }
 
-interface FunctionGroupMetaData extends GenericMetaData {
+export interface FunctionGroupMetaData extends GenericMetaData {
   "group:lockedByEditor": boolean
 }
 
-interface ClassMetaData extends GenericMetaData {
+export interface ClassMetaData extends GenericMetaData {
   "abapoo:modeled": boolean
   "class:abstract": boolean
   "class:category": string
@@ -44,7 +44,13 @@ export interface Link {
   rel: string
   type?: string
 }
-interface ClassInclude {
+export type classIncludes =
+  | "definitions"
+  | "implementations"
+  | "macros"
+  | "testclasses"
+  | "main"
+export interface ClassInclude {
   "abapsource:sourceUri": string
   "adtcore:changedAt": number
   "adtcore:changedBy": string
@@ -53,7 +59,7 @@ interface ClassInclude {
   "adtcore:name": string
   "adtcore:type": string
   "adtcore:version": string
-  "class:includeType": string
+  "class:includeType": classIncludes
   links: Link[]
 }
 export type AbapMetaData =
@@ -87,13 +93,6 @@ const convertIncludes = (i: any): ClassInclude => {
   const links = i["atom:link"].map(xmlNodeAttr)
   return { ...imeta, links }
 }
-
-export type classIncludes =
-  | "definitions"
-  | "implementations"
-  | "macros"
-  | "testclasses"
-  | "main"
 
 export async function objectStructure(
   h: AdtHTTP,

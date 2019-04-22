@@ -4,6 +4,18 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.21] 2019-04-22
+
+### Added
+
+- transport in create test include
+
+### Fixed
+
+- added missing exports
+- better typing for class metadata
+- logout
+
 ## [0.5.20] 2019-04-18
 
 ### Fixed

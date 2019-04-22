@@ -1,3 +1,4 @@
+import { createClient } from "http"
 import { CoreOptions } from "request"
 import { isString } from "util"
 import { adtException } from "./AdtException"
@@ -75,6 +76,14 @@ export function createSSLConfig(
 ): CoreOptions {
   return { ca, rejectUnauthorized: !allowUnauthorized }
 }
+interface HttpOptions {
+  baseUrl: string
+  username: string
+  password: string
+  client: string
+  language: string
+  options: CoreOptions
+}
 export class ADTClient {
   public static mainInclude(object: AbapObjectStructure): string {
     if (isClassStructure(object)) {
@@ -108,6 +117,7 @@ export class ADTClient {
   private h: AdtHTTP
   private pClone?: ADTClient
   private pIsClone?: boolean
+  private options: HttpOptions
 
   /**
    * Create an ADT client
@@ -124,14 +134,28 @@ export class ADTClient {
     password: string,
     client: string = "",
     language: string = "",
-    private config: CoreOptions = {}
+    options: CoreOptions = {}
   ) {
     if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
-    this.h = new AdtHTTP(baseUrl, username, password, client, language, config)
+    this.options = { baseUrl, username, password, client, language, options }
+    this.h = this.createHttp()
   }
+
+  private createHttp() {
+    const o = this.options
+    return new AdtHTTP(
+      o.baseUrl,
+      o.username,
+      o.password,
+      o.client,
+      o.language,
+      o.options
+    )
+  }
+
   public get statelessClone() {
     if (this.pIsClone) return this
     if (!this.pClone) {
@@ -141,7 +165,7 @@ export class ADTClient {
         this.password,
         this.client,
         this.language,
-        this.config
+        this.options.options
       )
       this.pClone.pIsClone = true
     }
@@ -183,6 +207,8 @@ export class ADTClient {
    * Logs on an ADT server. parameters provided on creation
    */
   public login() {
+    // if loggedoff create a new client
+    if (!this.h.username) this.h = this.createHttp()
     return this.h.login()
   }
   /**
@@ -343,8 +369,8 @@ export class ADTClient {
     } else return createObject(this.h, optionsOrType)
   }
 
-  public createTestInclude(clas: string, lockHandle: string) {
-    return createTestInclude(this.h, clas, lockHandle)
+  public createTestInclude(clas: string, lockHandle: string, transport = "") {
+    return createTestInclude(this.h, clas, lockHandle, transport)
   }
 
   public objectRegistrationInfo(objectUrl: string) {

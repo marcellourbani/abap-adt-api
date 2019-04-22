@@ -6,7 +6,6 @@ import {
   isAdtError,
   isClassStructure,
   isHttpError,
-  NodeParents,
   objectPath,
   UnitTestAlertKind
 } from "../"
@@ -29,12 +28,19 @@ test("login", async () => {
   expect(c.csrfToken).not.toEqual("fetch")
 })
 
-test("logout", async () => {
+test("logout http", async () => {
   const c = createHttp()
   expect(c).toBeDefined()
   await c.login()
   expect(c.csrfToken).not.toEqual("fetch")
   await c.logout()
+  try {
+    // we want to prevent autologins
+    await c.login()
+    fail("still logged in")
+  } catch (error) {
+    // ignore
+  }
 })
 
 test("badToken", async () => {
@@ -48,6 +54,15 @@ test("badToken", async () => {
   })
   expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
   expect(response.body).toBeDefined()
+})
+
+test("logout client", async () => {
+  const c = create()
+  expect(c).toBeDefined()
+  await c.login()
+  expect(c.csrfToken).not.toEqual("fetch")
+  await c.logout()
+  await c.login()
 })
 
 test("discovery", async () => {

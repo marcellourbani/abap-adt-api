@@ -107,6 +107,10 @@ export class AdtHTTP {
     await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
     this.options.auth = undefined
+    // new cookie jar
+    this.options.jar = request.jar()
+    // clear token
+    this.csrfToken = FETCH_CSRF_TOKEN
   }
 
   public async dropSession() {
