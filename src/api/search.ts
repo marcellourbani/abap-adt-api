@@ -1,4 +1,3 @@
-import { isString } from "util"
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
@@ -61,4 +60,25 @@ export async function findObjectPath(h: AdtHTTP, objectUrl: string) {
     "projectexplorer:objectLinkReferences",
     "objectLinkReference"
   ).map(xmlNodeAttr) as PathStep[]
+}
+
+export async function abapDocumentation(
+  h: AdtHTTP,
+  objectUri: string,
+  body: string,
+  line: number,
+  column: number,
+  language = "EN"
+) {
+  ValidateObjectUrl(objectUri)
+  const headers = { "Content-Type": "text/plain", Accept: "text/html" }
+  const uri = `${objectUri}#start=${line},${column}`
+  const qs = { uri, language, format: "eclipse" }
+  const response = await h.request(`/sap/bc/adt/docu/abap/langu`, {
+    method: "POST",
+    qs,
+    headers,
+    body
+  })
+  return response.body as string
 }

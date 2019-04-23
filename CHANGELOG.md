@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.22] 2019-04-23
+
+### Added
+
+- expose session id (for troubleshooting)
+- list abapgit repos
+
 ## [0.5.21] 2019-04-22
 
 ### Added

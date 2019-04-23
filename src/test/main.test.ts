@@ -888,3 +888,29 @@ test("code references in include with namespace", async () => {
     "/sap/bc/adt/oo/classes/%2fui5%2fcl_ui5_app_index_log/source/main"
   )
 })
+
+test("abapGit", async () => {
+  const c = create()
+  const git = await c.featureDetails("abapGit Repositories")
+  if (git) {
+    const repos = await c.gitRepos()
+    expect(repos).toBeDefined()
+    expect(repos.length).toBeGreaterThan(0)
+    expect(repos[0].sapPackage).toBeDefined()
+  }
+})
+
+test("ABAP documentation", async () => {
+  const c = create()
+  const source = `INTERFACE z_adt_testcase_intf1 PUBLIC .
+  METHODS dosomething IMPORTING x TYPE string RETURNING VALUE(y) TYPE string.
+ENDINTERFACE.`
+  const docu = await c.abapDocumentation(
+    "/sap/bc/adt/oo/interfaces/z_adt_testcase_intf1/source/main",
+    source,
+    1,
+    3
+  )
+  expect(docu).toBeDefined()
+  expect(docu.match(/interface/i)).toBeDefined()
+})

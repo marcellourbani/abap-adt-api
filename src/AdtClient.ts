@@ -1,16 +1,17 @@
-import { createClient } from "http"
 import { CoreOptions } from "request"
 import { isString } from "util"
 import { adtException } from "./AdtException"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import {
   AbapClassStructure,
+  abapDocumentation,
   AbapObjectStructure,
   activate,
   ActivationResult,
   adtCompatibilityGraph,
   adtCoreDiscovery,
   adtDiscovery,
+  AdtDiscoveryResult,
   classComponents,
   classIncludes,
   codeCompletion,
@@ -28,6 +29,7 @@ import {
   fixProposals,
   fragmentMappings,
   getObjectSource,
+  gitRepos,
   InactiveObject,
   isClassStructure,
   isCreatableTypeId,
@@ -85,6 +87,7 @@ interface HttpOptions {
   options: CoreOptions
 }
 export class ADTClient {
+  private discovery?: AdtDiscoveryResult[]
   public static mainInclude(object: AbapObjectStructure): string {
     if (isClassStructure(object)) {
       const mainInclude = object.includes.find(
@@ -222,6 +225,12 @@ export class ADTClient {
   }
   public dropSession() {
     return this.h.dropSession()
+  }
+
+  public get sessionID() {
+    const cookies = this.h.cookies() || []
+    const sc = cookies.find(c => !!c.key.match(/SAP_SESSIONID/))
+    return sc ? sc.value : ""
   }
 
   public nodeContents(
@@ -367,6 +376,11 @@ export class ADTClient {
         transport
       })
     } else return createObject(this.h, optionsOrType)
+  }
+
+  public async featureDetails(title: string) {
+    if (!this.discovery) this.discovery = await this.adtDiscovery()
+    return this.discovery.find(d => d.title === title)
   }
 
   public createTestInclude(clas: string, lockHandle: string, transport = "") {
@@ -576,5 +590,19 @@ export class ADTClient {
     clsInclude?: classIncludes
   ) {
     return revisions(this.h, objectUrl, clsInclude)
+  }
+
+  public abapDocumentation(
+    objectUri: string,
+    body: string,
+    line: number,
+    column: number,
+    language = "EN"
+  ) {
+    return abapDocumentation(this.h, objectUri, body, line, column, language)
+  }
+
+  public gitRepos() {
+    return gitRepos(this.h)
   }
 }

@@ -103,7 +103,15 @@ export class AdtHTTP {
       this.loginPromise = undefined
     }
   }
+
+  public cookies() {
+    const jar = this.options.jar
+    if (jar && jar !== true && this.options.baseUrl)
+      return jar.getCookies(this.options.baseUrl)
+  }
+
   public async logout() {
+    this.stateful = session_types.stateless
     await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
     this.options.auth = undefined
