@@ -18,6 +18,7 @@ export interface FixProposal {
   uri: string
   line: string
   column: string
+  userContent: string
 }
 
 export async function fixProposals(
@@ -37,16 +38,21 @@ export async function fixProposals(
     body
   })
   const raw = fullParse(response.body)
-  return xmlArray(raw, "qf:evaluationResults", "evaluationResult")
-    .map(x => xmlNodeAttr(xmlNode(x, "adtcore:objectReference")))
-    .map(x => ({
-      ...x,
-      "adtcore:name": decodeEntity(x["adtcore:name"]),
-      "adtcore:description": x["adtcore:description"],
+  const rawResults = xmlArray(raw, "qf:evaluationResults", "evaluationResult")
+  return rawResults.map(x => {
+    const attrs = xmlNodeAttr(xmlNode(x, "adtcore:objectReference"))
+    const userContent = decodeEntity(xmlNode(x, "userContent") || "")
+
+    return {
+      ...attrs,
+      "adtcore:name": decodeEntity(attrs["adtcore:name"]),
+      "adtcore:description": decodeEntity(attrs["adtcore:description"]),
       uri,
       line,
-      column
-    })) as FixProposal[]
+      column,
+      userContent
+    }
+  }) as FixProposal[]
 }
 export interface Delta {
   uri: string
@@ -71,6 +77,7 @@ export async function fixEdits(
     proposal.line
   },${proposal.column}"/>
     </input>
+    <userContent>${encodeEntity(proposal.userContent)}</userContent>
   </quickfixes:proposalRequest>`
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const response = await h.request(proposal["adtcore:uri"], {

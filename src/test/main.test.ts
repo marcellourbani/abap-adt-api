@@ -568,6 +568,27 @@ test("fix proposals", async () => {
   expect(edit && edit.range.start.column).toBe(0)
 })
 
+test("fix proposals reverse", async () => {
+  const c = create()
+
+  const source = `CLASS z_adt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .ENDCLASS.
+CLASS z_adt_testcase_class1 IMPLEMENTATION.
+  METHOD foo.
+  ENDMETHOD.
+ENDCLASS.`
+  const uri = "/sap/bc/adt/oo/classes/z_adt_testcase_class1/source/main"
+
+  const fixProposals = await c.fixProposals(uri, source, 3, 10)
+  expect(fixProposals).toBeDefined()
+  expect(fixProposals.length).toBeGreaterThan(0)
+  expect(fixProposals[0]["adtcore:type"]).toBe("create_method_def")
+  const edits = await c.fixEdits(fixProposals[0], source)
+  expect(edits.length).toBeGreaterThan(0)
+  const edit = edits[0]
+  expect(edit && edit.content.match(/methods\s+foo\./gi)).toBeTruthy()
+  expect(edit && edit.range.start.line).toBe(1)
+  expect(edit && edit.range.start.column).toBe(61)
+})
 const findBy = <T, K extends keyof T>(
   array: T[],
   fname: K,
@@ -698,10 +719,10 @@ test("transport selection for older boxes", async () => {
 
 test("pretty printer", async () => {
   const c = create()
-  const unformatted = "report hello.write:/, 'Hello,world'."
+  const unformatted = "REPORT hello.write:/, 'Hello,world'."
   const formatted = await c.prettyPrinter(unformatted)
   expect(formatted).toBeDefined()
-  expect(formatted).toMatch(/REPORT/)
+  expect(formatted).toMatch(/report/)
 })
 
 test("code references2", async () => {

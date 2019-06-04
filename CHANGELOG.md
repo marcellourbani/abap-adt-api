@@ -4,6 +4,12 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.23] 2019-06-04
+
+### Fixed
+
+- user content field in quickfix
+
 ## [0.5.22] 2019-04-23
 
 ### Added
