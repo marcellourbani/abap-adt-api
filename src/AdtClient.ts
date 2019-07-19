@@ -452,6 +452,16 @@ export class ADTClient {
     )
   }
 
+  public async runClass(
+    className: string) {
+    const response = await this.h.request(
+      "/sap/bc/adt/oo/classrun/" + className.toUpperCase(), {
+        method: "POST"
+      }
+    )
+    return response.body
+  }
+
   /**
    * Read code completion elements
    * Will fail on older systems where this returns HTML fragments rather than XML
