@@ -935,3 +935,9 @@ ENDINTERFACE.`
   expect(docu).toBeDefined()
   expect(docu.match(/interface/i)).toBeDefined()
 })
+
+test("Console application/IF_OO_ADT_CLASSRUN", async () => {
+  const c = create()
+  const result = await c.runClass("z_adt_testcase_console")
+  expect(result).toBe("Hello world!\n\n")
+})

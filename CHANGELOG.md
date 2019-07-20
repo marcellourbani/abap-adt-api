@@ -4,6 +4,16 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.26] 2019-07-13
+
+### Added
+
+- Run console application (class implementing IF_OO_ADT_CLASSRUN)
+
+### Fixed
+
+- removed vulnerabilities
+
 ## [0.5.25] 2019-07-13
 
 ### Fixed
