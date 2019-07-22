@@ -10,16 +10,16 @@ export interface InactiveObject {
   "adtcore:name": string
   "adtcore:parentUri": string
 }
-interface InactiveObjectElement extends InactiveObject {
+export interface InactiveObjectElement extends InactiveObject {
   user: string
   deleted: boolean
 }
-interface InactiveObjectRecord {
+export interface InactiveObjectRecord {
   object?: InactiveObjectElement
   transport?: InactiveObjectElement
 }
 
-interface ActivationResultMessage {
+export interface ActivationResultMessage {
   objDescr: string
   type: string
   line: number
