@@ -276,21 +276,35 @@ export class ADTClient {
     return objectStructure(this.h, objectUrl)
   }
   public activate(
-    object: InactiveObject | InactiveObject[]
+    object: InactiveObject | InactiveObject[],
+    preauditRequested?: boolean
   ): Promise<ActivationResult>
   public activate(
     objectName: string,
     objectUrl: string,
-    mainInclude?: string
+    mainInclude?: string,
+    preauditRequested?: boolean
   ): Promise<ActivationResult>
   public activate(
-    objectName: string | InactiveObject | InactiveObject[],
-    objectUrl?: string,
-    mainInclude?: string
+    objectNameOrObjects: string | InactiveObject | InactiveObject[],
+    objectUrlOrPreauditReq: string | boolean = true,
+    mainInclude?: string,
+    preauditRequested = true
   ) {
-    if (isString(objectName))
-      return activate(this.h, objectName, objectUrl!, mainInclude)
-    else return activate(this.h, objectName)
+    if (isString(objectNameOrObjects))
+      return activate(
+        this.h,
+        objectNameOrObjects,
+        objectUrlOrPreauditReq as string, // validated downstream
+        mainInclude,
+        preauditRequested
+      )
+    else
+      return activate(
+        this.h,
+        objectNameOrObjects,
+        objectUrlOrPreauditReq as boolean // validated downstream
+      )
   }
 
   public mainPrograms(includeUrl: string) {
@@ -452,10 +466,10 @@ export class ADTClient {
     )
   }
 
-  public async runClass(
-    className: string) {
+  public async runClass(className: string) {
     const response = await this.h.request(
-      "/sap/bc/adt/oo/classrun/" + className.toUpperCase(), {
+      "/sap/bc/adt/oo/classrun/" + className.toUpperCase(),
+      {
         method: "POST"
       }
     )

@@ -1,5 +1,5 @@
 import { isArray, isString } from "util"
-import { ValidateObjectUrl } from "../AdtException"
+import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 import { MainInclude } from "./activate"
@@ -50,33 +50,44 @@ function toElement(source: any) {
 
 export async function activate(
   h: AdtHTTP,
-  object: InactiveObject | InactiveObject[]
+  object: InactiveObject | InactiveObject[],
+  preauditRequested?: boolean
 ): Promise<ActivationResult>
 export async function activate(
   h: AdtHTTP,
   objectName: string,
   objectUrl: string,
-  mainInclude?: string
+  mainInclude?: string,
+  preauditRequested?: boolean
 ): Promise<ActivationResult>
 export async function activate(
   h: AdtHTTP,
-  objectName: string | InactiveObject | InactiveObject[],
-  objectUrl?: string,
-  mainInclude?: string
+  objectNameOrObjects: string | InactiveObject | InactiveObject[],
+  objectUrlOrPreauditReq: string | boolean = true,
+  mainInclude?: string,
+  preauditRequested = true
 ) {
   let objects: string[] = []
   let incl = ""
-  if (isString(objectName)) {
-    ValidateObjectUrl(objectUrl || "")
+  if (isString(objectNameOrObjects)) {
+    if (!isString(objectUrlOrPreauditReq))
+      throw adtException("Invalid parameters, objectUrl should be  a string")
+    ValidateObjectUrl(objectUrlOrPreauditReq || "")
+
     if (mainInclude) incl = `?context=${encodeURIComponent(mainInclude)}`
     objects.push(
-      `<adtcore:objectReference adtcore:uri="${objectUrl}${incl}" adtcore:name="${objectName}"/>`
+      `<adtcore:objectReference adtcore:uri="${objectUrlOrPreauditReq}${incl}" adtcore:name="${objectNameOrObjects}"/>`
     )
   } else {
     let inactives: InactiveObject[]
-    if (isArray(objectName)) {
-      inactives = objectName
-    } else inactives = [objectName]
+    if (isString(objectUrlOrPreauditReq))
+      throw adtException(
+        "Invalid parameters, preauditRequested should be a boolean"
+      )
+    preauditRequested = objectUrlOrPreauditReq
+    if (isArray(objectNameOrObjects)) {
+      inactives = objectNameOrObjects
+    } else inactives = [objectNameOrObjects]
     inactives.forEach(i => ValidateObjectUrl(i["adtcore:uri"]))
     objects = inactives.map(
       i =>
@@ -87,7 +98,7 @@ export async function activate(
         }" adtcore:name="${i["adtcore:name"]}"/>`
     )
   }
-  const qs = { method: "activate", preauditRequested: true }
+  const qs = { method: "activate", preauditRequested }
 
   const body =
     `<?xml version="1.0" encoding="UTF-8"?>` +
