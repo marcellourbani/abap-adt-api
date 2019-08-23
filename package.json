@@ -1,6 +1,6 @@
 {
   "name": "abap-adt-api",
-  "version": "0.5.29",
+  "version": "0.5.30",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "build",
   "main": "build/index.js",
@@ -22,6 +22,7 @@
     "fast-xml-parser": "^3.12.12",
     "html-entities": "^1.2.1",
     "request": "^2.88.0",
+    "request-debug": "^0.2.0",
     "sprintf-js": "^1.1.2",
     "tough-cookie": "^3.0.1"
   },

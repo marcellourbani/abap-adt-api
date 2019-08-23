@@ -1,7 +1,6 @@
 import request, { CoreOptions, OptionsWithUrl, Response } from "request"
-import { CookieJar } from "tough-cookie"
+import request_debug, { LogCallback, LogData, LogPhase } from "request-debug"
 import { fromException, isCsrfError } from "./AdtException"
-
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
@@ -10,9 +9,11 @@ export enum session_types {
   stateless = "stateless",
   keep = ""
 }
-
+export interface ClientOptions extends CoreOptions {
+  debugCallback?: LogCallback
+}
 export class AdtHTTP {
-  private options: CoreOptions
+  private options: ClientOptions
   private loginPromise?: Promise<any>
   public get isStateful() {
     return (
@@ -63,8 +64,9 @@ export class AdtHTTP {
     password: string,
     readonly client: string,
     readonly language: string,
-    config: CoreOptions = {}
+    config: ClientOptions = {}
   ) {
+    if (config.debugCallback) request_debug(request, config.debugCallback)
     if (!(baseUrl && username && password))
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
@@ -169,7 +171,7 @@ export class AdtHTTP {
     if (options.headers) headers = { ...headers, ...options.headers }
     const uo: OptionsWithUrl = { ...this.options, ...options, headers, url }
     return new Promise<Response>((resolve, reject) => {
-      request(uo, async (error, response, body) => {
+      request(uo, async (error, response) => {
         if (error) reject(error)
         else if (response.statusCode < 400) {
           if (this.csrfToken === FETCH_CSRF_TOKEN) {

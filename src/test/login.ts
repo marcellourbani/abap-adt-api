@@ -1,4 +1,3 @@
-import { Agent } from "https"
 import { ADTClient, createSSLConfig } from "../"
 import { AdtHTTP } from "../AdtHTTP"
 

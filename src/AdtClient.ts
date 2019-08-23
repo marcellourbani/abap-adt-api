@@ -1,7 +1,7 @@
-import { CoreOptions } from "request"
 import { isString } from "util"
 import { adtException } from "./AdtException"
-import { AdtHTTP, session_types } from "./AdtHTTP"
+import { AdtHTTP, ClientOptions, session_types } from "./AdtHTTP"
+
 import {
   AbapClassStructure,
   abapDocumentation,
@@ -46,7 +46,6 @@ import {
   prettyPrinter,
   prettyPrinterSetting,
   PrettyPrinterStyle,
-  Revision,
   revisions,
   runUnitTest,
   searchObject,
@@ -75,7 +74,7 @@ import { followUrl } from "./utilities"
 export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
-): CoreOptions {
+): ClientOptions {
   return { ca, rejectUnauthorized: !allowUnauthorized }
 }
 interface HttpOptions {
@@ -84,7 +83,7 @@ interface HttpOptions {
   password: string
   client: string
   language: string
-  options: CoreOptions
+  options: ClientOptions
 }
 export class ADTClient {
   private discovery?: AdtDiscoveryResult[]
@@ -137,7 +136,7 @@ export class ADTClient {
     password: string,
     client: string = "",
     language: string = "",
-    options: CoreOptions = {}
+    options: ClientOptions = {}
   ) {
     if (!(baseUrl && username && password))
       throw new Error(

@@ -1,4 +1,4 @@
-export { session_types } from "./AdtHTTP"
+export { session_types, ClientOptions } from "./AdtHTTP"
 export * from "./AdtClient"
 export * from "./AdtException"
 export {
