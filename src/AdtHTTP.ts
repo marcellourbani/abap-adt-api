@@ -1,4 +1,10 @@
-import request, { CoreOptions, OptionsWithUrl, Response } from "request"
+import request, {
+  CoreOptions,
+  OptionsWithUrl,
+  Request,
+  RequiredUriUrl,
+  Response
+} from "request"
 import request_debug, { LogCallback, LogData, LogPhase } from "request-debug"
 import { fromException, isCsrfError } from "./AdtException"
 const FETCH_CSRF_TOKEN = "fetch"
@@ -10,7 +16,7 @@ export enum session_types {
   keep = ""
 }
 export interface ClientOptions extends CoreOptions {
-  debugCallback?: LogCallback
+  debugCallback?: LogCallback<Request, CoreOptions, RequiredUriUrl>
 }
 export class AdtHTTP {
   private options: ClientOptions

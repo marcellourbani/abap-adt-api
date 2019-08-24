@@ -1,10 +1,5 @@
-import {
-  LogData,
-  LogPhase,
-  request,
-  RequestData,
-  ResponseData
-} from "request-debug"
+import { CoreOptions, Request, RequestAPI, RequiredUriUrl } from "request"
+import { LogData, LogPhase, RequestData, ResponseData } from "request-debug"
 import { ADTClient, createSSLConfig } from ".."
 
 interface Call {
@@ -14,7 +9,11 @@ interface Call {
 test("login", async () => {
   const requests = new Map<number, Call>()
   const options = createSSLConfig(!process.env.ADT_URL!.match(/^http:/i))
-  options.debugCallback = (type: LogPhase, data: LogData, r: request) => {
+  options.debugCallback = (
+    type: LogPhase,
+    data: LogData,
+    r: RequestAPI<Request, CoreOptions, RequiredUriUrl>
+  ) => {
     switch (type) {
       case "request":
         requests.set(data.debugId, { request: data as RequestData })
