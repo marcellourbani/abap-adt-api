@@ -30,6 +30,7 @@
     "@types/html-entities": "^1.2.16",
     "@types/jest": "^24.0.6",
     "@types/node": "^11.9.4",
+    "@types/request-debug": "^0.2.0",
     "@types/sprintf-js": "^1.1.2",
     "@types/tough-cookie": "^2.3.5",
     "jest": "^24.1.0",
