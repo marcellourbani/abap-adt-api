@@ -4,6 +4,16 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## Unreleased
+
+### Added
+
+- sample test data
+
+### Changed
+
+- unit tests don't depend on abapgit anymore
+
 ## [0.5.31] 2019-08-23
 
 ### Added

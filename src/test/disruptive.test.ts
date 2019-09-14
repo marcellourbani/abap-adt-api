@@ -316,6 +316,7 @@ test("Release a transport", async () => {
   const result = await c.statelessClone.transportRelease(transp)
 
   expect(result.length).toBeGreaterThan(0)
+  // will fail with abortrelapifail if TMS not configured
   expect(result[0]["chkrun:status"]).toBe("released")
 })
 const findTrans = (transports: TransportsOfUser, target: string) => {
