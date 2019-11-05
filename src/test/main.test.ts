@@ -120,7 +120,7 @@ test("NodeContents prog", async () => {
   )
   expect(fragment).toBeDefined()
   expect(fragment.line).toBe(105)
-  expect(resp.nodes.length).toBe(61)
+  expect(resp.nodes.length).toBe(63)
 })
 // will fail in older systems
 test("NodeContents include", async () => {

@@ -1,0 +1,12 @@
+@EndUserText.label: 'access control'
+@MappingRole: true
+define role Zdatadef_Ac {
+    grant
+        select
+            on
+                zdatadef
+                    where
+                        as4user = 'DEVELOPER'
+                        or as4user = aspect user;
+                        
+}

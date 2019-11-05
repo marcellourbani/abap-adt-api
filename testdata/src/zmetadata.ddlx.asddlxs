@@ -1,0 +1,6 @@
+@Metadata.layer: #CUSTOMER
+annotate view zdatadef with 
+{   
+@Consumption.derivation.resultElementHigh: 'trkorr'
+    korrdev ;
+}

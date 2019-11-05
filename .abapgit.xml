@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+ <asx:values>
+  <DATA>
+   <MASTER_LANGUAGE>E</MASTER_LANGUAGE>
+   <STARTING_FOLDER>/testdata/src/</STARTING_FOLDER>
+   <FOLDER_LOGIC>PREFIX</FOLDER_LOGIC>
+   <IGNORE>
+    <item>/.gitignore</item>
+    <item>/LICENSE</item>
+    <item>/README.md</item>
+    <item>/testdata/README.md</item>
+    <item>/package.json</item>
+    <item>/.travis.yml</item>
+    <item>/src</item>
+    <item>/CHANGELOG.md</item>
+    <item>/jest.config.js</item>
+    <item>/.npmignore</item>
+    <item>/package.json</item>
+    <item>/package-lock.json</item>
+    <item>/setenv_sample.js</item>
+    <item>/tsconfig.json</item>
+    <item>/tslint.json</item>
+   </IGNORE>
+  </DATA>
+ </asx:values>
+</asx:abap>
