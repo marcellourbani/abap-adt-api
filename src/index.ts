@@ -27,6 +27,7 @@ export {
   FunctionGroupMetaData,
   GenericMetaData,
   GitExternalInfo,
+  GitObject,
   GitRepo,
   GroupTypeIds,
   HierarchyNode,

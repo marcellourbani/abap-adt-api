@@ -1,5 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNode, boolFromAbap } from "../utilities"
+import { boolFromAbap, fullParse, xmlArray, xmlNode } from "../utilities"
 
 export interface GitRepo {
   key: string
@@ -20,6 +20,15 @@ export interface GitExternalInfo {
     is_head: boolean
     display_name: string
   }>
+}
+
+export interface GitObject {
+  obj_type: string
+  obj_name: string
+  package: string
+  obj_status: string
+  msg_type: string
+  msg_text: string
 }
 
 export async function gitRepos(h: AdtHTTP) {
@@ -75,4 +84,39 @@ export async function externalRepoInfo(h: AdtHTTP, repourl: string) {
     is_head: boolFromAbap(branch && branch.is_head)
   }))
   return { access_mode, branches } as GitExternalInfo
+}
+
+const parseObjects = (body: any) => {
+  const raw = fullParse(body)
+  return xmlArray(raw, "objects", "object") as GitObject[]
+}
+
+export async function createRepo(
+  h: AdtHTTP,
+  packageName: string,
+  repourl: string,
+  branch = "refs/heads/master",
+  transport = "",
+  user = "",
+  password = ""
+) {
+  const headers = {
+    "Content-Type": "application/abapgit.adt.repo.v1+xml"
+  }
+  const body = `<?xml version="1.0" ?>
+  <repository>
+    <branch>${branch}</branch>
+    <transportRequest>${transport}</transportRequest>
+    <package>${packageName}</package>
+    <url>${repourl}</url>
+    <user>${user}</user>
+    <password>${password}</password>
+  </repository>`
+  const response = await h.request(`/sap/bc/adt/abapgit/repos`, {
+    method: "POST",
+    body,
+    headers // encodeEntity?
+  })
+
+  return parseObjects(response.body)
 }

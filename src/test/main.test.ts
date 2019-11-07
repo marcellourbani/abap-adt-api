@@ -11,7 +11,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes } from "../api"
-import { create, createHttp } from "./login"
+import { create, createHttp, hasAbapGit } from "./login"
 
 // for older systems
 const eat404 = (e: any) => {
@@ -907,9 +907,7 @@ test("code references in include with namespace", async () => {
     "/sap/bc/adt/oo/classes/%2fui5%2fcl_ui5_app_index_log/source/main"
   )
 })
-async function hasAbapGit(c: ADTClient) {
-  return !!(await c.featureDetails("abapGit Repositories"))
-}
+
 test("abapGitRepos", async () => {
   const c = create()
   if (hasAbapGit(c)) {

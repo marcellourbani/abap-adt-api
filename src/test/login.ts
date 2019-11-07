@@ -21,3 +21,6 @@ export function createHttp(language: string = "") {
     createSSLConfig(!process.env.ADT_URL!.match(/^http:/i))
   )
 }
+export async function hasAbapGit(c: ADTClient) {
+  return !!(await c.featureDetails("abapGit Repositories"))
+}

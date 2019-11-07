@@ -7,7 +7,7 @@ import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
 import { ADTClient } from "../AdtClient"
 import { isGroupType, TransportsOfUser } from "../api"
-import { create } from "./login"
+import { create, hasAbapGit } from "./login"
 
 function enableWrite(time1: Date) {
   // will always return false. Switch in debug to run tests
@@ -420,5 +420,19 @@ test("Create a test classes", async () => {
     const lock = await c.lock(clasurl)
     await c.deleteObject(clasurl, lock.LOCK_HANDLE)
     await c.dropSession()
+  }
+})
+
+test("create AbapGit Repo", async () => {
+  if (!enableWrite(new Date())) return
+  const packagename = "$ABAPGITTESTSCLAS"
+
+  const c = create()
+  if (hasAbapGit(c)) {
+    const objects = await c.gitCreateRepo(
+      packagename,
+      "https://github.com/abapGit-tests/CLAS.git"
+    )
+    expect(objects).toBeDefined()
   }
 })

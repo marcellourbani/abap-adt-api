@@ -19,6 +19,7 @@ import {
   codeCompletionFull,
   CreatableTypeIds,
   createObject,
+  createRepo,
   createTestInclude,
   createTransport,
   deleteObject,
@@ -632,5 +633,24 @@ export class ADTClient {
 
   public gitExternalRepoInfo(repourl: string) {
     return externalRepoInfo(this.h, repourl)
+  }
+
+  public gitCreateRepo(
+    packageName: string,
+    repourl: string,
+    branch = "refs/heads/master",
+    transport = "",
+    user = "",
+    password = ""
+  ) {
+    return createRepo(
+      this.h,
+      packageName,
+      repourl,
+      branch,
+      transport,
+      user,
+      password
+    )
   }
 }
