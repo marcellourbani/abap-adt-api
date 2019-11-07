@@ -907,16 +907,28 @@ test("code references in include with namespace", async () => {
     "/sap/bc/adt/oo/classes/%2fui5%2fcl_ui5_app_index_log/source/main"
   )
 })
-
-test("abapGit", async () => {
+async function hasAbapGit(c: ADTClient) {
+  return !!(await c.featureDetails("abapGit Repositories"))
+}
+test("abapGitRepos", async () => {
   const c = create()
-  const git = await c.featureDetails("abapGit Repositories")
-  // only test if the feature is installed, as it's not part of standard ADT
-  if (git) {
+  if (hasAbapGit(c)) {
     const repos = await c.gitRepos()
     expect(repos).toBeDefined()
     expect(repos.length).toBeGreaterThan(0)
     expect(repos[0].sapPackage).toBeDefined()
+  }
+})
+
+test("abapGitxternalRepoInfo", async () => {
+  const c = create()
+  if (hasAbapGit(c)) {
+    const repoinfo = await c.gitExternalRepoInfo(
+      "https://github.com/marcellourbani/abapGit.git"
+    )
+    expect(repoinfo).toBeDefined()
+    expect(repoinfo.access_mode).toBe("PUBLIC")
+    expect(repoinfo.branches[0]).toBeDefined()
   }
 })
 

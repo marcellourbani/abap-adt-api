@@ -118,3 +118,5 @@ export const followUrl = (base: string, extra: string) => {
   base = base.replace(/\/$/, "")
   return base + "/" + extra
 }
+
+export const boolFromAbap = (x: any) => x === "X"

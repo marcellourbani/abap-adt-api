@@ -22,6 +22,7 @@ import {
   createTestInclude,
   createTransport,
   deleteObject,
+  externalRepoInfo,
   findDefinition,
   findObjectPath,
   fixEdits,
@@ -627,5 +628,9 @@ export class ADTClient {
 
   public gitRepos() {
     return gitRepos(this.h)
+  }
+
+  public gitExternalRepoInfo(repourl: string) {
+    return externalRepoInfo(this.h, repourl)
   }
 }

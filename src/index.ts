@@ -26,6 +26,7 @@ export {
   FragmentLocation,
   FunctionGroupMetaData,
   GenericMetaData,
+  GitExternalInfo,
   GitRepo,
   GroupTypeIds,
   HierarchyNode,
