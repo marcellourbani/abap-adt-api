@@ -428,7 +428,7 @@ test("create AbapGit Repo", async () => {
   const packagename = "$ABAPGITTESTSCLAS"
 
   const c = create()
-  if (hasAbapGit(c)) {
+  if (await hasAbapGit(c)) {
     const objects = await c.gitCreateRepo(
       packagename,
       "https://github.com/abapGit-tests/CLAS.git"

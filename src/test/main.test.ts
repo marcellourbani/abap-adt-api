@@ -1,5 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
+import chalk from "chalk"
 import { isArray, isString } from "util"
 import {
   ADTClient,
@@ -12,6 +13,8 @@ import {
 import { session_types } from "../AdtHTTP"
 import { classIncludes } from "../api"
 import { create, createHttp, hasAbapGit } from "./login"
+
+// tslint:disable: no-console
 
 // for older systems
 const eat404 = (e: any) => {
@@ -910,17 +913,23 @@ test("code references in include with namespace", async () => {
 
 test("abapGitRepos", async () => {
   const c = create()
-  if (hasAbapGit(c)) {
+  if (await hasAbapGit(c)) {
     const repos = await c.gitRepos()
     expect(repos).toBeDefined()
     expect(repos.length).toBeGreaterThan(0)
     expect(repos[0].sapPackage).toBeDefined()
+  } else {
+    console.log(
+      chalk.yellowBright(
+        "ABAPGit backend not installed, relevant tests skipped"
+      )
+    )
   }
 })
 
 test("abapGitxternalRepoInfo", async () => {
   const c = create()
-  if (hasAbapGit(c)) {
+  if (await hasAbapGit(c)) {
     const repoinfo = await c.gitExternalRepoInfo(
       "https://github.com/marcellourbani/abapGit.git"
     )
