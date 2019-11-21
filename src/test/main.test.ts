@@ -719,10 +719,18 @@ test("transport selection for older boxes", async () => {
 
 test("pretty printer", async () => {
   const c = create()
-  const unformatted = "REPORT hello.write:/, 'Hello,world'."
+  const style = (await c.prettyPrinterSetting())["abapformatter:style"]
+  if (style === "none" || style === "keywordAuto") {
+    console.log(
+      chalk.yellowBright("Pretty printer doesn't change case, tests skipped")
+    )
+    return
+  }
+  const uppercase = style === "toUpper" || style === "keywordUpper"
+  const unformatted = "RePort hello.write:/, 'Hello,world'."
   const formatted = await c.prettyPrinter(unformatted)
   expect(formatted).toBeDefined()
-  expect(formatted).toMatch(/report/)
+  expect(formatted).toMatch(uppercase ? /REPORT/ : /report/)
 })
 
 test("code references2", async () => {
