@@ -2,7 +2,6 @@ import { isArray, isString } from "util"
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
-import { MainInclude } from "./activate"
 
 export interface InactiveObject {
   "adtcore:uri": string
@@ -91,11 +90,7 @@ export async function activate(
     inactives.forEach(i => ValidateObjectUrl(i["adtcore:uri"]))
     objects = inactives.map(
       i =>
-        `<adtcore:objectReference adtcore:uri="${
-          i["adtcore:uri"]
-        }" adtcore:type="${i["adtcore:type"]}" adtcore:parentUri="${
-          i["adtcore:parentUri"]
-        }" adtcore:name="${i["adtcore:name"]}"/>`
+        `<adtcore:objectReference adtcore:uri="${i["adtcore:uri"]}" adtcore:type="${i["adtcore:type"]}" adtcore:parentUri="${i["adtcore:parentUri"]}" adtcore:name="${i["adtcore:name"]}"/>`
     )
   }
   const qs = { method: "activate", preauditRequested }

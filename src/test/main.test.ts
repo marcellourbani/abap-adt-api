@@ -520,34 +520,39 @@ test("code references", async () => {
 })
 
 test("Usage references", async () => {
-  const c = create()
-  const include = "/sap/bc/adt/oo/classes/zapidummyfoobar"
-  const references = await c.usageReferences(include)
+  jest.setTimeout(8000) // this usually takes longer than the default 5000
+  try {
+    const c = create()
+    const include = "/sap/bc/adt/oo/classes/zapidummyfoobar"
+    const references = await c.usageReferences(include)
 
-  expect(references).toBeDefined()
-  expect(references.length).toBeGreaterThan(2)
+    expect(references).toBeDefined()
+    expect(references.length).toBeGreaterThan(2)
 
-  const references2 = await c.usageReferences(include, 1, 5)
+    const references2 = await c.usageReferences(include, 1, 5)
 
-  expect(references2).toBeDefined()
-  expect(references2.length).toBeGreaterThan(2)
-  expect(references2[1].objectIdentifier.length).toBeGreaterThan(0)
+    expect(references2).toBeDefined()
+    expect(references2.length).toBeGreaterThan(2)
+    expect(references2[1].objectIdentifier.length).toBeGreaterThan(0)
 
-  const snippets = await c.usageReferenceSnippets(references)
-  expect(snippets).toBeDefined()
+    const snippets = await c.usageReferenceSnippets(references)
+    expect(snippets).toBeDefined()
 
-  snippets.forEach(o => {
-    {
-      const ref = references.find(
-        r => r.objectIdentifier === o.objectIdentifier
-      )
-      expect(ref).toBeDefined()
-      expect(ref && ref["adtcore:type"]).toBeTruthy()
-      o.snippets.forEach(s =>
-        expect(s.uri.start && s.uri.start.line).toBeDefined()
-      )
-    }
-  })
+    snippets.forEach(o => {
+      {
+        const ref = references.find(
+          r => r.objectIdentifier === o.objectIdentifier
+        )
+        expect(ref).toBeDefined()
+        expect(ref && ref["adtcore:type"]).toBeTruthy()
+        o.snippets.forEach(s =>
+          expect(s.uri.start && s.uri.start.line).toBeDefined()
+        )
+      }
+    })
+  } finally {
+    jest.setTimeout(5000)
+  }
 })
 
 test("fix proposals", async () => {

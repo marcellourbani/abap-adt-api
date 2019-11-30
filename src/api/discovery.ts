@@ -1,7 +1,6 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
-import { AdtDiscoveryResult } from "./discovery"
 
 export interface AdtDiscoveryResult {
   collection: Array<{

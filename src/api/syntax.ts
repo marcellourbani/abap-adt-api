@@ -12,7 +12,6 @@ import {
   xmlNodeAttr
 } from "../utilities"
 import { Link } from "./objectstructure"
-import { SyntaxCheckResult } from "./syntax"
 
 export interface SyntaxCheckResult {
   uri: string
@@ -390,9 +389,7 @@ export async function usageReferenceSnippets(
     .filter(r => r.objectIdentifier)
     .reduce(
       (last: string, current) =>
-        `${last}<usagereferences:objectIdentifier optional="false">${
-          current.objectIdentifier
-        }</usagereferences:objectIdentifier>`,
+        `${last}<usagereferences:objectIdentifier optional="false">${current.objectIdentifier}</usagereferences:objectIdentifier>`,
       ""
     )
   const body = `<?xml version="1.0" encoding="UTF-8"?>

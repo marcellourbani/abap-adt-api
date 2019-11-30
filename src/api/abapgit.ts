@@ -120,3 +120,30 @@ export async function createRepo(
 
   return parseObjects(response.body)
 }
+
+export async function pullRepo(
+  h: AdtHTTP,
+  repoId: string,
+  branch = "refs/heads/master",
+  transport = "",
+  user = "",
+  password = ""
+) {
+  const headers = {
+    "Content-Type": "application/abapgit.adt.repo.v1+xml"
+  }
+  branch = `<branch>${branch}</branch>`
+  transport = transport
+    ? `<transportRequest>${transport}</transportRequest>`
+    : ""
+  user = user ? `<user>${user}</user>` : ""
+  password = password ? `<password>${password}</password>` : ""
+  const body = `<?xml version="1.0" ?><repository>${branch}${transport}${user}${password}</repository>`
+  const response = await h.request(`/sap/bc/adt/abapgit/repos/${repoId}/pull`, {
+    method: "POST",
+    body,
+    headers
+  })
+
+  return parseObjects(response.body)
+}

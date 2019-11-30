@@ -163,7 +163,7 @@ export function adtException(message: string) {
 }
 
 export function ValidateObjectUrl(url: string) {
-  if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-z]+/)) return // valid
+  if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-zA-Z%\$]?[\w%]+/)) return // valid
   throw new AdtErrorException(0, "BADOBJECTURL", "Invalid Object URL:" + url)
 }
 

@@ -6,7 +6,13 @@ import { session_types } from "../"
 import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
 import { ADTClient } from "../AdtClient"
-import { isGroupType, TransportsOfUser } from "../api"
+import {
+  hasPackageOptions,
+  isGroupType,
+  NewPackageOptions,
+  TransportsOfUser
+} from "../api"
+import { ObjectValidateOptions } from "./../api"
 import { create, hasAbapGit } from "./login"
 
 function enableWrite(time1: Date) {
@@ -71,6 +77,11 @@ test("write_program", async () => {
   // const source = new TextEncoder().encode(
   const source = `Report ${name}.\nwrite:/ 'Hello,World!'.`
   // )
+  try {
+    await deleteObj(path, c)
+  } catch (_) {
+    // ignore
+  }
   try {
     await c.createObject({
       description: "temporary test program",
@@ -223,7 +234,7 @@ test("pretty printer settings", async () => {
   expect(changed["abapformatter:style"]).toBe(newStyle)
 })
 
-async function deleteObj(object: string, c: ADTClient) {
+async function deleteObj(object: string, c: ADTClient, rethrow = false) {
   let result
   try {
     c.stateful = session_types.stateful
@@ -231,6 +242,7 @@ async function deleteObj(object: string, c: ADTClient) {
     result = await c.deleteObject(object, handle.LOCK_HANDLE)
   } catch (e) {
     // most probably doesn't exist
+    if (rethrow) throw e
   }
   await c.dropSession()
   return result
@@ -242,12 +254,22 @@ async function createObj(
   c: ADTClient
 ) {
   if (isGroupType(options.objtype)) return
-  const vresult = await c.validateNewObject({
-    objtype: options.objtype,
+
+  const baseValidateOptions = {
+    ...options,
     objname: options.name,
-    packagename: options.parentName,
-    description: options.description
-  })
+    packagename: options.parentName
+  } as ObjectValidateOptions // typescript is not smart enough to rule out grouptypes, so I have to cast
+  const validateOptions = hasPackageOptions(options)
+    ? {
+        ...baseValidateOptions,
+        swcomp: options.swcomp,
+        transportLayer: options.transportLayer,
+        packagetype: options.description
+      }
+    : baseValidateOptions
+
+  const vresult = await c.validateNewObject(validateOptions)
   expect(vresult).toBeDefined()
   expect(vresult.success).toBeTruthy()
   // use a stateless clone as regular calls leave the backend in a weird state
@@ -300,6 +322,36 @@ test("Create CDS objects", async () => {
     await deleteObj(acconobj, c)
     await deleteObj(metaobj, c)
     await deleteObj(ddefobj, c)
+  }
+})
+
+test("Create and delete a package", async () => {
+  if (!enableWrite(new Date())) return
+  const TMPPACKAGE = "$ADTAPIDUMMYPACKAGE"
+  const TMPPACKAGEURL = `/sap/bc/adt/packages/${TMPPACKAGE}`
+  const c = create()
+  const options: NewPackageOptions = {
+    description: "test Package creation",
+    name: TMPPACKAGE,
+    objtype: "DEVC/K",
+    parentName: "$TMP",
+    parentPath: "/sap/bc/adt/packages/$TMP",
+    transportLayer: "",
+    swcomp: "LOCAL",
+    packagetype: "development"
+  }
+  // cleanup drom previous runs
+  await deleteObj(TMPPACKAGEURL, c)
+  try {
+    const result = await createObj(options, TMPPACKAGEURL, c)
+    expect(result).toBeDefined()
+    expect(result!.objectUrl).toBeDefined()
+    await deleteObj(TMPPACKAGEURL, c, true)
+  } catch (e) {
+    throw e
+  } finally {
+    await c.dropSession()
+    await deleteObj(TMPPACKAGEURL, c)
   }
 })
 
@@ -364,7 +416,7 @@ test("Transport user changes", async () => {
   }
 })
 
-test("", async () => {
+test("Create transports", async () => {
   if (!enableWrite(new Date())) return
   const c = create()
   const transp = await c.createTransport(
@@ -429,6 +481,20 @@ test("create AbapGit Repo", async () => {
 
   const c = create()
   if (await hasAbapGit(c)) {
+    // cleanup
+    await deleteObj("/sap/bc/adt/oo/classes/zcl_ag_unit_test", c)
+    await deleteObj(`/sap/bc/adt/packages/${packagename}`, c)
+    const options: NewPackageOptions = {
+      description: "test Package creation",
+      name: packagename,
+      objtype: "DEVC/K",
+      parentName: "$TMP",
+      parentPath: "/sap/bc/adt/packages/$TMP",
+      transportLayer: "",
+      swcomp: "LOCAL",
+      packagetype: "development"
+    }
+    await createObj(options, `/sap/bc/adt/packages/${packagename}`, c)
     const objects = await c.gitCreateRepo(
       packagename,
       "https://github.com/abapGit-tests/CLAS.git"

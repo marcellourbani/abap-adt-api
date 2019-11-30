@@ -30,6 +30,7 @@ export {
   GitObject,
   GitRepo,
   GroupTypeIds,
+  hasPackageOptions,
   HierarchyNode,
   InactiveObject,
   InactiveObjectElement,
@@ -45,6 +46,7 @@ export {
   Location,
   MainInclude,
   NewObjectOptions,
+  NewPackageOptions,
   Node,
   NodeCategory,
   NodeObjectType,
@@ -84,5 +86,8 @@ export {
   UnitTestStackEntry,
   UsageReference,
   ValidateOptions,
-  ValidationResult
+  ValidationResult,
+  ObjectValidateOptions,
+  GroupValidateOptions,
+  PackageValidateOptions
 } from "./api"

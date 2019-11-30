@@ -32,6 +32,7 @@ import {
   fragmentMappings,
   getObjectSource,
   gitRepos,
+  GroupValidateOptions,
   InactiveObject,
   isClassStructure,
   isCreatableTypeId,
@@ -45,6 +46,8 @@ import {
   objectRegistrationInfo,
   objectStructure,
   objectTypes,
+  ObjectValidateOptions,
+  PackageValidateOptions,
   prettyPrinter,
   prettyPrinterSetting,
   PrettyPrinterStyle,
@@ -69,7 +72,8 @@ import {
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions
+  ValidateOptions,
+  ValidationResult
 } from "./api"
 import { followUrl } from "./utilities"
 

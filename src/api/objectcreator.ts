@@ -4,14 +4,8 @@ import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray } from "../utilities"
 
-export interface CreatableType {
-  validationPath: string
-  creationPath: string
-  rootName: string
-  nameSpace: string
-  label: string
-  typeId: CreatableTypeIds
-}
+type PACKAGETYPE = "DEVC/K"
+
 export type GroupTypeIds = "FUGR/FF" | "FUGR/I"
 export type NonGroupTypeIds =
   | "CLAS/OC"
@@ -26,31 +20,58 @@ export type NonGroupTypeIds =
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
-export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds
+export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds | PACKAGETYPE
+export interface CreatableType {
+  validationPath: string
+  creationPath: string
+  rootName: string
+  nameSpace: string
+  label: string
+  typeId: CreatableTypeIds
+}
 
-interface ObjectValidateOptions {
+interface BaseValidateOptions {
+  objtype: CreatableTypeIds
+  objname: string
+  description: string
+}
+export interface ObjectValidateOptions extends BaseValidateOptions {
   objtype: NonGroupTypeIds
-  objname: string
   packagename: string
-  description: string
 }
-interface GroupValidateOptions {
+export interface GroupValidateOptions extends BaseValidateOptions {
   objtype: GroupTypeIds
-  objname: string
   fugrname: string
-  description: string
 }
-export type ValidateOptions = ObjectValidateOptions | GroupValidateOptions
+type packageTypes = "development" | "structure" | "main"
+interface PackageSpecificData {
+  swcomp: string
+  transportLayer: string
+  packagetype: packageTypes
+}
+export interface PackageValidateOptions
+  extends PackageSpecificData,
+    BaseValidateOptions {
+  objtype: PACKAGETYPE
+  packagename: string
+}
+
 export interface NewObjectOptions {
   objtype: CreatableTypeIds
   name: string
   parentName: string
   description: string
-  // devclass: string
   parentPath: string
   responsible?: string
   transport?: string
 }
+export interface NewPackageOptions
+  extends NewObjectOptions,
+    PackageSpecificData {
+  objtype: PACKAGETYPE
+}
+export const hasPackageOptions = (o: any): o is PackageSpecificData =>
+  !!(o as any).swcomp
 export interface ObjectType {
   CAPABILITIES: string[]
   CATEGORY: string
@@ -66,30 +87,56 @@ export interface ValidationResult {
   SEVERITY?: string
   SHORT_TEXT?: string
 }
+export type ValidateOptions =
+  | ObjectValidateOptions
+  | GroupValidateOptions
+  | PackageValidateOptions
+
 function createBody(options: NewObjectOptions, type: CreatableType) {
-  const responsible = options.responsible
-    ? `adtcore:responsible="${options.responsible}"`
-    : ""
-  if (options.objtype === "FUGR/FF" || options.objtype === "FUGR/I") {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-    <${type.rootName} ${type.nameSpace}
-       xmlns:adtcore="http://www.sap.com/adt/core"
-       adtcore:description="${options.description}"
-       adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-       ${responsible}>
-         <adtcore:containerRef adtcore:name="${options.parentName}"
-           adtcore:type="FUGR/F"
-           adtcore:uri="${options.parentPath}"/>
-    </${type.rootName}>`
-  } else {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-    <${type.rootName} ${type.nameSpace}
-      xmlns:adtcore="http://www.sap.com/adt/core"
-      adtcore:description="${options.description}"
-      adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-      ${responsible}>
-      <adtcore:packageRef adtcore:name="${options.parentName}"/>
-    </${type.rootName}>`
+  const responsible = `adtcore:responsible="${options.responsible}"`
+  switch (options.objtype) {
+    case "FUGR/FF":
+    case "FUGR/I":
+      return `<?xml version="1.0" encoding="UTF-8"?>
+        <${type.rootName} ${type.nameSpace}
+           xmlns:adtcore="http://www.sap.com/adt/core"
+           adtcore:description="${options.description}"
+           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
+           ${responsible}>
+             <adtcore:containerRef adtcore:name="${options.parentName}"
+               adtcore:type="FUGR/F"
+               adtcore:uri="${options.parentPath}"/>
+        </${type.rootName}>`
+    case "DEVC/K":
+      const po = options as NewPackageOptions
+      const layer = po.transportLayer ? `pak:name="${po.transportLayer}"` : ""
+      const compname = po.swcomp ? `pak:name="${po.swcomp}"` : ""
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<pak:package xmlns:pak="http://www.sap.com/adt/packages"
+xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="${options.description}"
+adtcore:name="${options.name}" adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
+<adtcore:packageRef adtcore:name="${options.name}"/>
+<pak:attributes pak:packageType="structure"/>
+<pak:superPackage/>
+<pak:applicationComponent/>
+<pak:transport>
+ <pak:softwareComponent ${compname}/>
+ <pak:transportLayer ${layer}/>
+</pak:transport>
+<pak:translation/>
+<pak:useAccesses/>
+<pak:packageInterfaces/>
+<pak:subPackages/>
+</pak:package>`
+    default:
+      return `<?xml version="1.0" encoding="UTF-8"?>
+        <${type.rootName} ${type.nameSpace}
+          xmlns:adtcore="http://www.sap.com/adt/core"
+          adtcore:description="${options.description}"
+          adtcore:name="${options.name}" adtcore:type="${options.objtype}"
+          ${responsible}>
+          <adtcore:packageRef adtcore:name="${options.parentName}"/>
+        </${type.rootName}>`
   }
 }
 
@@ -128,8 +175,7 @@ export function objectPath(
       typeIdOrObjectOptions.parentName
     )
   const encodedname = encodeURIComponent(name || "")
-  if (typeIdOrObjectOptions === "DEVC/K")
-    return `/sap/bc/adt/packages/${encodedname}`
+  if (typeIdOrObjectOptions === "DEVC/K") return `/sap/bc/adt/packages`
   const ot = CreatableTypes.get(typeIdOrObjectOptions)
   if (!ot) return ""
   return (
@@ -143,8 +189,10 @@ export function objectPath(
 export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
+  // const body = packageBody(options, ot)
   const response = await h.request("/sap/bc/adt/" + ot.validationPath, {
     method: "POST",
+    // body,
     qs: options
   })
   const raw = fullParse(response.body)
@@ -162,12 +210,16 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   } as ValidationResult
 }
 
-export async function createObject(h: AdtHTTP, options: NewObjectOptions) {
+export async function createObject(
+  h: AdtHTTP,
+  options: NewObjectOptions | NewPackageOptions
+) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
   const url =
     "/sap/bc/adt/" +
     sprintf(ot.creationPath, encodeURIComponent(options.parentName))
+  options.responsible = (options.responsible || h.username).toUpperCase()
   const body = createBody(options, ot)
   const qs: any = {}
   if (options.transport) qs.corrNr = options.transport
@@ -307,6 +359,14 @@ const ctypes: CreatableType[] = [
     rootName: "ddla:ddlaSource",
     typeId: "DDLA/ADF",
     validationPath: "ddic/ddla/sources/validation"
+  },
+  {
+    creationPath: "packages",
+    label: "Package",
+    nameSpace: 'xmlns:pak="http://www.sap.com/adt/packages"',
+    rootName: "pak:package",
+    typeId: "DEVC/K",
+    validationPath: "packages/validation"
   }
 ]
 ctypes.forEach(v => CreatableTypes.set(v.typeId, v))

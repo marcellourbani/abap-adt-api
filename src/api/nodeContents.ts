@@ -2,7 +2,6 @@ import { parse } from "fast-xml-parser"
 import { isString } from "util"
 import { AdtHTTP } from "../AdtHTTP"
 import { xmlArray } from "../utilities"
-import { NodeParents } from "./nodeContents"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
 
 export function isNodeParent(t: string): t is NodeParents {
