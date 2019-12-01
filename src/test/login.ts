@@ -1,6 +1,5 @@
 import { ADTClient, createSSLConfig } from "../"
 import { AdtHTTP } from "../AdtHTTP"
-
 export function create() {
   return new ADTClient(
     process.env.ADT_URL!,
@@ -23,4 +22,16 @@ export function createHttp(language: string = "") {
 }
 export async function hasAbapGit(c: ADTClient) {
   return !!(await c.featureDetails("abapGit Repositories"))
+}
+
+export const runTest = (f: (c: ADTClient) => Promise<void>) => {
+  const c = create()
+  return async () => {
+    try {
+      await f(c)
+    } finally {
+      if (c.statelessClone.loggedin) c.statelessClone.logout()
+      if (c.loggedin) c.logout()
+    }
+  }
 }

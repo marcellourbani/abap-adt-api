@@ -188,6 +188,10 @@ export class ADTClient {
     this.h.stateful = stateful
   }
 
+  public get loggedin() {
+    return this.h.loggedin
+  }
+
   public get isStateful() {
     return this.h.isStateful
   }

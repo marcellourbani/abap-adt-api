@@ -41,7 +41,7 @@ export class AdtHTTP {
   public set csrfToken(token: string) {
     this.options.headers![CSRF_TOKEN_HEADER] = token
   }
-  private get loggedin() {
+  public get loggedin() {
     return this.csrfToken !== FETCH_CSRF_TOKEN
   }
   public get baseUrl() {

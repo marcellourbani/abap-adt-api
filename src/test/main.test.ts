@@ -12,7 +12,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes } from "../api"
-import { create, createHttp, hasAbapGit } from "./login"
+import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
 
@@ -26,9 +26,13 @@ const eatResourceNotFound = (e: any) => {
 
 test("login", async () => {
   const c = createHttp()
-  expect(c).toBeDefined()
-  await c.login()
-  expect(c.csrfToken).not.toEqual("fetch")
+  try {
+    expect(c).toBeDefined()
+    await c.login()
+    expect(c.csrfToken).not.toEqual("fetch")
+  } finally {
+    c.logout()
+  }
 })
 
 test("logout http", async () => {
@@ -43,373 +47,425 @@ test("logout http", async () => {
     fail("still logged in")
   } catch (error) {
     // ignore
+  } finally {
+    c.logout()
   }
 })
 
 test("badToken", async () => {
   const c = createHttp("DE")
-  await c.login()
-  expect(c.csrfToken).not.toEqual("fetch")
-  c.csrfToken = "bad" // will trigger a bad login
-  const response = await c.request("/sap/bc/adt/repository/nodestructure", {
-    method: "POST",
-    qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
+  try {
+    await c.login()
+    expect(c.csrfToken).not.toEqual("fetch")
+    c.csrfToken = "bad" // will trigger a bad login
+    const response = await c.request("/sap/bc/adt/repository/nodestructure", {
+      method: "POST",
+      qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
+    })
+    expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
+    expect(response.body).toBeDefined()
+  } finally {
+    c.logout()
+  }
+})
+
+test(
+  "logout client",
+  runTest(async (c: ADTClient) => {
+    expect(c).toBeDefined()
+    await c.login()
+    expect(c.csrfToken).not.toEqual("fetch")
+    await c.logout()
+    await c.login()
   })
-  expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
-  expect(response.body).toBeDefined()
-})
+)
 
-test("logout client", async () => {
-  const c = create()
-  expect(c).toBeDefined()
-  await c.login()
-  expect(c.csrfToken).not.toEqual("fetch")
-  await c.logout()
-  await c.login()
-})
+test(
+  "discovery",
+  runTest(async (c: ADTClient) => {
+    const discovery = await c.adtDiscovery()
+    expect(discovery).toBeDefined()
+    try {
+      const corediscovery = await c.adtCoreDiscovery()
+      expect(corediscovery).toBeDefined()
+    } catch (e) {
+      eatResourceNotFound(e) // for older systems
+    }
+    const graph = await c.adtCompatibiliyGraph()
+    expect(graph).toBeDefined()
+  })
+)
 
-test("discovery", async () => {
-  const c = create()
-  const discovery = await c.adtDiscovery()
-  expect(discovery).toBeDefined()
-  try {
-    const corediscovery = await c.adtCoreDiscovery()
-    expect(corediscovery).toBeDefined()
-  } catch (e) {
-    eatResourceNotFound(e) // for older systems
-  }
-  const graph = await c.adtCompatibiliyGraph()
-  expect(graph).toBeDefined()
-})
+test(
+  "getNodeContents",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.nodeContents("DEVC/K", "BASIS")
+    expect(resp).toBeDefined()
+    expect(resp.nodes).toBeDefined()
+    const known = resp.nodes.find(x => x.OBJECT_NAME === "S_BUPA_API")
+    expect(known).toBeDefined()
+  })
+)
 
-test("getNodeContents", async () => {
-  const c = create()
-  const resp = await c.nodeContents("DEVC/K", "BASIS")
-  expect(resp).toBeDefined()
-  expect(resp.nodes).toBeDefined()
-  const known = resp.nodes.find(x => x.OBJECT_NAME === "S_BUPA_API")
-  expect(known).toBeDefined()
-})
+test(
+  "getNodeContents ZAPIDUMMY",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.nodeContents("DEVC/K", "ZAPIDUMMY")
+    expect(resp).toBeDefined()
+    expect(resp.nodes).toBeDefined()
+    const known = resp.nodes.find(x => x.OBJECT_NAME === "ZAPIDUMMYFOOBAR")
+    expect(known).toBeDefined()
+  })
+)
 
-test("getNodeContents ZAPIDUMMY", async () => {
-  const c = create()
-  const resp = await c.nodeContents("DEVC/K", "ZAPIDUMMY")
-  expect(resp).toBeDefined()
-  expect(resp.nodes).toBeDefined()
-  const known = resp.nodes.find(x => x.OBJECT_NAME === "ZAPIDUMMYFOOBAR")
-  expect(known).toBeDefined()
-})
+test(
+  "emptyNodeContents",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.nodeContents("DEVC/K", "/FOO/BARFOOFOOTERTQWERWER")
+    expect(resp.nodes.length).toBe(0)
+  })
+)
 
-test("emptyNodeContents", async () => {
-  const c = create()
-  const resp = await c.nodeContents("DEVC/K", "/FOO/BARFOOFOOTERTQWERWER")
-  expect(resp.nodes.length).toBe(0)
-})
-
-test("NodeContents prog", async () => {
-  const c = create()
-  const resp = await c.nodeContents("PROG/P", "ZAPIDUMMYTESTPROG1")
-  let fragment = await c.fragmentMappings(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1/source/main",
-    "PROG/PD",
-    "1001"
-  )
-  expect(fragment).toBeDefined()
-  expect(fragment.line).toBe(10)
-  fragment = await c.fragmentMappings(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1/source/main",
-    "PROG/PE",
-    "START-OF-SELECTION"
-  )
-  expect(fragment).toBeDefined()
-  expect(fragment.line).toBe(105)
-  expect(resp.nodes.length).toBe(63)
-})
-// will fail in older systems
-test("NodeContents include", async () => {
-  const c = create()
-  // really a PROG/I, but only works if we lie...
-  const resp = await c.nodeContents("PROG/PI", "ZAPIDUMMYTESTPROG1TOP")
-  const fragment = await c.fragmentMappings(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1top/source/main",
-    "PROG/PD",
-    "OK_CODE"
-  )
-  expect(fragment.line).toBe(5)
-  expect(resp.nodes.length).toBe(2)
-})
-
-test("getReentranceTicket", async () => {
-  const c = create()
-
-  try {
-    const ticket = await c.reentranceTicket()
-    expect(ticket).toBeDefined()
-    expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
-  } catch (e) {
-    // ignore system not configured for SSO tickets
-    if (
-      !(
-        isAdtError(e) &&
-        e.type === "ExceptionSecurityTicketFailure" &&
-        e.message === "This system rejects all logons using SSO tickets"
-      )
+test(
+  "NodeContents prog",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.nodeContents("PROG/P", "ZAPIDUMMYTESTPROG1")
+    let fragment = await c.fragmentMappings(
+      "/sap/bc/adt/programs/programs/zapidummytestprog1/source/main",
+      "PROG/PD",
+      "1001"
     )
-      throw e
-  }
-})
+    expect(fragment).toBeDefined()
+    expect(fragment.line).toBe(10)
+    fragment = await c.fragmentMappings(
+      "/sap/bc/adt/programs/programs/zapidummytestprog1/source/main",
+      "PROG/PE",
+      "START-OF-SELECTION"
+    )
+    expect(fragment).toBeDefined()
+    expect(fragment.line).toBe(105)
+    expect(resp.nodes.length).toBe(63)
+  })
+)
+// will fail in older systems
+test(
+  "NodeContents include",
+  runTest(async (c: ADTClient) => {
+    // really a PROG/I, but only works if we lie...
+    const resp = await c.nodeContents("PROG/PI", "ZAPIDUMMYTESTPROG1TOP")
+    const fragment = await c.fragmentMappings(
+      "/sap/bc/adt/programs/programs/zapidummytestprog1top/source/main",
+      "PROG/PD",
+      "OK_CODE"
+    )
+    expect(fragment.line).toBe(5)
+    expect(resp.nodes.length).toBe(2)
+  })
+)
 
-test("getTransportInfo", async () => {
-  const c = create()
-  const trreg = new RegExp(`${process.env.ADT_SYSTEMID}K9[\d]*`)
-  let info = await c.transportInfo(
-    "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
-    "ZAPIDUMMY"
-  )
-  expect(info).toBeDefined()
-  expect(info.RECORDING).toEqual("X")
-  expect(info.TRANSPORTS.length).toBeGreaterThan(0)
-  info = await c.transportInfo(
-    "/sap/bc/adt/oo/classes/zapidummylocked/source/main",
-    "ZAPIDUMMY"
-  )
-  expect(info).toBeDefined()
-  expect(info.RECORDING).toEqual("")
-  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
-  info = await c.transportInfo(
-    "/sap/bc/adt/oo/classes/zapidummylocked",
-    "ZAPIDUMMY"
-  )
-  expect(info).toBeDefined()
-  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
+test(
+  "getReentranceTicket",
+  runTest(async (c: ADTClient) => {
+    try {
+      const ticket = await c.reentranceTicket()
+      expect(ticket).toBeDefined()
+      expect(ticket.match(/^[\w+/\!]+=*$/)).toBeDefined()
+    } catch (e) {
+      // ignore system not configured for SSO tickets
+      if (
+        !(
+          isAdtError(e) &&
+          e.type === "ExceptionSecurityTicketFailure" &&
+          e.message === "This system rejects all logons using SSO tickets"
+        )
+      )
+        throw e
+    }
+  })
+)
 
-  info = await c.transportInfo(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc",
-    "ZAPIDUMMY"
-  )
-  expect(info).toBeDefined()
-  expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
-})
-
-test("objectPath", async () => {
-  const c = create()
-  const path = objectPath("CLAS/OC", "zapidummytestcreation", "")
-  expect(path).toBe("/sap/bc/adt/oo/classes/zapidummytestcreation")
-  const info = await c.transportInfo(path, "ZAPIDUMMY")
-  expect(info).toBeDefined()
-  expect(info.RECORDING).toEqual("X")
-  expect(info.TRANSPORTS.length).toBeGreaterThan(0)
-})
-
-test("badTransportInfo", async () => {
-  const c = create()
-  try {
-    const info = await c.transportInfo(
-      "/sap/bc/adt/oo/classes/zapidummytestcreation/foo/bar",
+test(
+  "getTransportInfo",
+  runTest(async (c: ADTClient) => {
+    const trreg = new RegExp(`${process.env.ADT_SYSTEMID}K9[\d]*`)
+    let info = await c.transportInfo(
+      "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
       "ZAPIDUMMY"
     )
-    fail("Exception expected for invalid object URL")
-  } catch (e) {
-    expect(e).toBeDefined()
-  }
-})
+    expect(info).toBeDefined()
+    expect(info.RECORDING).toEqual("X")
+    expect(info.TRANSPORTS.length).toBeGreaterThan(0)
+    info = await c.transportInfo(
+      "/sap/bc/adt/oo/classes/zapidummylocked/source/main",
+      "ZAPIDUMMY"
+    )
+    expect(info).toBeDefined()
+    expect(info.RECORDING).toEqual("")
+    expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
+    info = await c.transportInfo(
+      "/sap/bc/adt/oo/classes/zapidummylocked",
+      "ZAPIDUMMY"
+    )
+    expect(info).toBeDefined()
+    expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
 
-test("objectStructure", async () => {
-  const c = create()
-  let structure = await c.objectStructure(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1"
-  )
-  expect(structure.links).toBeDefined()
-  expect(structure.links!.length).toBeGreaterThan(0)
-  expect(ADTClient.mainInclude(structure)).toBe(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1/source/main"
-  )
-  structure = await c.objectStructure(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar"
-  )
-  expect(structure.links).toBeDefined()
-  expect(structure.links!.length).toBeGreaterThan(0)
-  expect(ADTClient.mainInclude(structure)).toBe(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/source/main"
-  )
-  structure = await c.objectStructure(
-    "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
-  )
-  if (!isClassStructure(structure)) throw new Error("ss")
-  expect(structure.includes.length).toBeGreaterThan(0)
-  expect(ADTClient.mainInclude(structure)).toBe(
-    "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
-  )
-  expect(ADTClient.classIncludes(structure).get("definitions")).toBe(
-    "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/includes/definitions"
-  )
-  try {
-    structure = await c.objectStructure(
-      "/sap/bc/adt/vit/wb/object_type/trant/object_name/ZABAPGIT"
+    info = await c.transportInfo(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc",
+      "ZAPIDUMMY"
     )
-    expect(structure).toBeDefined()
-  } catch (e) {
-    eatResourceNotFound(e) // for older systems
-  }
-  try {
-    // table, uses relative paths
-    structure = await c.objectStructure(
-      "/sap/bc/adt/ddic/tables/zapiadtdummytabl"
+    expect(info).toBeDefined()
+    expect(info.LOCKS!.HEADER!.TRKORR).toMatch(trreg)
+  })
+)
+
+test(
+  "objectPath",
+  runTest(async (c: ADTClient) => {
+    const path = objectPath("CLAS/OC", "zapidummytestcreation", "")
+    expect(path).toBe("/sap/bc/adt/oo/classes/zapidummytestcreation")
+    const info = await c.transportInfo(path, "ZAPIDUMMY")
+    expect(info).toBeDefined()
+    expect(info.RECORDING).toEqual("X")
+    expect(info.TRANSPORTS.length).toBeGreaterThan(0)
+  })
+)
+
+test(
+  "badTransportInfo",
+  runTest(async (c: ADTClient) => {
+    try {
+      const info = await c.transportInfo(
+        "/sap/bc/adt/oo/classes/zapidummytestcreation/foo/bar",
+        "ZAPIDUMMY"
+      )
+      fail("Exception expected for invalid object URL")
+    } catch (e) {
+      expect(e).toBeDefined()
+    }
+  })
+)
+
+test(
+  "objectStructure",
+  runTest(async (c: ADTClient) => {
+    let structure = await c.objectStructure(
+      "/sap/bc/adt/programs/programs/zapidummytestprog1"
     )
-    expect(structure).toBeDefined()
+    expect(structure.links).toBeDefined()
+    expect(structure.links!.length).toBeGreaterThan(0)
     expect(ADTClient.mainInclude(structure)).toBe(
-      "/sap/bc/adt/ddic/tables/zapiadtdummytabl/source/main"
+      "/sap/bc/adt/programs/programs/zapidummytestprog1/source/main"
     )
-  } catch (e) {
-    eat404(e) // not supported in older systems
-  }
-})
-
-test("activateProgram", async () => {
-  const c = create()
-  const result = await c.activate(
-    "ZAPIDUMMYTESTPROG1",
-    "/sap/bc/adt/programs/programs/zapidummytestprog1"
-  )
-  expect(result).toBeDefined()
-  expect(result.success).toBe(true)
-})
-
-test("getMainPrograms", async () => {
-  const c = create()
-  const result = await c.mainPrograms(
-    "/sap/bc/adt/programs/includes/zadttestincludeinc"
-  )
-  expect(result).toBeDefined()
-  expect(result.length).toBe(1)
-  expect(result[0]["adtcore:name"]).toBe("ZADTTESTINCLUDE1")
-})
-
-test("getObjectSource", async () => {
-  const c = create()
-
-  const result = await c.getObjectSource(
-    "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1/source/main"
-  )
-  expect(result).toBeDefined()
-  expect(result).toMatch(/ZADTTESTINCLUDEINC/gim)
-})
-
-test("lock_unlock", async () => {
-  const c = create()
-  const target = "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1"
-  try {
+    structure = await c.objectStructure(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar"
+    )
+    expect(structure.links).toBeDefined()
+    expect(structure.links!.length).toBeGreaterThan(0)
+    expect(ADTClient.mainInclude(structure)).toBe(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/source/main"
+    )
+    structure = await c.objectStructure(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
+    )
+    if (!isClassStructure(structure)) throw new Error("ss")
+    expect(structure.includes.length).toBeGreaterThan(0)
+    expect(ADTClient.mainInclude(structure)).toBe(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+    )
+    expect(ADTClient.classIncludes(structure).get("definitions")).toBe(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/includes/definitions"
+    )
     try {
-      await c.lock(target)
-      fail("lock should be forbidden when client is stateless")
+      structure = await c.objectStructure(
+        "/sap/bc/adt/vit/wb/object_type/trant/object_name/ZABAPGIT"
+      )
+      expect(structure).toBeDefined()
     } catch (e) {
-      // ignore
+      eatResourceNotFound(e) // for older systems
     }
-    c.stateful = session_types.stateful
-    const handle = await c.lock(target)
     try {
-      await c.lock(target)
-      fail("lock should be forbidden when object already locked")
+      // table, uses relative paths
+      structure = await c.objectStructure(
+        "/sap/bc/adt/ddic/tables/zapiadtdummytabl"
+      )
+      expect(structure).toBeDefined()
+      expect(ADTClient.mainInclude(structure)).toBe(
+        "/sap/bc/adt/ddic/tables/zapiadtdummytabl/source/main"
+      )
     } catch (e) {
-      // ignore
+      eat404(e) // not supported in older systems
     }
-    await c.unLock(target, handle.LOCK_HANDLE)
-  } catch (e) {
-    throw e
-  } finally {
-    await c.dropSession()
-  }
-})
-
-test("searchObject", async () => {
-  const c = create()
-  const result = await c.searchObject("ZABAP*", "")
-  expect(result).toBeDefined()
-  expect(result[0]["adtcore:description"]).toBeDefined()
-  const prog = result.find(
-    sr => sr["adtcore:name"] === "ZABAPGIT" && sr["adtcore:type"] === "PROG/P"
-  )
-  expect(prog).toBeDefined()
-  const result2 = await c.searchObject("ZABAP*", "", 4)
-  expect(result2).toBeDefined()
-  expect(result2.length).toBe(4)
-})
-
-test("searchObject by type", async () => {
-  const c = create()
-  const result = await c.searchObject("ZABAP*", "PROG/P")
-  expect(result).toBeDefined()
-  result.forEach(r =>
-    expect(r["adtcore:type"].replace(/\/.*$/, "")).toBe("PROG")
-  )
-})
-
-test("findObjectPath", async () => {
-  const c = create()
-  const result = await c.findObjectPath(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1"
-  )
-  expect(result).toBeDefined()
-  const idx = result.length === 3 ? 1 : 0 // in some systems starts at $TMP, in some it doesn't
-  expect(result[idx] && result[idx]["adtcore:name"]).toBe("ZAPIDUMMY")
-})
-
-test("validateNewFM", async () => {
-  const c = create()
-  const result = await c.validateNewObject({
-    description: "a fm",
-    fugrname: "ZAPIDUMMYFOOBAR",
-    objname: "ZFOOBARFEWFWE",
-    objtype: "FUGR/FF"
   })
-  expect(result.success).toBeTruthy()
-})
+)
 
-test("validateClass", async () => {
-  const c = create()
-  const result = await c.validateNewObject({
-    description: "a class",
-    objname: "ZFOOBARFEWFWE",
-    objtype: "CLAS/OC",
-    packagename: "$TMP"
+test(
+  "activateProgram",
+  runTest(async (c: ADTClient) => {
+    const result = await c.activate(
+      "ZAPIDUMMYTESTPROG1",
+      "/sap/bc/adt/programs/programs/zapidummytestprog1"
+    )
+    expect(result).toBeDefined()
+    expect(result.success).toBe(true)
   })
-  expect(result.success).toBeTruthy()
-})
+)
 
-test("validateExistingClass", async () => {
-  const c = create()
-  try {
-    await c.validateNewObject({
+test(
+  "getMainPrograms",
+  runTest(async (c: ADTClient) => {
+    const result = await c.mainPrograms(
+      "/sap/bc/adt/programs/includes/zadttestincludeinc"
+    )
+    expect(result).toBeDefined()
+    expect(result.length).toBe(1)
+    expect(result[0]["adtcore:name"]).toBe("ZADTTESTINCLUDE1")
+  })
+)
+
+test(
+  "getObjectSource",
+  runTest(async (c: ADTClient) => {
+    const result = await c.getObjectSource(
+      "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1/source/main"
+    )
+    expect(result).toBeDefined()
+    expect(result).toMatch(/ZADTTESTINCLUDEINC/gim)
+  })
+)
+
+test(
+  "lock_unlock",
+  runTest(async (c: ADTClient) => {
+    const target = "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1"
+    try {
+      try {
+        await c.lock(target)
+        fail("lock should be forbidden when client is stateless")
+      } catch (e) {
+        // ignore
+      }
+      c.stateful = session_types.stateful
+      const handle = await c.lock(target)
+      try {
+        await c.lock(target)
+        fail("lock should be forbidden when object already locked")
+      } catch (e) {
+        // ignore
+      }
+      await c.unLock(target, handle.LOCK_HANDLE)
+    } catch (e) {
+      throw e
+    } finally {
+      await c.dropSession()
+    }
+  })
+)
+
+test(
+  "searchObject",
+  runTest(async (c: ADTClient) => {
+    const result = await c.searchObject("ZABAP*", "")
+    expect(result).toBeDefined()
+    expect(result[0]["adtcore:description"]).toBeDefined()
+    const prog = result.find(
+      sr => sr["adtcore:name"] === "ZABAPGIT" && sr["adtcore:type"] === "PROG/P"
+    )
+    expect(prog).toBeDefined()
+    const result2 = await c.searchObject("ZABAP*", "", 4)
+    expect(result2).toBeDefined()
+    expect(result2.length).toBe(4)
+  })
+)
+
+test(
+  "searchObject by type",
+  runTest(async (c: ADTClient) => {
+    const result = await c.searchObject("ZABAP*", "PROG/P")
+    expect(result).toBeDefined()
+    result.forEach(r =>
+      expect(r["adtcore:type"].replace(/\/.*$/, "")).toBe("PROG")
+    )
+  })
+)
+
+test(
+  "findObjectPath",
+  runTest(async (c: ADTClient) => {
+    const result = await c.findObjectPath(
+      "/sap/bc/adt/programs/programs/zapidummytestprog1"
+    )
+    expect(result).toBeDefined()
+    const idx = result.length === 3 ? 1 : 0 // in some systems starts at $TMP, in some it doesn't
+    expect(result[idx] && result[idx]["adtcore:name"]).toBe("ZAPIDUMMY")
+  })
+)
+
+test(
+  "validateNewFM",
+  runTest(async (c: ADTClient) => {
+    const result = await c.validateNewObject({
+      description: "a fm",
+      fugrname: "ZAPIDUMMYFOOBAR",
+      objname: "ZFOOBARFEWFWE",
+      objtype: "FUGR/FF"
+    })
+    expect(result.success).toBeTruthy()
+  })
+)
+
+test(
+  "validateClass",
+  runTest(async (c: ADTClient) => {
+    const result = await c.validateNewObject({
       description: "a class",
-      objname: "ZCL_ABAPGIT_GUI",
+      objname: "ZFOOBARFEWFWE",
       objtype: "CLAS/OC",
       packagename: "$TMP"
     })
-    fail("Existing object should fail validation")
-  } catch (e) {
-    //
-  }
-})
+    expect(result.success).toBeTruthy()
+  })
+)
 
-test("loadTypes", async () => {
-  const c = create()
-  const result = await c.loadTypes()
-  expect(result).toBeDefined()
-  const groupinc = result.find(t => t.OBJECT_TYPE === "FUGR/I")
-  expect(groupinc).toBeDefined()
-})
+test(
+  "validateExistingClass",
+  runTest(async (c: ADTClient) => {
+    try {
+      await c.validateNewObject({
+        description: "a class",
+        objname: "ZCL_ABAPGIT_GUI",
+        objtype: "CLAS/OC",
+        packagename: "$TMP"
+      })
+      fail("Existing object should fail validation")
+    } catch (e) {
+      //
+    }
+  })
+)
 
-test("objectRegistration", async () => {
-  const c = create()
-  const result = await c.objectRegistrationInfo(
-    "/sap/bc/adt/programs/programs/zapidummytestprog1"
-  )
-  expect(result).toBeDefined()
-})
+test(
+  "loadTypes",
+  runTest(async (c: ADTClient) => {
+    const result = await c.loadTypes()
+    expect(result).toBeDefined()
+    const groupinc = result.find(t => t.OBJECT_TYPE === "FUGR/I")
+    expect(groupinc).toBeDefined()
+  })
+)
+
+test(
+  "objectRegistration",
+  runTest(async (c: ADTClient) => {
+    const result = await c.objectRegistrationInfo(
+      "/sap/bc/adt/programs/programs/zapidummytestprog1"
+    )
+    expect(result).toBeDefined()
+  })
+)
 
 // disabled as test case is missing
-// test("activate multiple", async () => {
-//   const c = create()
+// test("activate multiple", runTest(async (c: ADTClient) => {
+//
 //   let result = await c.activate(
 //     "ZCL_FOOBAR",
 //     "/sap/bc/adt/oo/classes/zcl_foobar"
@@ -417,183 +473,202 @@ test("objectRegistration", async () => {
 //   const inactive = inactiveObjectsInResults(result)
 //   result = await c.activate(inactive)
 //   expect(result.success).toBeTruthy()
-// })
+// }))
 
-test("lock table", async () => {
-  const c = create()
-  c.stateful = session_types.stateful
-  try {
-    const handle = await c.lock("/sap/bc/adt/ddic/tables/zapiadtdummytabl")
-    await c.unLock(
-      "/sap/bc/adt/ddic/tables/zapiadtdummytabl",
-      handle.LOCK_HANDLE
+test(
+  "lock table",
+  runTest(async (c: ADTClient) => {
+    c.stateful = session_types.stateful
+    try {
+      const handle = await c.lock("/sap/bc/adt/ddic/tables/zapiadtdummytabl")
+      await c.unLock(
+        "/sap/bc/adt/ddic/tables/zapiadtdummytabl",
+        handle.LOCK_HANDLE
+      )
+    } catch (e) {
+      eat404(e) // not found on older systems
+    } finally {
+      await c.dropSession()
+    }
+  })
+)
+
+test(
+  "syntax ckeck",
+  runTest(async (c: ADTClient) => {
+    const messages = await c.syntaxCheck(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop",
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+      `FUNCTION-POOL zapidummyfoobar.\n raise exception type cx_root.\n  DATA foo`
     )
-  } catch (e) {
-    eat404(e) // not found on older systems
-  } finally {
-    await c.dropSession()
-  }
-})
+    expect(messages).toBeDefined()
+    expect(messages.length).toBe(2)
+    expect(messages[1].offset).toBe(2)
+    expect(messages[1].line).toBe(3)
+    expect(messages[0].severity).toBe("E")
+    const quoteFound = messages[0].text.includes("&quot;")
+    expect(quoteFound).toBeFalsy()
+  })
+)
 
-test("syntax ckeck", async () => {
-  const c = create()
-  const messages = await c.syntaxCheck(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop",
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
-    `FUNCTION-POOL zapidummyfoobar.\n raise exception type cx_root.\n  DATA foo`
-  )
-  expect(messages).toBeDefined()
-  expect(messages.length).toBe(2)
-  expect(messages[1].offset).toBe(2)
-  expect(messages[1].line).toBe(3)
-  expect(messages[0].severity).toBe("E")
-  const quoteFound = messages[0].text.includes("&quot;")
-  expect(quoteFound).toBeFalsy()
-})
+test(
+  "code completion",
+  runTest(async (c: ADTClient) => {
+    const proposals = await c.codeCompletion(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+      `FUNCTION-POOL zapidummyfoobar.\nDAT\ndata:foo.`,
+      2,
+      3
+    )
+    expect(proposals).toBeDefined()
+    expect(proposals.length).toBeGreaterThan(0)
+    const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "DATA")
+    expect(dataprop).toBeDefined()
+  })
+)
 
-test("code completion", async () => {
-  const c = create()
-  const proposals = await c.codeCompletion(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
-    `FUNCTION-POOL zapidummyfoobar.\nDAT\ndata:foo.`,
-    2,
-    3
-  )
-  expect(proposals).toBeDefined()
-  expect(proposals.length).toBeGreaterThan(0)
-  const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "DATA")
-  expect(dataprop).toBeDefined()
-})
+test(
+  "code completion field-symbol",
+  runTest(async (c: ADTClient) => {
+    const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo.field-symbols:<foo> type any.\nassign foo to     `
+    const proposals = await c.codeCompletion(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+      source,
+      3,
+      14
+    )
+    expect(proposals).toBeDefined()
+    expect(proposals.length).toBeGreaterThan(0)
+    const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "<FOO>")
+    expect(dataprop).toBeDefined()
+  })
+)
 
-test("code completion field-symbol", async () => {
-  const c = create()
-  const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo.field-symbols:<foo> type any.\nassign foo to     `
-  const proposals = await c.codeCompletion(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
-    source,
-    3,
-    14
-  )
-  expect(proposals).toBeDefined()
-  expect(proposals.length).toBeGreaterThan(0)
-  const dataprop = proposals.find(p => p.IDENTIFIER.toUpperCase() === "<FOO>")
-  expect(dataprop).toBeDefined()
-})
-
-test("code completion full", async () => {
-  const c = create()
-  const result = await c.codeCompletionFull(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
-    `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table.\nform x.\ncreate object foo`,
-    4,
-    17,
-    "FOO"
-  )
-  expect(result).toBeDefined()
-  expect(result).toMatch(/container/gi)
-})
+test(
+  "code completion full",
+  runTest(async (c: ADTClient) => {
+    const result = await c.codeCompletionFull(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+      `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table.\nform x.\ncreate object foo`,
+      4,
+      17,
+      "FOO"
+    )
+    expect(result).toBeDefined()
+    expect(result).toMatch(/container/gi)
+  })
+)
 
 // not supported in older releases
-test("code completion elements", async () => {
-  const c = create()
-  const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table`
-  const include =
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
-  const info = await c.codeCompletionElement(include, source, 2, 34)
-  if (isString(info)) expect(info.length).toBeGreaterThan(2)
-  else {
-    expect(info).toBeDefined()
-    expect(info.components!.length).toBeGreaterThan(1)
-  }
-})
+test(
+  "code completion elements",
+  runTest(async (c: ADTClient) => {
+    const source = `FUNCTION-POOL zapidummyfoobar.\ndata:foo type ref to cl_salv_table`
+    const include =
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
+    const info = await c.codeCompletionElement(include, source, 2, 34)
+    if (isString(info)) expect(info.length).toBeGreaterThan(2)
+    else {
+      expect(info).toBeDefined()
+      expect(info.components!.length).toBeGreaterThan(1)
+    }
+  })
+)
 
-test("code references", async () => {
-  const c = create()
-  const source = `FUNCTION-POOL zapidummyfoobar.\ndata:grid type ref to cl_salv_table.\nif grid is bound.endif.`
-  const include =
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
-  const definitionLocation = await c.findDefinition(include, source, 3, 3, 7)
-  expect(definitionLocation).toBeDefined()
-  expect(definitionLocation.url).toBe(include)
-  expect(definitionLocation.line).toBe(2)
-  expect(definitionLocation.column).toBe(5)
-})
+test(
+  "code references",
+  runTest(async (c: ADTClient) => {
+    const source = `FUNCTION-POOL zapidummyfoobar.\ndata:grid type ref to cl_salv_table.\nif grid is bound.endif.`
+    const include =
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
+    const definitionLocation = await c.findDefinition(include, source, 3, 3, 7)
+    expect(definitionLocation).toBeDefined()
+    expect(definitionLocation.url).toBe(include)
+    expect(definitionLocation.line).toBe(2)
+    expect(definitionLocation.column).toBe(5)
+  })
+)
 
-test("Usage references", async () => {
-  jest.setTimeout(8000) // this usually takes longer than the default 5000
-  try {
-    const c = create()
-    const include = "/sap/bc/adt/oo/classes/zapidummyfoobar"
-    const references = await c.usageReferences(include)
+test(
+  "Usage references",
+  runTest(async (c: ADTClient) => {
+    jest.setTimeout(8000) // this usually takes longer than the default 5000
+    try {
+      const include = "/sap/bc/adt/oo/classes/zapidummyfoobar"
+      const references = await c.usageReferences(include)
 
-    expect(references).toBeDefined()
-    expect(references.length).toBeGreaterThan(2)
+      expect(references).toBeDefined()
+      expect(references.length).toBeGreaterThan(2)
 
-    const references2 = await c.usageReferences(include, 1, 5)
+      const references2 = await c.usageReferences(include, 1, 5)
 
-    expect(references2).toBeDefined()
-    expect(references2.length).toBeGreaterThan(2)
-    expect(references2[1].objectIdentifier.length).toBeGreaterThan(0)
+      expect(references2).toBeDefined()
+      expect(references2.length).toBeGreaterThan(2)
+      expect(references2[1].objectIdentifier.length).toBeGreaterThan(0)
 
-    const snippets = await c.usageReferenceSnippets(references)
-    expect(snippets).toBeDefined()
+      const snippets = await c.usageReferenceSnippets(references)
+      expect(snippets).toBeDefined()
 
-    snippets.forEach(o => {
-      {
-        const ref = references.find(
-          r => r.objectIdentifier === o.objectIdentifier
-        )
-        expect(ref).toBeDefined()
-        expect(ref && ref["adtcore:type"]).toBeTruthy()
-        o.snippets.forEach(s =>
-          expect(s.uri.start && s.uri.start.line).toBeDefined()
-        )
-      }
-    })
-  } finally {
-    jest.setTimeout(5000)
-  }
-})
+      snippets.forEach(o => {
+        {
+          const ref = references.find(
+            r => r.objectIdentifier === o.objectIdentifier
+          )
+          expect(ref).toBeDefined()
+          expect(ref && ref["adtcore:type"]).toBeTruthy()
+          o.snippets.forEach(s =>
+            expect(s.uri.start && s.uri.start.line).toBeDefined()
+          )
+        }
+      })
+    } finally {
+      jest.setTimeout(5000)
+    }
+  })
+)
 
-test("fix proposals", async () => {
-  const c = create()
-  const source = `FUNCTION-POOL zapidummyfoobar.\nclass fo definition.\npublic section.
+test(
+  "fix proposals",
+  runTest(async (c: ADTClient) => {
+    const source = `FUNCTION-POOL zapidummyfoobar.\nclass fo definition.\npublic section.
   methods bar.\nendclass.\nclass fo implementation.\nendclass."<`
-  const include =
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
-  const fixProposals = await c.fixProposals(include, source, 4, 10)
-  expect(fixProposals).toBeDefined()
-  expect(fixProposals.length).toBeGreaterThan(0)
-  expect(fixProposals[0]["adtcore:type"]).toBe("add_unimplemented_method")
-  const edits = await c.fixEdits(fixProposals[0], source)
-  expect(edits.length).toBeGreaterThan(0)
-  const edit = edits[0]
-  expect(edit && edit.content.match(/method\s+bar\./)).toBeTruthy()
-  expect(edit && edit.range.start.line).toBe(7)
-  expect(edit && edit.range.start.column).toBe(0)
-})
+    const include =
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
+    const fixProposals = await c.fixProposals(include, source, 4, 10)
+    expect(fixProposals).toBeDefined()
+    expect(fixProposals.length).toBeGreaterThan(0)
+    expect(fixProposals[0]["adtcore:type"]).toBe("add_unimplemented_method")
+    const edits = await c.fixEdits(fixProposals[0], source)
+    expect(edits.length).toBeGreaterThan(0)
+    const edit = edits[0]
+    expect(edit && edit.content.match(/method\s+bar\./)).toBeTruthy()
+    expect(edit && edit.range.start.line).toBe(7)
+    expect(edit && edit.range.start.column).toBe(0)
+  })
+)
 
-test("fix proposals reverse", async () => {
-  const c = create()
-
-  const source = `CLASS zapiadt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .ENDCLASS.
+test(
+  "fix proposals reverse",
+  runTest(async (c: ADTClient) => {
+    const source = `CLASS zapiadt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .ENDCLASS.
 CLASS zapiadt_testcase_class1 IMPLEMENTATION.
   METHOD foo.
   ENDMETHOD.
 ENDCLASS.`
-  const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+    const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
 
-  const fixProposals = await c.fixProposals(uri, source, 3, 10)
-  expect(fixProposals).toBeDefined()
-  expect(fixProposals.length).toBeGreaterThan(0)
-  expect(fixProposals[0]["adtcore:type"]).toBe("create_method_def")
-  const edits = await c.fixEdits(fixProposals[0], source)
-  expect(edits.length).toBeGreaterThan(0)
-  const edit = edits[0]
-  expect(edit && edit.content.match(/methods\s+foo\./gi)).toBeTruthy()
-  expect(edit && edit.range.start.line).toBe(1)
-  expect(edit && edit.range.start.column).toBe(63)
-})
+    const fixProposals = await c.fixProposals(uri, source, 3, 10)
+    expect(fixProposals).toBeDefined()
+    expect(fixProposals.length).toBeGreaterThan(0)
+    expect(fixProposals[0]["adtcore:type"]).toBe("create_method_def")
+    const edits = await c.fixEdits(fixProposals[0], source)
+    expect(edits.length).toBeGreaterThan(0)
+    const edit = edits[0]
+    expect(edit && edit.content.match(/methods\s+foo\./gi)).toBeTruthy()
+    expect(edit && edit.range.start.line).toBe(1)
+    expect(edit && edit.range.start.column).toBe(63)
+  })
+)
 const findBy = <T, K extends keyof T>(
   array: T[],
   fname: K,
@@ -609,174 +684,214 @@ const findBy = <T, K extends keyof T>(
       })
 }
 
-test("unit test", async () => {
-  const c = create()
-  const testResults = await c.runUnitTest(
-    "/sap/bc/adt/programs/programs/zapiadtunitcases"
-  )
-  expect(testResults).toBeDefined()
-  expect(testResults.length).toBe(2)
-  // expect some test methods to be ok, some to fail
-  const class1 = findBy(testResults, "adtcore:name", "LCL_TEST1")
-  expect(class1).toBeDefined()
-  if (class1) {
-    const testok = findBy(class1.testmethods, "adtcore:name", "TEST_OK")
-    expect(testok).toBeDefined()
-    expect(testok!.alerts.length).toBe(0)
-    const testfail = findBy(class1.testmethods, "adtcore:name", "TEST_FAILURE")
-    expect(testfail).toBeDefined()
-    expect(testfail!.alerts.length).toBe(2)
-    const failure = findBy(
-      testfail!.alerts,
-      "kind",
-      UnitTestAlertKind.failedAssertion
+test(
+  "unit test",
+  runTest(async (c: ADTClient) => {
+    const testResults = await c.runUnitTest(
+      "/sap/bc/adt/programs/programs/zapiadtunitcases"
     )
-    expect(failure).toBeDefined()
-    expect(failure!.stack[0]).toBeDefined()
-  }
-})
+    expect(testResults).toBeDefined()
+    expect(testResults.length).toBe(2)
+    // expect some test methods to be ok, some to fail
+    const class1 = findBy(testResults, "adtcore:name", "LCL_TEST1")
+    expect(class1).toBeDefined()
+    if (class1) {
+      const testok = findBy(class1.testmethods, "adtcore:name", "TEST_OK")
+      expect(testok).toBeDefined()
+      expect(testok!.alerts.length).toBe(0)
+      const testfail = findBy(
+        class1.testmethods,
+        "adtcore:name",
+        "TEST_FAILURE"
+      )
+      expect(testfail).toBeDefined()
+      expect(testfail!.alerts.length).toBe(2)
+      const failure = findBy(
+        testfail!.alerts,
+        "kind",
+        UnitTestAlertKind.failedAssertion
+      )
+      expect(failure).toBeDefined()
+      expect(failure!.stack[0]).toBeDefined()
+    }
+  })
+)
 
-test("class components", async () => {
-  const c = create()
-  const structure = await c.classComponents(
-    "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
-  )
-  expect(structure).toBeDefined()
-  expect(structure["adtcore:name"]).toBe("ZAPIADT_TESTCASE_CLASS1")
-  const met = structure.components.find(
-    co =>
-      !!co["adtcore:type"].match(/CLAS\/OO|M/) &&
-      co["adtcore:name"] === "DOSOMETHINGPRIVATE"
-  )
-  expect(met).toBeDefined()
-  expect(met && met.links && met.links.length).toBeGreaterThan(0)
-})
-
-test("source fragments", async () => {
-  const c = create()
-  const fragment = await c.fragmentMappings(
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
-    "FUGR/PD",
-    "FOO"
-  )
-  expect(fragment).toBeDefined()
-  expect(fragment.line).toBe(4)
-})
-
-test("syntax ckeck bis", async () => {
-  const c = create()
-  const messages = await c.syntaxCheck(
-    "/sap/bc/adt/programs/includes/zadttestincludeinc",
-    "/sap/bc/adt/programs/includes/zadttestincludeinc/source/main",
-    `form foo.\nendform.\naaa`,
-    "/sap/bc/adt/programs/programs/zadttestinclude1"
-  )
-  expect(messages).toBeDefined()
-  expect(messages.length).toBe(1)
-  expect(messages[0].severity).toBe("E")
-})
-
-test("FM definition", async () => {
-  const c = create()
-  const source =
-    "*&---------------------------------------------------------------------*\n" +
-    "*& Report ZADTTESTINCLUDE1\n" +
-    "*&---------------------------------------------------------------------*\n" +
-    "*&\n" +
-    "*&---------------------------------------------------------------------*\n" +
-    "REPORT ZADTTESTINCLUDE1.\n" +
-    "include ZADTTESTINCLUDEINC.\n" +
-    "START-OF-SELECTION.\n" +
-    "PERFORM foo.\n" +
-    "call FUNCTION 'ZAPIDUMMYFOOFUNC'."
-  const include = "/sap/bc/adt/programs/programs/zadttestinclude1/source/main"
-  const definitionLocation = await c.findDefinition(include, source, 10, 15, 21)
-  expect(definitionLocation).toBeDefined()
-  expect(definitionLocation.url.length).toBeGreaterThan(1)
-})
-
-test("Object types", async () => {
-  const c = create()
-  const types = await c.objectTypes()
-  const type = types.find(x => x.type === "PROG/P")
-  expect(type && type.name).toBe("REPO")
-})
-
-test("check types", async () => {
-  const c = create()
-  const types = await c.syntaxCheckTypes()
-  expect(types).toBeDefined()
-  const type = types.get("abapCheckRun")
-  expect(type && type.find(x => !!x.match("PROG"))).toBeDefined()
-})
-
-test("transport selection for older boxes", async () => {
-  const c = create()
-  const info = await c.transportInfo(
-    "/sap/bc/adt/programs/programs/ztestmu2/source/main",
-    "",
-    ""
-  )
-  expect(info).toBeDefined()
-  if (process.env.ADT_OLDSYSTEM)
-    expect(info.TRANSPORTS.length).toBeGreaterThan(1)
-})
-
-test("pretty printer", async () => {
-  const c = create()
-  const style = (await c.prettyPrinterSetting())["abapformatter:style"]
-  if (style === "none" || style === "keywordAuto") {
-    console.log(
-      chalk.yellowBright("Pretty printer doesn't change case, tests skipped")
+test(
+  "class components",
+  runTest(async (c: ADTClient) => {
+    const structure = await c.classComponents(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
     )
-    return
-  }
-  const uppercase = style === "toUpper" || style === "keywordUpper"
-  const unformatted = "RePort hello.write:/, 'Hello,world'."
-  const formatted = await c.prettyPrinter(unformatted)
-  expect(formatted).toBeDefined()
-  expect(formatted).toMatch(uppercase ? /REPORT/ : /report/)
-})
+    expect(structure).toBeDefined()
+    expect(structure["adtcore:name"]).toBe("ZAPIADT_TESTCASE_CLASS1")
+    const met = structure.components.find(
+      co =>
+        !!co["adtcore:type"].match(/CLAS\/OO|M/) &&
+        co["adtcore:name"] === "DOSOMETHINGPRIVATE"
+    )
+    expect(met).toBeDefined()
+    expect(met && met.links && met.links.length).toBeGreaterThan(0)
+  })
+)
 
-test("code references2", async () => {
-  const c = create()
-  const src = `REPORT ZADTTESTINCLUDE1.
+test(
+  "source fragments",
+  runTest(async (c: ADTClient) => {
+    const fragment = await c.fragmentMappings(
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main",
+      "FUGR/PD",
+      "FOO"
+    )
+    expect(fragment).toBeDefined()
+    expect(fragment.line).toBe(4)
+  })
+)
+
+test(
+  "syntax ckeck bis",
+  runTest(async (c: ADTClient) => {
+    const messages = await c.syntaxCheck(
+      "/sap/bc/adt/programs/includes/zadttestincludeinc",
+      "/sap/bc/adt/programs/includes/zadttestincludeinc/source/main",
+      `form foo.\nendform.\naaa`,
+      "/sap/bc/adt/programs/programs/zadttestinclude1"
+    )
+    expect(messages).toBeDefined()
+    expect(messages.length).toBe(1)
+    expect(messages[0].severity).toBe("E")
+  })
+)
+
+test(
+  "FM definition",
+  runTest(async (c: ADTClient) => {
+    const source =
+      "*&---------------------------------------------------------------------*\n" +
+      "*& Report ZADTTESTINCLUDE1\n" +
+      "*&---------------------------------------------------------------------*\n" +
+      "*&\n" +
+      "*&---------------------------------------------------------------------*\n" +
+      "REPORT ZADTTESTINCLUDE1.\n" +
+      "include ZADTTESTINCLUDEINC.\n" +
+      "START-OF-SELECTION.\n" +
+      "PERFORM foo.\n" +
+      "call FUNCTION 'ZAPIDUMMYFOOFUNC'."
+    const include = "/sap/bc/adt/programs/programs/zadttestinclude1/source/main"
+    const definitionLocation = await c.findDefinition(
+      include,
+      source,
+      10,
+      15,
+      21
+    )
+    expect(definitionLocation).toBeDefined()
+    expect(definitionLocation.url.length).toBeGreaterThan(1)
+  })
+)
+
+test(
+  "Object types",
+  runTest(async (c: ADTClient) => {
+    const types = await c.objectTypes()
+    const type = types.find(x => x.type === "PROG/P")
+    expect(type && type.name).toBe("REPO")
+  })
+)
+
+test(
+  "check types",
+  runTest(async (c: ADTClient) => {
+    const types = await c.syntaxCheckTypes()
+    expect(types).toBeDefined()
+    const type = types.get("abapCheckRun")
+    expect(type && type.find(x => !!x.match("PROG"))).toBeDefined()
+  })
+)
+
+test(
+  "transport selection for older boxes",
+  runTest(async (c: ADTClient) => {
+    const info = await c.transportInfo(
+      "/sap/bc/adt/programs/programs/ztestmu2/source/main",
+      "",
+      ""
+    )
+    expect(info).toBeDefined()
+    if (process.env.ADT_OLDSYSTEM)
+      expect(info.TRANSPORTS.length).toBeGreaterThan(1)
+  })
+)
+
+test(
+  "pretty printer",
+  runTest(async (c: ADTClient) => {
+    const style = (await c.prettyPrinterSetting())["abapformatter:style"]
+    if (style === "none" || style === "keywordAuto") {
+      console.log(
+        chalk.yellowBright("Pretty printer doesn't change case, tests skipped")
+      )
+      return
+    }
+    const uppercase = style === "toUpper" || style === "keywordUpper"
+    const unformatted = "RePort hello.write:/, 'Hello,world'."
+    const formatted = await c.prettyPrinter(unformatted)
+    expect(formatted).toBeDefined()
+    expect(formatted).toMatch(uppercase ? /REPORT/ : /report/)
+  })
+)
+
+test(
+  "code references2",
+  runTest(async (c: ADTClient) => {
+    const src = `REPORT ZADTTESTINCLUDE1.
   DATA:foo TYPE TABLE OF string.
   FIELD-SYMBOLS:<fs> LIKE LINE OF foo.
   LOOP AT foo ASSIGNING <fs>.
     cl_http_utility=>escape_html( '' ).
     cl_http_utility=>if_http_utility~escape_html( '' ).
   ENDLOOP.`
-  const incl = "/sap/bc/adt/programs/programs/zadttestinclude1/source/main"
-  const definitionLocation = await c.findDefinition(incl, src, 5, 21, 32, true)
-  expect(definitionLocation).toBeDefined()
-  expect(definitionLocation.url).toBe(
-    "/sap/bc/adt/oo/classes/cl_http_utility/source/main"
-  )
-  expect(definitionLocation.line).toBe(460)
-  expect(definitionLocation.column).toBe(7)
-})
+    const incl = "/sap/bc/adt/programs/programs/zadttestinclude1/source/main"
+    const definitionLocation = await c.findDefinition(
+      incl,
+      src,
+      5,
+      21,
+      32,
+      true
+    )
+    expect(definitionLocation).toBeDefined()
+    expect(definitionLocation.url).toBe(
+      "/sap/bc/adt/oo/classes/cl_http_utility/source/main"
+    )
+    expect(definitionLocation.line).toBe(460)
+    expect(definitionLocation.column).toBe(7)
+  })
+)
 
-test("type hierarchy children", async () => {
-  const c = create()
-  const source = `INTERFACE zapiadt_testcase_intf1 PUBLIC .
+test(
+  "type hierarchy children",
+  runTest(async (c: ADTClient) => {
+    const source = `INTERFACE zapiadt_testcase_intf1 PUBLIC .
   METHODS dosomething IMPORTING x TYPE string RETURNING VALUE(y) TYPE string.
 ENDINTERFACE.`
-  const descendents = await c.typeHierarchy(
-    "/sap/bc/adt/oo/interfaces/zapiadt_testcase_intf1/source/main",
-    source,
-    1,
-    11
-  )
-  expect(descendents).toBeDefined()
-  expect(
-    descendents.find(n => n.name.toUpperCase() === "ZAPIADT_TESTCASE_INTF1")
-  ).toBeDefined()
-})
+    const descendents = await c.typeHierarchy(
+      "/sap/bc/adt/oo/interfaces/zapiadt_testcase_intf1/source/main",
+      source,
+      1,
+      11
+    )
+    expect(descendents).toBeDefined()
+    expect(
+      descendents.find(n => n.name.toUpperCase() === "ZAPIADT_TESTCASE_INTF1")
+    ).toBeDefined()
+  })
+)
 
-test("type hierarchy parents", async () => {
-  const c = create()
-  const source = `CLASS zapiadt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .
+test(
+  "type hierarchy parents",
+  runTest(async (c: ADTClient) => {
+    const source = `CLASS zapiadt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .
   PUBLIC SECTION.
     INTERFACES zapiadt_testcase_intf1 .
     DATA lastx TYPE string .
@@ -788,187 +903,216 @@ CLASS zapiadt_testcase_class1 IMPLEMENTATION.
     lastx = x.
   ENDMETHOD.
 ENDCLASS.`
-  const ascendents = await c.typeHierarchy(
-    "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main",
-    source,
-    1,
-    11,
-    true
-  )
-  expect(ascendents).toBeDefined()
-  expect(
-    ascendents.find(n => n.name.toLowerCase() === "zapiadt_testcase_intf1")
-  ).toBeDefined()
-})
+    const ascendents = await c.typeHierarchy(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main",
+      source,
+      1,
+      11,
+      true
+    )
+    expect(ascendents).toBeDefined()
+    expect(
+      ascendents.find(n => n.name.toLowerCase() === "zapiadt_testcase_intf1")
+    ).toBeDefined()
+  })
+)
 
-test("user transports", async () => {
-  const c = create()
-  const transports = await c.userTransports(process.env.ADT_USER!)
-  expect(transports.workbench.length).toBeGreaterThan(0)
-  let hit: any
-  for (const s of transports.workbench)
-    for (const t of s.modifiable)
-      if (t["tm:number"] === process.env.ADT_TRANS) hit = t
-  expect(hit).toBeDefined()
-  expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
-})
+test(
+  "user transports",
+  runTest(async (c: ADTClient) => {
+    const transports = await c.userTransports(process.env.ADT_USER!)
+    expect(transports.workbench.length).toBeGreaterThan(0)
+    let hit: any
+    for (const s of transports.workbench)
+      for (const t of s.modifiable)
+        if (t["tm:number"] === process.env.ADT_TRANS) hit = t
+    expect(hit).toBeDefined()
+    expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
+  })
+)
 
-test("System users", async () => {
-  const c = create()
-  const users = await c.systemUsers()
-  expect(users.length).toBeGreaterThan(0)
-  expect(
-    users.find(u => u.id.toUpperCase() === process.env.ADT_USER!.toUpperCase())
-  ).toBeDefined()
-})
+test(
+  "System users",
+  runTest(async (c: ADTClient) => {
+    const users = await c.systemUsers()
+    expect(users.length).toBeGreaterThan(0)
+    expect(
+      users.find(
+        u => u.id.toUpperCase() === process.env.ADT_USER!.toUpperCase()
+      )
+    ).toBeDefined()
+  })
+)
 
-test("Transportable object", async () => {
-  const c = create()
-  const reference = await c.transportReference(
-    "R3TR",
-    "CLAS",
-    "ZAPIADT_TESTCASE_CLASS1"
-  )
+test(
+  "Transportable object",
+  runTest(async (c: ADTClient) => {
+    const reference = await c.transportReference(
+      "R3TR",
+      "CLAS",
+      "ZAPIADT_TESTCASE_CLASS1"
+    )
 
-  expect(reference).toBe("/sap/bc/adt/oo/classes/zapiadt_testcase_class1")
-})
+    expect(reference).toBe("/sap/bc/adt/oo/classes/zapiadt_testcase_class1")
+  })
+)
 
-test("stateless clone", async () => {
-  const c = create()
-  const obj = "/sap/bc/adt/programs/programs/zapidummytestprog1"
-  c.stateful = session_types.stateful
-  try {
-    const clone = c.statelessClone
-    expect(clone.statelessClone).toBe(clone)
+test(
+  "stateless clone",
+  runTest(async (c: ADTClient) => {
+    const obj = "/sap/bc/adt/programs/programs/zapidummytestprog1"
+    c.stateful = session_types.stateful
     try {
-      clone.stateful = session_types.stateful
-      fail("Stateless clone must stay stateless")
-    } catch (e) {
-      // ignore
+      const clone = c.statelessClone
+      expect(clone.statelessClone).toBe(clone)
+      try {
+        clone.stateful = session_types.stateful
+        fail("Stateless clone must stay stateless")
+      } catch (e) {
+        // ignore
+      }
+      const lock = await c.lock(obj)
+      await clone.objectStructure(obj)
+      try {
+        const lock2 = await c.lock(obj)
+        fail("lock didn't survive read on stateless clone")
+      } catch (e) {
+        // ignore
+      }
+      expect(clone.stateful).toBe(session_types.stateless)
+      const result = await clone.objectRegistrationInfo(obj)
+      expect(result).toBeDefined()
+    } finally {
+      c.dropSession()
     }
-    const lock = await c.lock(obj)
-    await clone.objectStructure(obj)
-    try {
-      const lock2 = await c.lock(obj)
-      fail("lock didn't survive read on stateless clone")
-    } catch (e) {
-      // ignore
-    }
-    expect(clone.stateful).toBe(session_types.stateless)
-    const result = await clone.objectRegistrationInfo(obj)
-    expect(result).toBeDefined()
-  } finally {
-    c.dropSession()
-  }
-})
+  })
+)
 
-test("revisions of func by URL", async () => {
-  const c = create()
-  const obj =
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc"
-  const revisions = await c.revisions(obj)
-  expect(revisions).toBeTruthy()
-  expect(revisions[0]).toBeTruthy()
-  expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
-})
-
-test("revisions of func by structure", async () => {
-  const c = create()
-  const obj =
-    "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc"
-  const str = await c.objectStructure(obj)
-  const revisions = await c.revisions(str)
-  expect(revisions).toBeTruthy()
-  expect(revisions[0]).toBeTruthy()
-  expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
-})
-
-test("revisions of class includes", async () => {
-  const c = create()
-  const obj = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
-  const v = async (include?: classIncludes) => {
-    const revisions = await c.revisions(obj, include)
+test(
+  "revisions of func by URL",
+  runTest(async (c: ADTClient) => {
+    const obj =
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc"
+    const revisions = await c.revisions(obj)
     expect(revisions).toBeTruthy()
     expect(revisions[0]).toBeTruthy()
     expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
-  }
-  await v()
-  await v("main")
-  await v("testclasses")
-  await v("definitions")
-})
+  })
+)
 
-test("code references in include", async () => {
-  const c = create()
-  const s = `data:foo type REF TO cl_salv_table.`
-  const i =
-    "/sap/bc/adt/programs/includes/zapiadt_testcase_include1/source/main"
-  const m = "/sap/bc/adt/programs/programs/zapiadt_testcase_program1"
-  const definitionLocation = await c.findDefinition(i, s, 1, 22, 34, false, m)
-  expect(definitionLocation).toBeDefined()
-  expect(definitionLocation.url).toBe(
-    "/sap/bc/adt/oo/classes/cl_salv_table/source/main"
-  )
-})
+test(
+  "revisions of func by structure",
+  runTest(async (c: ADTClient) => {
+    const obj =
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc"
+    const str = await c.objectStructure(obj)
+    const revisions = await c.revisions(str)
+    expect(revisions).toBeTruthy()
+    expect(revisions[0]).toBeTruthy()
+    expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
+  })
+)
 
-test("code references in include with namespace", async () => {
-  const c = create()
-  const s = `form foo./ui5/cl_ui5_app_index_log=>get_instance( ).endform.`
-  const i =
-    "/sap/bc/adt/programs/includes/%2fui5%2f_index_calculate_f01/source/main"
-  const m = "/sap/bc/adt/programs/programs/%2fui5%2fapp_index_calculate"
-  const definitionLocation = await c.findDefinition(i, s, 1, 15, 48, false, m)
-  expect(definitionLocation).toBeDefined()
-  expect(definitionLocation.url).toBe(
-    "/sap/bc/adt/oo/classes/%2fui5%2fcl_ui5_app_index_log/source/main"
-  )
-})
+test(
+  "revisions of class includes",
+  runTest(async (c: ADTClient) => {
+    const obj = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
+    const v = async (include?: classIncludes) => {
+      const revisions = await c.revisions(obj, include)
+      expect(revisions).toBeTruthy()
+      expect(revisions[0]).toBeTruthy()
+      expect(revisions[0].version.match(/[a-zA-Z]\w\wK\d+/)).toBeTruthy()
+    }
+    await v()
+    await v("main")
+    await v("testclasses")
+    await v("definitions")
+  })
+)
 
-test("abapGitRepos", async () => {
-  const c = create()
-  if (await hasAbapGit(c)) {
-    const repos = await c.gitRepos()
-    expect(repos).toBeDefined()
-    expect(repos.length).toBeGreaterThan(0)
-    expect(repos[0].sapPackage).toBeDefined()
-  } else {
-    console.log(
-      chalk.yellowBright(
-        "ABAPGit backend not installed, relevant tests skipped"
+test(
+  "code references in include",
+  runTest(async (c: ADTClient) => {
+    const s = `data:foo type REF TO cl_salv_table.`
+    const i =
+      "/sap/bc/adt/programs/includes/zapiadt_testcase_include1/source/main"
+    const m = "/sap/bc/adt/programs/programs/zapiadt_testcase_program1"
+    const definitionLocation = await c.findDefinition(i, s, 1, 22, 34, false, m)
+    expect(definitionLocation).toBeDefined()
+    expect(definitionLocation.url).toBe(
+      "/sap/bc/adt/oo/classes/cl_salv_table/source/main"
+    )
+  })
+)
+
+test(
+  "code references in include with namespace",
+  runTest(async (c: ADTClient) => {
+    const s = `form foo./ui5/cl_ui5_app_index_log=>get_instance( ).endform.`
+    const i =
+      "/sap/bc/adt/programs/includes/%2fui5%2f_index_calculate_f01/source/main"
+    const m = "/sap/bc/adt/programs/programs/%2fui5%2fapp_index_calculate"
+    const definitionLocation = await c.findDefinition(i, s, 1, 15, 48, false, m)
+    expect(definitionLocation).toBeDefined()
+    expect(definitionLocation.url).toBe(
+      "/sap/bc/adt/oo/classes/%2fui5%2fcl_ui5_app_index_log/source/main"
+    )
+  })
+)
+
+test(
+  "abapGitRepos",
+  runTest(async (c: ADTClient) => {
+    if (await hasAbapGit(c)) {
+      const repos = await c.gitRepos()
+      expect(repos).toBeDefined()
+      expect(repos.length).toBeGreaterThan(0)
+      expect(repos[0].sapPackage).toBeDefined()
+    } else {
+      console.log(
+        chalk.yellowBright(
+          "ABAPGit backend not installed, relevant tests skipped"
+        )
       )
-    )
-  }
-})
+    }
+  })
+)
 
-test("abapGitxternalRepoInfo", async () => {
-  const c = create()
-  if (await hasAbapGit(c)) {
-    const repoinfo = await c.gitExternalRepoInfo(
-      "https://github.com/marcellourbani/abapGit.git"
-    )
-    expect(repoinfo).toBeDefined()
-    expect(repoinfo.access_mode).toBe("PUBLIC")
-    expect(repoinfo.branches[0]).toBeDefined()
-  }
-})
+test(
+  "abapGitxternalRepoInfo",
+  runTest(async (c: ADTClient) => {
+    if (await hasAbapGit(c)) {
+      const repoinfo = await c.gitExternalRepoInfo(
+        "https://github.com/marcellourbani/abapGit.git"
+      )
+      expect(repoinfo).toBeDefined()
+      expect(repoinfo.access_mode).toBe("PUBLIC")
+      expect(repoinfo.branches[0]).toBeDefined()
+    }
+  })
+)
 
-test("ABAP documentation", async () => {
-  const c = create()
-  const source = `INTERFACE zapiadt_testcase_intf1 PUBLIC .
+test(
+  "ABAP documentation",
+  runTest(async (c: ADTClient) => {
+    const source = `INTERFACE zapiadt_testcase_intf1 PUBLIC .
   METHODS dosomething IMPORTING x TYPE string RETURNING VALUE(y) TYPE string.
 ENDINTERFACE.`
-  const docu = await c.abapDocumentation(
-    "/sap/bc/adt/oo/interfaces/zapiadt_testcase_intf1/source/main",
-    source,
-    1,
-    3
-  )
-  expect(docu).toBeDefined()
-  expect(docu.match(/interface/i)).toBeDefined()
-})
+    const docu = await c.abapDocumentation(
+      "/sap/bc/adt/oo/interfaces/zapiadt_testcase_intf1/source/main",
+      source,
+      1,
+      3
+    )
+    expect(docu).toBeDefined()
+    expect(docu.match(/interface/i)).toBeDefined()
+  })
+)
 
-test("Console application/IF_OO_ADT_CLASSRUN", async () => {
-  const c = create()
-  const result = await c.runClass("ZAPIADT_TESTCASE_CONSOLE")
-  expect(result).toBe("Hello world!\n\n")
-})
+test(
+  "Console application/IF_OO_ADT_CLASSRUN",
+  runTest(async (c: ADTClient) => {
+    const result = await c.runClass("ZAPIADT_TESTCASE_CONSOLE")
+    expect(result).toBe("Hello world!\n\n")
+  })
+)
