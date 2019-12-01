@@ -1,6 +1,8 @@
 import { AdtHTTP } from "../AdtHTTP"
 import { boolFromAbap, fullParse, xmlArray, xmlNode } from "../utilities"
 
+import { parse } from "fast-xml-parser"
+
 export interface GitRepo {
   key: string
   sapPackage: string
@@ -33,7 +35,11 @@ export interface GitObject {
 
 export async function gitRepos(h: AdtHTTP) {
   const response = await h.request(`/sap/bc/adt/abapgit/repos`)
-  const raw = fullParse(response.body)
+  const raw = parse(response.body, {
+    ignoreAttributes: false,
+    parseAttributeValue: false,
+    parseNodeValue: false
+  })
   return xmlArray(raw, "repositories", "repository").map((x: any) => {
     const {
       key,
@@ -146,4 +152,14 @@ export async function pullRepo(
   })
 
   return parseObjects(response.body)
+}
+
+export async function unlinkRepo(h: AdtHTTP, repoId: string) {
+  const headers = {
+    "Content-Type": "application/abapgit.adt.repo.v1+xml"
+  }
+  await h.request(`/sap/bc/adt/abapgit/repos/${repoId}`, {
+    method: "DELETE",
+    headers
+  })
 }

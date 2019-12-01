@@ -10,7 +10,8 @@ import {
   hasPackageOptions,
   isGroupType,
   NewPackageOptions,
-  TransportsOfUser
+  TransportsOfUser,
+  unlinkRepo
 } from "../api"
 import { ObjectValidateOptions } from "./../api"
 import { hasAbapGit, runTest } from "./login"
@@ -472,18 +473,32 @@ test("Create a test classes", async () => {
   })
 })
 
-test("create AbapGit Repo", async () => {
+test("create and pull AbapGit Repo", async () => {
   if (!enableWrite(new Date())) return
-  const packagename = "$ABAPGITTESTSCLAS"
-
+  const PACKAGEURL =
+    "https://github.com/marcellourbani/adt_api_dummy_test_repository.git"
+  const PACKAGENAME = "$ADTAPI_TEST_GIT_REPO_DUMMY"
+  const OBJECT = "/sap/bc/adt/programs/programs/zadtapi_test_git_program_dummy"
+  jest.setTimeout(25000) // 5 seconds are a bit tight
   await doRunTest(async (c: ADTClient) => {
     if (await hasAbapGit(c)) {
-      // cleanup
-      await deleteObj("/sap/bc/adt/oo/classes/zcl_ag_unit_test", c)
-      await deleteObj(`/sap/bc/adt/packages/${packagename}`, c)
+      const getRepo = async () => {
+        const repos = await c.gitRepos()
+        for (const repo of repos.filter(r => r.sapPackage === PACKAGENAME))
+          return repo
+      }
+      const cleanup = async () => {
+        await deleteObj(OBJECT, c)
+        await deleteObj(`/sap/bc/adt/packages/${PACKAGENAME}`, c)
+        const repo = await getRepo()
+        if (repo) await c.gitUnlinkRepo(repo.key)
+      }
+
+      await cleanup()
+
       const options: NewPackageOptions = {
         description: "test Package creation",
-        name: packagename,
+        name: PACKAGENAME,
         objtype: "DEVC/K",
         parentName: "$TMP",
         parentPath: "/sap/bc/adt/packages/$TMP",
@@ -491,13 +506,22 @@ test("create AbapGit Repo", async () => {
         swcomp: "LOCAL",
         packagetype: "development"
       }
-      await createObj(options, `/sap/bc/adt/packages/${packagename}`, c)
-      const objects = await c.gitCreateRepo(
-        packagename,
-        "https://github.com/abapGit-tests/CLAS.git"
-      )
-      expect(objects).toBeDefined()
+      try {
+        await createObj(options, `/sap/bc/adt/packages/${PACKAGENAME}`, c)
+        const objects = await c.gitCreateRepo(PACKAGENAME, PACKAGEURL)
+        expect(objects).toBeDefined()
+        await deleteObj(OBJECT, c)
+        // object deleted, pull it
+        const repo = await getRepo()
+        if (repo) {
+          const pulledObjects = await c.gitPullRepo(repo.key)
+          expect(pulledObjects).toBeDefined()
+          const source = await c.getObjectSource(`${OBJECT}/source/main`)
+          expect(source).toBeDefined()
+        } else fail("new repository doesn't exits")
+      } finally {
+        await cleanup()
+      }
     }
   })
-  fail("foo")
 })

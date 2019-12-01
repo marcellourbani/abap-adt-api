@@ -9,6 +9,9 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 ### Added
 
 - sample test data
+- ABAPGIT repo CRUD
+- Package creation and deletion
+- logout from tests
 
 ### Changed
 

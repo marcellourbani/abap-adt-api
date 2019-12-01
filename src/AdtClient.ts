@@ -32,7 +32,6 @@ import {
   fragmentMappings,
   getObjectSource,
   gitRepos,
-  GroupValidateOptions,
   InactiveObject,
   isClassStructure,
   isCreatableTypeId,
@@ -46,11 +45,10 @@ import {
   objectRegistrationInfo,
   objectStructure,
   objectTypes,
-  ObjectValidateOptions,
-  PackageValidateOptions,
   prettyPrinter,
   prettyPrinterSetting,
   PrettyPrinterStyle,
+  pullRepo,
   revisions,
   runUnitTest,
   searchObject,
@@ -66,14 +64,14 @@ import {
   transportRelease,
   transportSetOwner,
   typeHierarchy,
+  unlinkRepo,
   unLock,
   UsageReference,
   usageReferences,
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions,
-  ValidationResult
+  ValidateOptions
 } from "./api"
 import { followUrl } from "./utilities"
 
@@ -660,5 +658,19 @@ export class ADTClient {
       user,
       password
     )
+  }
+
+  public gitPullRepo(
+    repoId: string,
+    branch = "refs/heads/master",
+    transport = "",
+    user = "",
+    password = ""
+  ) {
+    return pullRepo(this.h, repoId, branch, transport, user, password)
+  }
+
+  public gitUnlinkRepo(repoId: string) {
+    return unlinkRepo(this.h, repoId)
   }
 }
