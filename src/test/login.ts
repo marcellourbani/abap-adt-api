@@ -30,6 +30,7 @@ export const runTest = (f: (c: ADTClient) => Promise<void>) => {
     try {
       await f(c)
     } finally {
+      jest.setTimeout(5000) // restore the default 5000
       if (c.statelessClone.loggedin) c.statelessClone.logout()
       if (c.loggedin) c.logout()
     }

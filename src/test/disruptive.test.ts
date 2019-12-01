@@ -355,6 +355,7 @@ test("Create and delete a package", async () => {
 
 test("Release a transport", async () => {
   if (!enableWrite(new Date())) return
+  jest.setTimeout(8000) // this usually takes longer than the default 5000
   await doRunTest(async (c: ADTClient) => {
     const transp = await c.createTransport(
       "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
