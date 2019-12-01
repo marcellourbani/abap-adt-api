@@ -21,6 +21,50 @@ function enableWrite(time1: Date) {
   const diff = time2.getTime() - time1.getTime()
   return diff > 1000 || process.env.ADT_ENABLE_ALL === "YES"
 }
+
+async function deleteObj(object: string, c: ADTClient, rethrow = false) {
+  let result
+  try {
+    c.stateful = session_types.stateful
+    const handle = await c.lock(object)
+    result = await c.deleteObject(object, handle.LOCK_HANDLE)
+  } catch (e) {
+    // most probably doesn't exist
+    if (rethrow) throw e
+  }
+  await c.dropSession()
+  return result
+}
+
+async function createObj(
+  options: NewObjectOptions,
+  newobject: string,
+  c: ADTClient
+) {
+  if (isGroupType(options.objtype)) return
+
+  const baseValidateOptions = {
+    ...options,
+    objname: options.name,
+    packagename: options.parentName
+  } as ObjectValidateOptions // typescript is not smart enough to rule out grouptypes, so I have to cast
+  const validateOptions = hasPackageOptions(options)
+    ? {
+        ...baseValidateOptions,
+        swcomp: options.swcomp,
+        transportLayer: options.transportLayer,
+        packagetype: options.description
+      }
+    : baseValidateOptions
+
+  const vresult = await c.validateNewObject(validateOptions)
+  expect(vresult).toBeDefined()
+  expect(vresult.success).toBeTruthy()
+  // use a stateless clone as regular calls leave the backend in a weird state
+  await c.statelessClone.createObject(options)
+  return await c.objectStructure(newobject)
+}
+
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 test("createTransport", async () => {
   if (!enableWrite(new Date())) return
@@ -46,6 +90,7 @@ test("Create and delete", async () => {
       parentPath: "/sap/bc/adt/packages/$TMP"
     }
     const newobject = "/sap/bc/adt/functions/groups/y_adtnpm_foobar"
+    await deleteObj(newobject, c)
     await c.createObject(options)
     // group created, let's create a function module now
     await c.createObject({
@@ -55,16 +100,7 @@ test("Create and delete", async () => {
       parentName: "Y_ADTNPM_FOOBAR",
       parentPath: newobject
     })
-    // create successful, will try a deletion. Need to lock first
-    // locks only work in stateful sessions
-    try {
-      c.stateful = session_types.stateful
-      const handle = await c.lock(newobject)
-      expect(handle.LOCK_HANDLE).not.toBe("")
-      await c.deleteObject(newobject, handle.LOCK_HANDLE)
-    } catch (e) {
-      fail("Deletion error")
-    }
+    await deleteObj(newobject, c, true)
   })
 })
 
@@ -229,49 +265,6 @@ test("pretty printer settings", async () => {
     expect(changed["abapformatter:style"]).toBe(newStyle)
   })
 })
-
-async function deleteObj(object: string, c: ADTClient, rethrow = false) {
-  let result
-  try {
-    c.stateful = session_types.stateful
-    const handle = await c.lock(object)
-    result = await c.deleteObject(object, handle.LOCK_HANDLE)
-  } catch (e) {
-    // most probably doesn't exist
-    if (rethrow) throw e
-  }
-  await c.dropSession()
-  return result
-}
-
-async function createObj(
-  options: NewObjectOptions,
-  newobject: string,
-  c: ADTClient
-) {
-  if (isGroupType(options.objtype)) return
-
-  const baseValidateOptions = {
-    ...options,
-    objname: options.name,
-    packagename: options.parentName
-  } as ObjectValidateOptions // typescript is not smart enough to rule out grouptypes, so I have to cast
-  const validateOptions = hasPackageOptions(options)
-    ? {
-        ...baseValidateOptions,
-        swcomp: options.swcomp,
-        transportLayer: options.transportLayer,
-        packagetype: options.description
-      }
-    : baseValidateOptions
-
-  const vresult = await c.validateNewObject(validateOptions)
-  expect(vresult).toBeDefined()
-  expect(vresult.success).toBeTruthy()
-  // use a stateless clone as regular calls leave the backend in a weird state
-  await c.statelessClone.createObject(options)
-  return await c.objectStructure(newobject)
-}
 
 test("Create CDS objects", async () => {
   if (!enableWrite(new Date())) return
