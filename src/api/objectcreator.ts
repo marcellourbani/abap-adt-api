@@ -4,7 +4,7 @@ import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray } from "../utilities"
 
-type PACKAGETYPE = "DEVC/K"
+export type PackageTypeId = "DEVC/K"
 
 export type GroupTypeIds = "FUGR/FF" | "FUGR/I"
 export type NonGroupTypeIds =
@@ -20,7 +20,7 @@ export type NonGroupTypeIds =
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
-export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds | PACKAGETYPE
+export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds | PackageTypeId
 export interface CreatableType {
   validationPath: string
   creationPath: string
@@ -43,16 +43,16 @@ export interface GroupValidateOptions extends BaseValidateOptions {
   objtype: GroupTypeIds
   fugrname: string
 }
-type packageTypes = "development" | "structure" | "main"
-interface PackageSpecificData {
+export type PackageTypes = "development" | "structure" | "main"
+export interface PackageSpecificData {
   swcomp: string
   transportLayer: string
-  packagetype: packageTypes
+  packagetype: PackageTypes
 }
 export interface PackageValidateOptions
   extends PackageSpecificData,
     BaseValidateOptions {
-  objtype: PACKAGETYPE
+  objtype: PackageTypeId
   packagename: string
 }
 
@@ -68,7 +68,7 @@ export interface NewObjectOptions {
 export interface NewPackageOptions
   extends NewObjectOptions,
     PackageSpecificData {
-  objtype: PACKAGETYPE
+  objtype: PackageTypeId
 }
 export const hasPackageOptions = (o: any): o is PackageSpecificData =>
   !!(o as any).swcomp
@@ -255,6 +255,10 @@ export async function createTestInclude(
 
 export function isGroupType(type: any): type is GroupTypeIds {
   return type === "FUGR/FF" || type === "FUGR/I"
+}
+
+export function isPackageType(type: any): type is PackageTypeId {
+  return type === "DEVC/K"
 }
 
 export const CreatableTypes: Map<CreatableTypeIds, CreatableType> = new Map()

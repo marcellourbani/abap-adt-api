@@ -1112,3 +1112,14 @@ test(
     expect(result).toBe("Hello world!\n\n")
   })
 )
+
+test(
+  "Transport Layer search help",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.packageSearchHelp("transportlayers")
+    expect(resp).toBeDefined()
+    expect(resp.length).toBeGreaterThan(1)
+    const sap = resp.find(x => x.name === "SAP")
+    expect(sap).toBeDefined()
+  })
+)

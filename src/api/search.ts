@@ -17,6 +17,17 @@ export interface PathStep {
   "projectexplorer:category": string
 }
 
+export type PackageValueHelpType =
+  | "applicationcomponents"
+  | "softwarecomponents"
+  | "transportlayers"
+  | "translationrelevances"
+
+export interface PackageValueHelpResult {
+  name: string
+  description: string
+  data: string
+}
 export async function searchObject(
   h: AdtHTTP,
   query: string,
@@ -81,4 +92,25 @@ export async function abapDocumentation(
     body
   })
   return response.body as string
+}
+
+export async function packageSearchHelp(
+  h: AdtHTTP,
+  type: PackageValueHelpType,
+  name = "*"
+) {
+  const headers = { Accept: "application/*" }
+  const qs = { name }
+  const uri = `/sap/bc/adt/packages/valuehelps/${type}`
+  const response = await h.request(uri, { qs, headers })
+  const raw = fullParse(response.body)
+  return xmlArray(raw, "nameditem:namedItemList", "nameditem:namedItem").map(
+    (item: any) => {
+      return {
+        name: item["nameditem:name"],
+        description: item["nameditem:description"],
+        data: item["nameditem:data"]
+      } as PackageValueHelpResult
+    }
+  )
 }

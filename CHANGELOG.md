@@ -12,6 +12,8 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - ABAPGIT repo CRUD
 - Package creation and deletion
 - logout from tests
+- longer timeouts for some slow test
+- transport layer/software component/application component/translation relevances search help
 
 ### Changed
 

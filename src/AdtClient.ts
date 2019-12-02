@@ -45,6 +45,8 @@ import {
   objectRegistrationInfo,
   objectStructure,
   objectTypes,
+  packageSearchHelp,
+  PackageValueHelpType,
   prettyPrinter,
   prettyPrinterSetting,
   PrettyPrinterStyle,
@@ -632,7 +634,9 @@ export class ADTClient {
   ) {
     return abapDocumentation(this.h, objectUri, body, line, column, language)
   }
-
+  public packageSearchHelp(type: PackageValueHelpType, name = "*") {
+    return packageSearchHelp(this.h, type, name)
+  }
   public gitRepos() {
     return gitRepos(this.h)
   }
