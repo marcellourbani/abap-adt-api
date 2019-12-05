@@ -35,6 +35,7 @@ import {
   InactiveObject,
   isClassStructure,
   isCreatableTypeId,
+  isPackageType,
   loadTypes,
   lock,
   mainPrograms,
@@ -94,6 +95,8 @@ interface HttpOptions {
 export class ADTClient {
   private discovery?: AdtDiscoveryResult[]
   public static mainInclude(object: AbapObjectStructure): string {
+    // packages don't really have any include
+    if (isPackageType(object.metaData["adtcore:type"])) return object.objectUrl
     if (isClassStructure(object)) {
       const mainInclude = object.includes.find(
         x => x["class:includeType"] === "main"

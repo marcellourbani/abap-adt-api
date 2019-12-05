@@ -219,10 +219,32 @@ test(
 )
 
 test(
-  "objectPath",
+  "objectPath and transport",
   runTest(async (c: ADTClient) => {
     const path = objectPath("CLAS/OC", "zapidummytestcreation", "")
     expect(path).toBe("/sap/bc/adt/oo/classes/zapidummytestcreation")
+    const info = await c.transportInfo(path, "ZAPIDUMMY")
+    expect(info).toBeDefined()
+    expect(info.RECORDING).toEqual("X")
+    expect(info.TRANSPORTS.length).toBeGreaterThan(0)
+  })
+)
+test(
+  "objectPath and transport for local packages",
+  runTest(async (c: ADTClient) => {
+    const path = objectPath("DEVC/K", "$APIDUMMYFOOBARTESTPACKAGE", "")
+    expect(path).toBe("/sap/bc/adt/packages/%24APIDUMMYFOOBARTESTPACKAGE")
+    const info = await c.transportInfo(path, "$TMP")
+    expect(info).toBeDefined()
+    expect(info.RECORDING).toEqual("")
+  })
+)
+
+test(
+  "objectPath and transport for transportable packages",
+  runTest(async (c: ADTClient) => {
+    const path = objectPath("DEVC/K", "ZAPIDUMMYFOOBARTESTPACKAGE", "")
+    expect(path).toBe("/sap/bc/adt/packages/ZAPIDUMMYFOOBARTESTPACKAGE")
     const info = await c.transportInfo(path, "ZAPIDUMMY")
     expect(info).toBeDefined()
     expect(info.RECORDING).toEqual("X")

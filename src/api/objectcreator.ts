@@ -159,12 +159,12 @@ export async function loadTypes(h: AdtHTTP) {
 export function objectPath(objOptions: NewObjectOptions): string
 export function objectPath(typeId: "DEVC/K", name: string): string
 export function objectPath(
-  typeId: CreatableTypeIds | "DEVC/K",
+  typeId: CreatableTypeIds,
   name: string,
   parentName: string
 ): string
 export function objectPath(
-  typeIdOrObjectOptions: CreatableTypeIds | "DEVC/K" | NewObjectOptions,
+  typeIdOrObjectOptions: CreatableTypeIds | NewObjectOptions,
   name?: string,
   parentName?: string
 ): string {
@@ -175,7 +175,6 @@ export function objectPath(
       typeIdOrObjectOptions.parentName
     )
   const encodedname = encodeURIComponent(name || "")
-  if (typeIdOrObjectOptions === "DEVC/K") return `/sap/bc/adt/packages`
   const ot = CreatableTypes.get(typeIdOrObjectOptions)
   if (!ot) return ""
   return (
