@@ -644,8 +644,8 @@ export class ADTClient {
     return gitRepos(this.h)
   }
 
-  public gitExternalRepoInfo(repourl: string) {
-    return externalRepoInfo(this.h, repourl)
+  public gitExternalRepoInfo(repourl: string, user = "", password = "") {
+    return externalRepoInfo(this.h, repourl, user, password)
   }
 
   public gitCreateRepo(

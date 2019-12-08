@@ -64,7 +64,12 @@ export async function gitRepos(h: AdtHTTP) {
   })
 }
 
-export async function externalRepoInfo(h: AdtHTTP, repourl: string) {
+export async function externalRepoInfo(
+  h: AdtHTTP,
+  repourl: string,
+  user = "",
+  password = ""
+) {
   const headers = {
     "Content-Type": "application/abapgit.adt.repo.info.ext.request.v1+xml",
     Accept: "application/abapgit.adt.repo.info.ext.response.v1+xml"
@@ -74,6 +79,8 @@ export async function externalRepoInfo(h: AdtHTTP, repourl: string) {
     body: `<?xml version="1.0" ?>
           <repository_ext>
             <url>${repourl}</url>
+            <user>${user}</user>
+            <password>${password}</password>
           </repository_ext>`,
     headers
   })

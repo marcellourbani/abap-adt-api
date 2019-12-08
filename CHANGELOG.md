@@ -4,7 +4,15 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.5.34] 2019-12-08
+
+### Added
+
+- support for password protected external git repos
+
 ## [0.5.33] 2019-12-05
+
+### Fixed
 
 - fixed path for packages
 - added relevant tests

@@ -1111,6 +1111,34 @@ test(
 )
 
 test(
+  "abapGitxternalRepoInfo with password",
+  runTest(async (c: ADTClient) => {
+    jest.setTimeout(20000) // often takes longer than 5s
+
+    if (await hasAbapGit(c)) {
+      const { ADT_GIT_REPO, ADT_GIT_USER, ADT_GIT_PASS } = process.env
+      if (ADT_GIT_REPO && ADT_GIT_USER && ADT_GIT_PASS) {
+        const repoinfopri = await c.gitExternalRepoInfo(ADT_GIT_REPO)
+        expect(repoinfopri.access_mode).toBe("PRIVATE")
+        expect(repoinfopri.branches[0]).toBeUndefined()
+        const repoinfo = await c.gitExternalRepoInfo(
+          ADT_GIT_REPO,
+          ADT_GIT_USER,
+          ADT_GIT_PASS
+        )
+        expect(repoinfo).toBeDefined()
+        expect(repoinfo.access_mode).toBe("PRIVATE")
+        expect(repoinfo.branches[0]).toBeDefined()
+      } else
+        console.log(
+          chalk.yellowBright(
+            "No password protected ABAPGit repo provided, relevant tests skipped"
+          )
+        )
+    }
+  })
+)
+test(
   "ABAP documentation",
   runTest(async (c: ADTClient) => {
     const source = `INTERFACE zapiadt_testcase_intf1 PUBLIC .
