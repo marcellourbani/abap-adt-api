@@ -7,7 +7,8 @@ import {
   JSON2AbapXML,
   xmlArray,
   xmlNode,
-  xmlNodeAttr
+  xmlNodeAttr,
+  decodeEntity
 } from "../utilities"
 import { Link } from "./objectstructure"
 
@@ -189,6 +190,7 @@ const parseTask = (t: any) => {
     links: xmlArray(t, "atom:link").map(xmlNodeAttr),
     objects: xmlArray(t, "tm:abap_object").map(xmlNodeAttr)
   }
+  if (task["tm:desc"]) task["tm:desc"] = decodeEntity(task["tm:desc"])
   return task as TransportTask
 }
 const parseRequest = (r: any) => {
@@ -213,6 +215,7 @@ export async function userTransports(h: AdtHTTP, user: string, targets = true) {
   const workbench = xmlArray(raw, "tm:root", "tm:workbench", "tm:target").map(
     parseTargets
   )
+
   const customizing = xmlArray(
     raw,
     "tm:root",

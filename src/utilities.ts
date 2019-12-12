@@ -7,7 +7,7 @@ export function JSON2AbapXML(original: any, root: string = "DATA") {
   let inner = ""
   for (const key of Object.keys(original))
     if (original[key])
-      inner = `${inner}\n<${key}>${original[key] || ""}</${key}>`
+      inner = `${inner}\n<${key}>${encodeEntity(original[key]) || ""}</${key}>`
     else inner = `${inner}\n<${key}/>`
 
   return `<?xml version="1.0" encoding="UTF-8"?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">

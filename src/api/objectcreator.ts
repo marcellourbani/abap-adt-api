@@ -2,7 +2,7 @@ import { sprintf } from "sprintf-js"
 import { isString } from "util"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray } from "../utilities"
+import { fullParse, xmlArray, encodeEntity } from "../utilities"
 
 export type PackageTypeId = "DEVC/K"
 
@@ -100,7 +100,7 @@ function createBody(options: NewObjectOptions, type: CreatableType) {
       return `<?xml version="1.0" encoding="UTF-8"?>
         <${type.rootName} ${type.nameSpace}
            xmlns:adtcore="http://www.sap.com/adt/core"
-           adtcore:description="${options.description}"
+           adtcore:description="${encodeEntity(options.description)}"
            adtcore:name="${options.name}" adtcore:type="${options.objtype}"
            ${responsible}>
              <adtcore:containerRef adtcore:name="${options.parentName}"
@@ -113,8 +113,12 @@ function createBody(options: NewObjectOptions, type: CreatableType) {
       const compname = po.swcomp ? `pak:name="${po.swcomp}"` : ""
       return `<?xml version="1.0" encoding="UTF-8"?>
 <pak:package xmlns:pak="http://www.sap.com/adt/packages"
-xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="${options.description}"
-adtcore:name="${options.name}" adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
+xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="${encodeEntity(
+        options.description
+      )}"
+adtcore:name="${
+        options.name
+      }" adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
 <adtcore:packageRef adtcore:name="${options.name}"/>
 <pak:attributes pak:packageType="structure"/>
 <pak:superPackage/>
@@ -132,7 +136,7 @@ adtcore:name="${options.name}" adtcore:type="DEVC/K" adtcore:version="active" ${
       return `<?xml version="1.0" encoding="UTF-8"?>
         <${type.rootName} ${type.nameSpace}
           xmlns:adtcore="http://www.sap.com/adt/core"
-          adtcore:description="${options.description}"
+          adtcore:description="${encodeEntity(options.description)}"
           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
           ${responsible}>
           <adtcore:packageRef adtcore:name="${options.parentName}"/>
