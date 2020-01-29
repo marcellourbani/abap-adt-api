@@ -1166,10 +1166,22 @@ test(
 test(
   "Transport Layer search help",
   runTest(async (c: ADTClient) => {
-    const resp = await c.packageSearchHelp("transportlayers")
-    expect(resp).toBeDefined()
-    expect(resp.length).toBeGreaterThan(1)
-    const sap = resp.find(x => x.name === "SAP")
-    expect(sap).toBeDefined()
+    const details = await c.featureDetails("Packages")
+    const f = await c.collectionFeatureDetails(
+      "/sap/bc/adt/packages/valuehelps/transportlayers"
+    )
+    const tl =
+      f ||
+      (details &&
+        details.collection.find(coll =>
+          coll.templateLinks.find(l => l.template.match(/transportlayers/))
+        ))
+    if (tl) {
+      const resp = await c.packageSearchHelp("transportlayers")
+      expect(resp).toBeDefined()
+      expect(resp.length).toBeGreaterThan(1)
+      const sap = resp.find(x => x.name === "SAP")
+      expect(sap).toBeDefined()
+    }
   })
 )

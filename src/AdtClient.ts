@@ -409,6 +409,13 @@ export class ADTClient {
     return this.discovery.find(d => d.title === title)
   }
 
+  public async collectionFeatureDetails(url: string) {
+    if (!this.discovery) this.discovery = await this.adtDiscovery()
+    return this.discovery.find(f =>
+      f.collection.find(c => c.templateLinks.find(l => l.template === url))
+    )
+  }
+
   public createTestInclude(clas: string, lockHandle: string, transport = "") {
     return createTestInclude(this.h, clas, lockHandle, transport)
   }
