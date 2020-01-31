@@ -614,7 +614,7 @@ test(
 test(
   "Usage references",
   runTest(async (c: ADTClient) => {
-    jest.setTimeout(8000) // this usually takes longer than the default 5000
+    jest.setTimeout(10000) // this usually takes longer than the default 5000
     const include = "/sap/bc/adt/oo/classes/zapidummyfoobar"
     const references = await c.usageReferences(include)
 
@@ -938,6 +938,8 @@ ENDCLASS.`
 test(
   "user transports",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(8000) // this usually takes longer than the default 5000
+    jest.setTimeout(8000) // this usually takes longer than the default 5000
     const transports = await c.userTransports(process.env.ADT_USER!)
     expect(transports.workbench.length).toBeGreaterThan(0)
     let hit: any
@@ -1183,5 +1185,95 @@ test(
       const sap = resp.find(x => x.name === "SAP")
       expect(sap).toBeDefined()
     }
+  })
+)
+
+test(
+  "syntax ckeck CDS",
+  runTest(async (c: ADTClient) => {
+    const messages = await c.syntaxCheck(
+      `/sap/bc/adt/ddic/ddl/sources/zapidummy_datadef`
+    )
+    expect(messages).toBeDefined()
+    expect(messages.length).toBe(2)
+    expect(messages[0].offset).toBe(9)
+    expect(messages[0].line).toBe(16)
+    expect(messages[1].severity).toBe("I")
+    const quoteFound = messages[0].text.includes("&quot;")
+    expect(quoteFound).toBeFalsy()
+  })
+)
+test(
+  "syntax ckeck CDS with source",
+  runTest(async (c: ADTClient) => {
+    const messages = await c.syntaxCheck(
+      `/sap/bc/adt/ddic/ddl/sources/zapidummy_datadef`,
+      "/sap/bc/adt/ddic/ddl/sources/zapidummy_datadef/source/main",
+      `@AbapCatalog.sqlViewName: 'ZAPIDUMMY_DDEFSV'
+      @AbapCatalog.compiler.compareFilter: true
+      @AbapCatalog.preserveKey: true
+      @AccessControl.authorizationCheck: #CHECK
+      @EndUserText.label: 'data definition test'
+      @Metadata.allowExtensions: true
+      define view ZAPIDUMMY_datadef as select from e070 {
+          trkorr,
+          korrdev,
+          as4user,foobar
+      }`
+    )
+    expect(messages).toBeDefined()
+    expect(messages.length).toBe(1)
+    expect(messages[0].offset).toBe(18)
+    expect(messages[0].line).toBe(10)
+    expect(messages[0].severity).toBe("E")
+  })
+)
+
+test(
+  "syntax ckeck CDS access",
+  runTest(async (c: ADTClient) => {
+    let messages = await c.syntaxCheck(
+      `/sap/bc/adt/acm/dcl/sources/zapidummy_datadef_ac`
+    )
+    expect(messages).toBeDefined()
+    expect(messages.length).toBe(0)
+    messages = await c.syntaxCheck(
+      `/sap/bc/adt/acm/dcl/sources/zapidummy_datadef_ac`,
+      `/sap/bc/adt/acm/dcl/sources/zapidummy_datadef_ac/source/main`,
+      `@EndUserText.label: 'access control'
+      @MappingRole: true
+      define role Zapidummy_datadef_Ac {
+          grant select on ZAPIDUMMY_DATADEF
+            where as4user = 'DEVELOPER'
+               or as4user = aspect user
+      }`
+    )
+    expect(messages.length).toBe(1)
+    expect(messages[0].offset).toBe(6)
+    expect(messages[0].line).toBe(7)
+    expect(messages[0].severity).toBe("E")
+  })
+)
+test(
+  "syntax ckeck CDS metadata",
+  runTest(async (c: ADTClient) => {
+    let messages = await c.syntaxCheck(
+      `/sap/bc/adt/ddic/ddlx/sources/zapidummy_metadata`
+    )
+    expect(messages).toBeDefined()
+    expect(messages.length).toBe(0)
+    messages = await c.syntaxCheck(
+      `/sap/bc/adt/ddic/ddlx/sources/zapidummy_metadata`,
+      `/sap/bc/adt/ddic/ddlx/sources/zapidummy_metadata/source/main`,
+      `@Metadata.layer: #CUSTOMER
+      annotate view ZAPIDUMMY_datadef with{
+      @Consumption.derivation.resultElementHigh: 'trkorr'
+          korrdev ;d
+      }`
+    )
+    expect(messages.length).toBe(1)
+    expect(messages[0].offset).toBe(6)
+    expect(messages[0].line).toBe(5)
+    expect(messages[0].severity).toBe("E")
   })
 )

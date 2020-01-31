@@ -50,6 +50,33 @@ export async function syntaxCheckTypes(h: AdtHTTP) {
   }, new Map<string, string[]>())
   return reporters
 }
+export function parseCheckResults(raw: any) {
+  const messages = [] as SyntaxCheckResult[]
+  xmlArray(
+    raw,
+    "chkrun:checkRunReports",
+    "chkrun:checkReport",
+    "chkrun:checkMessageList",
+    "chkrun:checkMessage"
+  ).forEach((m: any) => {
+    const rawUri = m["@_chkrun:uri"] || ""
+    let message = {
+      uri: rawUri,
+      line: 0,
+      offset: 0,
+      severity: m["@_chkrun:type"],
+      text: decodeEntity(m["@_chkrun:shortText"])
+    }
+    const matches = rawUri.match(/([^#]+)#start=([\d]+),([\d]+)/)
+    if (matches) {
+      const [uri, line, offset] = matches.slice(1)
+      message = { ...message, uri, line: toInt(line), offset: toInt(offset) }
+    }
+    messages.push(message)
+  })
+
+  return messages
+}
 export async function syntaxCheck(
   h: AdtHTTP,
   inclUrl: string,
@@ -81,29 +108,7 @@ export async function syntaxCheck(
     { method: "POST", headers, body }
   )
   const raw = fullParse(response.body)
-  const messages = [] as SyntaxCheckResult[]
-  xmlArray(
-    raw,
-    "chkrun:checkRunReports",
-    "chkrun:checkReport",
-    "chkrun:checkMessageList",
-    "chkrun:checkMessage"
-  ).forEach((m: any) => {
-    const rawUri = m["@_chkrun:uri"] || ""
-    const matches = rawUri.match(/([^#]+)#start=([\d]+),([\d]+)/)
-    if (matches) {
-      const [uri, line, offset] = matches.slice(1)
-      messages.push({
-        uri,
-        line: toInt(line),
-        offset: toInt(offset),
-        severity: m["@_chkrun:type"],
-        text: decodeEntity(m["@_chkrun:shortText"])
-      })
-    }
-  })
-
-  return messages
+  return parseCheckResults(raw)
 }
 export interface CompletionProposal {
   KIND: number

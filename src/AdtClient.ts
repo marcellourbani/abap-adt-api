@@ -58,6 +58,7 @@ import {
   setObjectSource,
   setPrettyPrinterSetting,
   syntaxCheck,
+  SyntaxCheckResult,
   syntaxCheckTypes,
   systemUsers,
   transportAddUser,
@@ -76,6 +77,7 @@ import {
   validateNewObject,
   ValidateOptions
 } from "./api"
+import { syntaxCheckCDS } from "./api/cds"
 import { followUrl } from "./utilities"
 
 export function createSSLConfig(
@@ -449,15 +451,28 @@ export class ADTClient {
   public syntaxCheckTypes() {
     return syntaxCheckTypes(this.h)
   }
-
+  public syntaxCheck(cdsUrl: string): Promise<SyntaxCheckResult[]>
   public syntaxCheck(
-    inclUrl: string,
+    url: string,
     mainUrl: string,
     content: string,
+    mainProgram?: string,
+    version?: string
+  ): Promise<SyntaxCheckResult[]>
+  public syntaxCheck(
+    url: string,
+    mainUrl?: string,
+    content?: string,
     mainProgram: string = "",
     version: string = "active"
-  ) {
-    return syntaxCheck(this.h, inclUrl, mainUrl, content, mainProgram, version)
+  ): Promise<SyntaxCheckResult[]> {
+    if (url.match(/^\/sap\/bc\/adt\/((ddic\/ddlx?)|(acm\/dcl))\/sources\//))
+      return syntaxCheckCDS(this.h, url, mainUrl, content)
+    else {
+      if (!mainUrl || !content)
+        throw new Error("mainUrl and content are required for syntax check")
+      return syntaxCheck(this.h, url, mainUrl, content, mainProgram, version)
+    }
   }
 
   public codeCompletion(

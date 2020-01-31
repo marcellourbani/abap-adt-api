@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 ### Added
 
 - feature check
+- syntax check for CDS views
 
 ## [0.5.35] 2019-12-12
 
