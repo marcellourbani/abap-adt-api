@@ -1,0 +1,6 @@
+@Metadata.layer: #CUSTOMER
+annotate view ZAPIDUMMY_datadef with
+{   
+@Consumption.derivation.resultElementHigh: 'trkorr'
+    korrdev ;
+}

@@ -1,10 +1,10 @@
-@AbapCatalog.sqlViewName: 'ZDATADEF_SV'
+@AbapCatalog.sqlViewName: 'ZAPIDUMMY_DDEFSV'
 @AbapCatalog.compiler.compareFilter: true
 @AbapCatalog.preserveKey: true
 @AccessControl.authorizationCheck: #CHECK
-@EndUserText.label: 'foo'
+@EndUserText.label: 'data definition test'
 @Metadata.allowExtensions: true
-define view zdatadef as select from e070 {
+define view ZAPIDUMMY_datadef as select from e070 {
     trkorr,
     korrdev,
     as4user ,

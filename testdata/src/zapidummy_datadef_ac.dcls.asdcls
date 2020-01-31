@@ -1,0 +1,7 @@
+@EndUserText.label: 'access control'
+@MappingRole: true
+define role Zapidummy_datadef_Ac {
+    grant select on ZAPIDUMMY_DATADEF 
+      where as4user = 'DEVELOPER'
+         or as4user = aspect user;               
+}
