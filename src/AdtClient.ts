@@ -24,6 +24,7 @@ import {
   createTestInclude,
   createTransport,
   ddicElement,
+  ddicRepositoryAccess,
   deleteObject,
   externalRepoInfo,
   findDefinition,
@@ -710,7 +711,7 @@ export class ADTClient {
   }
 
   public ddicElement(
-    path: string,
+    path: string | string[],
     getTargetForAssociation = false,
     getExtensionViews = true,
     getSecondaryObjects = true
@@ -722,5 +723,9 @@ export class ADTClient {
       getExtensionViews,
       getSecondaryObjects
     )
+  }
+
+  public ddicRepositoryAccess(path: string | string[]) {
+    return ddicRepositoryAccess(this.h, path)
   }
 }

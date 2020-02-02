@@ -1300,3 +1300,46 @@ test(
     expect(carrid?.properties.elementProps?.ddicDataElement).toBe("s_carr_id")
   })
 )
+
+test(
+  "CDS DDIC definitions, multiple",
+  runTest(async (c: ADTClient) => {
+    const definitions = await c.ddicElement([
+      "spfli.deptime",
+      "scarr.deptime",
+      "deptime"
+    ])
+    expect(definitions).toBeDefined()
+    expect(definitions.name).toBe("deptime")
+    expect(definitions.type).toBe("TABL/DTF")
+
+    expect(definitions.properties.elementProps?.ddicIsKey).toBe(false)
+    expect(definitions.properties.elementProps?.ddicDataElement).toBe(
+      "s_dep_time"
+    )
+  })
+)
+
+test(
+  "CDS DDIC elements single",
+  runTest(async (c: ADTClient) => {
+    const elements = await c.ddicRepositoryAccess("sca*")
+    expect(elements).toBeDefined()
+    expect(elements.length).toBeGreaterThan(10)
+    const scarr = elements.find(d => d.name === "scarr")
+    expect(scarr?.uri).toBe("/sap/bc/adt/ddic/tables/scarr")
+    expect(scarr?.type).toBe("TABL/DT")
+  })
+)
+
+test(
+  "CDS DDIC elements multiple",
+  runTest(async (c: ADTClient) => {
+    const elements = await c.ddicRepositoryAccess(["scarr.dis", "spfli.dis"])
+    expect(elements).toBeDefined()
+    expect(elements.length).toBe(2)
+    const distance = elements.find(d => d.name === "distance")
+    expect(distance?.uri).toBe("not_used")
+    expect(distance?.type).toBe("TABL/DTF")
+  })
+)

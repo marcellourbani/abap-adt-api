@@ -120,3 +120,13 @@ export const followUrl = (base: string, extra: string) => {
 }
 
 export const boolFromAbap = (x: any) => x === "X"
+
+export function formatQS(raw: any) {
+  const val = (key: string, x: any): string =>
+    isArray(x)
+      ? x.map(e => val(key, e)).join("&")
+      : `${key}=${encodeURIComponent(x)}`
+  return Object.getOwnPropertyNames(raw)
+    .map(k => val(k, raw[k]))
+    .join("&")
+}

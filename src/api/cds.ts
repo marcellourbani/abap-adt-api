@@ -1,5 +1,14 @@
+import { isArray } from "util"
 import { AdtHTTP } from "../AdtHTTP"
-import { btoa, fullParse, toInt, xmlArray, xmlNode } from "../utilities"
+import {
+  btoa,
+  formatQS,
+  fullParse,
+  toInt,
+  xmlArray,
+  xmlNode,
+  xmlNodeAttr
+} from "../utilities"
 import { parseCheckResults } from "./syntax"
 
 export async function syntaxCheckCDS(
@@ -152,20 +161,51 @@ function parseDdicElement(raw: any) {
 
 export async function ddicElement(
   h: AdtHTTP,
-  path: string,
+  path: string | string[],
   getTargetForAssociation = false,
   getExtensionViews = true,
   getSecondaryObjects = true
 ) {
   const headers = { Accept: "application/vnd.sap.adt.elementinfo+xml" }
-  const qs = {
-    path,
+  const qs = formatQS({
     getTargetForAssociation,
     getExtensionViews,
-    getSecondaryObjects
-  }
-  const uri = `/sap/bc/adt/ddic/ddl/elementinfo`
-  const response = await h.request(uri, { headers, qs })
+    getSecondaryObjects,
+    path
+  })
+  const uri = `/sap/bc/adt/ddic/ddl/elementinfo?${qs}`
+  const response = await h.request(uri, { headers })
   const raw = fullParse(response.body)
   return parseDdicElement(raw["abapsource:elementInfo"])
+}
+export interface DdicObjectReference {
+  uri: string
+  type: string
+  name: string
+  path: string
+}
+
+export async function ddicRepositoryAccess(
+  h: AdtHTTP,
+  path: string | string[]
+) {
+  const headers = { Accept: "application/*" }
+  const qs = isArray(path)
+    ? formatQS({ requestScope: "all", path })
+    : `datasource=${encodeURIComponent(path)}`
+  const url = `/sap/bc/adt/ddic/ddl/ddicrepositoryaccess?${qs}`
+  const response = await h.request(url, { headers })
+  const raw = fullParse(response.body)
+  const records = raw["adtcore:objectReferences"]
+    ? xmlArray(raw, "adtcore:objectReferences", "adtcore:objectReference")
+    : xmlArray(raw, "ddl:ddlObjectReferences", "ddl:ddlObjectReference")
+  return records.map(r => {
+    const attr = xmlNodeAttr(r)
+    return {
+      uri: attr["adtcore:uri"] || "",
+      type: attr["adtcore:type"] || "",
+      name: attr["adtcore:name"] || "",
+      path: attr["ddl:path"] || ""
+    } as DdicObjectReference
+  })
 }
