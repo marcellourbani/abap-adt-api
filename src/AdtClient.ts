@@ -12,6 +12,7 @@ import {
   adtCoreDiscovery,
   adtDiscovery,
   AdtDiscoveryResult,
+  annotationDefinitions,
   classComponents,
   classIncludes,
   codeCompletion,
@@ -22,6 +23,7 @@ import {
   createRepo,
   createTestInclude,
   createTransport,
+  ddicElement,
   deleteObject,
   externalRepoInfo,
   findDefinition,
@@ -58,6 +60,7 @@ import {
   setObjectSource,
   setPrettyPrinterSetting,
   syntaxCheck,
+  syntaxCheckCDS,
   SyntaxCheckResult,
   syntaxCheckTypes,
   systemUsers,
@@ -77,7 +80,6 @@ import {
   validateNewObject,
   ValidateOptions
 } from "./api"
-import { syntaxCheckCDS } from "./api/cds"
 import { followUrl } from "./utilities"
 
 export function createSSLConfig(
@@ -701,5 +703,24 @@ export class ADTClient {
 
   public gitUnlinkRepo(repoId: string) {
     return unlinkRepo(this.h, repoId)
+  }
+
+  public annotationDefinitions() {
+    return annotationDefinitions(this.h)
+  }
+
+  public ddicElement(
+    path: string,
+    getTargetForAssociation = false,
+    getExtensionViews = true,
+    getSecondaryObjects = true
+  ) {
+    return ddicElement(
+      this.h,
+      path,
+      getTargetForAssociation,
+      getExtensionViews,
+      getSecondaryObjects
+    )
   }
 }

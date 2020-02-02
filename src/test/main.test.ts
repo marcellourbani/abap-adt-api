@@ -1277,3 +1277,26 @@ test(
     expect(messages[0].severity).toBe("E")
   })
 )
+
+test(
+  "CDS annotations definitions",
+  runTest(async (c: ADTClient) => {
+    const definitions = await c.annotationDefinitions()
+    expect(definitions).toBeDefined()
+    const scopeFound = definitions.includes("@Scope")
+    expect(scopeFound).toBeTruthy()
+  })
+)
+
+test(
+  "CDS DDIC definitions",
+  runTest(async (c: ADTClient) => {
+    const definitions = await c.ddicElement("spfli")
+    expect(definitions).toBeDefined()
+    expect(definitions.name).toBe("spfli")
+    expect(definitions.type).toBe("TABL/DT")
+    const carrid = definitions.children.find(x => x.name === "carrid")
+    expect(carrid?.properties.elementProps?.ddicIsKey).toBe(true)
+    expect(carrid?.properties.elementProps?.ddicDataElement).toBe("s_carr_id")
+  })
+)

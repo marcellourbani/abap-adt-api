@@ -10,6 +10,8 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 
 - feature check
 - syntax check for CDS views
+- CDS annotations definition(raw)
+- DDIC components (required for CDS completions)
 
 ## [0.5.35] 2019-12-12
 

@@ -95,5 +95,8 @@ export {
   ValidationResult,
   ObjectValidateOptions,
   GroupValidateOptions,
-  PackageValidateOptions
+  PackageValidateOptions,
+  DdicAnnotation,
+  DdicProperties,
+  DdicElement
 } from "./api"
