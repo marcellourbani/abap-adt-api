@@ -3,12 +3,12 @@ import { adtException, ValidateObjectUrl } from "../AdtException"
 import { SAPRC } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
+  decodeEntity,
   fullParse,
   JSON2AbapXML,
   xmlArray,
   xmlNode,
-  xmlNodeAttr,
-  decodeEntity
+  xmlNodeAttr
 } from "../utilities"
 import { Link } from "./objectstructure"
 

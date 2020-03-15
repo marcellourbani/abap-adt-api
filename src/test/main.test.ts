@@ -939,7 +939,6 @@ test(
   "user transports",
   runTest(async (c: ADTClient) => {
     jest.setTimeout(8000) // this usually takes longer than the default 5000
-    jest.setTimeout(8000) // this usually takes longer than the default 5000
     const transports = await c.userTransports(process.env.ADT_USER!)
     expect(transports.workbench.length).toBeGreaterThan(0)
     let hit: any
@@ -1101,6 +1100,7 @@ test(
 test(
   "abapGitxternalRepoInfo",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(8000) // this usually takes longer than the default 5000
     if (await hasAbapGit(c)) {
       const repoinfo = await c.gitExternalRepoInfo(
         "https://github.com/marcellourbani/abapGit.git"

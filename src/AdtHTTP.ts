@@ -5,7 +5,7 @@ import request, {
   RequiredUriUrl,
   Response
 } from "request"
-import request_debug, { LogCallback, LogData, LogPhase } from "request-debug"
+import request_debug, { LogCallback } from "request-debug"
 import { fromException, isCsrfError } from "./AdtException"
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
