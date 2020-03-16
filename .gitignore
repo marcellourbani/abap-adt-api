@@ -3,3 +3,4 @@ build
 tmp
 .vscode
 setenv.js
+package-lock.json
