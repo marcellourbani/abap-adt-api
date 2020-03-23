@@ -18,9 +18,12 @@ export enum session_types {
 export interface ClientOptions extends CoreOptions {
   debugCallback?: LogCallback<Request, CoreOptions, RequiredUriUrl>
 }
+export type BearerFetcher = () => Promise<string>
 export class AdtHTTP {
   private options: ClientOptions
   private loginPromise?: Promise<any>
+  private getToken?: BearerFetcher
+  private userName?: string
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -48,7 +51,9 @@ export class AdtHTTP {
     return this.options.baseUrl!
   }
   public get username() {
-    return (this.options.auth && this.options.auth.username) || ""
+    return (
+      this.userName || (this.options.auth && this.options.auth.username) || ""
+    )
   }
   public get password() {
     return (this.options.auth && this.options.auth.password) || ""
@@ -67,16 +72,11 @@ export class AdtHTTP {
   constructor(
     baseUrl: string,
     username: string,
-    password: string,
+    password: string | BearerFetcher,
     readonly client: string,
     readonly language: string,
     config: ClientOptions = {}
   ) {
-    if (config.debugCallback) request_debug(request, config.debugCallback)
-    if (!(baseUrl && username && password))
-      throw new Error(
-        "Invalid ADTClient configuration: url, login and password are required"
-      )
     const headers: any = {
       ...config.headers,
       Accept: "*/*",
@@ -87,10 +87,20 @@ export class AdtHTTP {
     headers[SESSION_HEADER] = session_types.stateless
     this.options = {
       ...config,
-      auth: { username, password },
       baseUrl,
       headers,
       jar: request.jar()
+    }
+    if (typeof password === "string") {
+      if (config.debugCallback) request_debug(request, config.debugCallback)
+      if (!(baseUrl && username && password))
+        throw new Error(
+          "Invalid ADTClient configuration: url, login and password are required"
+        )
+      this.options.auth = { username, password }
+    } else {
+      this.getToken = password
+      this.userName = username
     }
   }
   /**
@@ -98,6 +108,9 @@ export class AdtHTTP {
    */
   public async login() {
     if (this.loginPromise) return this.loginPromise
+    // oauth
+    if (this.getToken && !this.options.auth)
+      await this.getToken().then(bearer => (this.options.auth = { bearer }))
     const qs: any = {}
     if (this.client) qs["sap-client"] = this.client
     if (this.language) qs["sap-language"] = this.language

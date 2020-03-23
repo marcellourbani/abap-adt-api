@@ -1,6 +1,6 @@
 import { isString } from "util"
 import { adtException } from "./AdtException"
-import { AdtHTTP, ClientOptions, session_types } from "./AdtHTTP"
+import { AdtHTTP, ClientOptions, session_types, BearerFetcher } from "./AdtHTTP"
 
 import {
   AbapClassStructure,
@@ -92,13 +92,14 @@ export function createSSLConfig(
 interface HttpOptions {
   baseUrl: string
   username: string
-  password: string
+  password: string | BearerFetcher
   client: string
   language: string
   options: ClientOptions
 }
 export class ADTClient {
   private discovery?: AdtDiscoveryResult[]
+  private fetcher?: () => Promise<string>
   public static mainInclude(object: AbapObjectStructure): string {
     // packages don't really have any include
     if (isPackageType(object.metaData["adtcore:type"])) return object.objectUrl
@@ -147,7 +148,7 @@ export class ADTClient {
   constructor(
     baseUrl: string,
     username: string,
-    password: string,
+    password: string | BearerFetcher,
     client: string = "",
     language: string = "",
     options: ClientOptions = {}
@@ -156,6 +157,7 @@ export class ADTClient {
       throw new Error(
         "Invalid ADTClient configuration: url, login and password are required"
       )
+    if (typeof password !== "string") password = this.wrapFetcher(password)
     this.options = { baseUrl, username, password, client, language, options }
     this.h = this.createHttp()
   }
@@ -172,13 +174,24 @@ export class ADTClient {
     )
   }
 
+  private wrapFetcher: (f: BearerFetcher) => BearerFetcher = fetcher => {
+    let fetchBearer: Promise<string>
+    if (this.fetcher) return this.fetcher
+    this.fetcher = () => {
+      fetchBearer = fetchBearer || fetcher()
+      return fetchBearer
+    }
+    return this.fetcher
+  }
+
   public get statelessClone() {
     if (this.pIsClone) return this
     if (!this.pClone) {
+      const pw = this.fetcher || this.password
       this.pClone = new ADTClient(
         this.baseUrl,
         this.username,
-        this.password,
+        pw,
         this.client,
         this.language,
         this.options.options
