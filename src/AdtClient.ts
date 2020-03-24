@@ -100,7 +100,10 @@ interface HttpOptions {
 export class ADTClient {
   private discovery?: AdtDiscoveryResult[]
   private fetcher?: () => Promise<string>
-  public static mainInclude(object: AbapObjectStructure): string {
+  public static mainInclude(
+    object: AbapObjectStructure,
+    withDefault = true
+  ): string {
     // packages don't really have any include
     if (isPackageType(object.metaData["adtcore:type"])) return object.objectUrl
     if (isClassStructure(object)) {
@@ -113,10 +116,14 @@ export class ADTClient {
           mainInclude.links.find(x => !x.type)) // CDS have no type for the plain text link...
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     } else {
+      const source = object.metaData["abapsource:sourceUri"]
+      if (source) return followUrl(object.objectUrl, source)
       const mainLink = object.links.find(x => x.type === "text/plain")
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     }
-    return followUrl(object.objectUrl, "/source/main")
+    return withDefault
+      ? followUrl(object.objectUrl, "/source/main")
+      : object.objectUrl
   }
 
   public static classIncludes(clas: AbapClassStructure) {

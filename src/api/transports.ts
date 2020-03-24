@@ -350,7 +350,7 @@ export interface SystemUser {
 
 export async function systemUsers(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/system/users", {
-    headers: { Accept: "application/*" }
+    headers: { Accept: "application/atom+xml;type=feed" }
   })
   const raw = parse(response.body)
   return xmlArray(raw, "atom:feed", "atom:entry").map(
