@@ -143,3 +143,13 @@ export function formatQS(raw: any) {
     .map(k => val(k, raw[k]))
     .join("&")
 }
+
+export const toXmlAttributes = (o: any, prefix: string) => {
+  const sep = prefix ? ":" : ""
+  return o
+    ? Object.getOwnPropertyNames(o)
+        .sort()
+        .map(k => `${prefix}${sep}${k.replace(/^@_/, "")}="${o[k]}"`)
+        .join(" ")
+    : ""
+}

@@ -81,7 +81,10 @@ import {
   validateNewObject,
   ValidateOptions,
   GitRepo,
-  stageRepo
+  stageRepo,
+  GitStaging,
+  pushRepo,
+  checkRepo
 } from "./api"
 import { followUrl } from "./utilities"
 
@@ -730,6 +733,19 @@ export class ADTClient {
 
   public stageRepo(repo: GitRepo, user = "", password = "") {
     return stageRepo(this.h, repo, user, password)
+  }
+
+  public pushRepo(
+    repo: GitRepo,
+    staging: GitStaging,
+    user = "",
+    password = ""
+  ) {
+    return pushRepo(this.h, repo, staging, user, password)
+  }
+
+  public checkRepo(repo: GitRepo, user = "", password = "") {
+    return checkRepo(this.h, repo, user, password)
   }
 
   public annotationDefinitions() {

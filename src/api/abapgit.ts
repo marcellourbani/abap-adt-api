@@ -5,7 +5,11 @@ import {
   xmlArray,
   xmlNode,
   xmlNodeAttr,
-  stripNs
+  stripNs,
+  btoa,
+  toXmlAttributes,
+  decodeEntity,
+  encodeEntity
 } from "../utilities"
 
 import { parse } from "fast-xml-parser"
@@ -23,6 +27,12 @@ export interface GitRepo {
   branch_name: string
   created_by: string
   created_at: Date
+  created_email?: string
+  deserialized_by?: string
+  deserialized_email?: string
+  deserialized_at?: Date
+  status?: string
+  status_text?: string
   links: GitLink[]
 }
 
@@ -69,6 +79,7 @@ export interface GitStaging {
   staged: GitStagingObject[]
   unstaged: GitStagingObject[]
   ignored: GitStagingObject[]
+  comment: string
   author: GitUser
   committer: GitUser
 }
@@ -87,7 +98,13 @@ export async function gitRepos(h: AdtHTTP) {
       url,
       branch_name,
       created_by,
-      created_at
+      created_at,
+      created_email,
+      deserialized_by,
+      deserialized_email,
+      deserialized_at,
+      status,
+      status_text
     } = x
     const links = xmlArray(x, "atom:link").map(xmlNodeAttr)
     const repo: GitRepo = {
@@ -97,6 +114,12 @@ export async function gitRepos(h: AdtHTTP) {
       branch_name,
       created_by,
       created_at: new Date(created_at),
+      created_email,
+      deserialized_by,
+      deserialized_email,
+      deserialized_at,
+      status,
+      status_text,
       links
     }
     return repo
@@ -209,27 +232,15 @@ export async function unlinkRepo(h: AdtHTTP, repoId: string) {
     headers
   })
 }
-
-export async function stageRepo(
-  h: AdtHTTP,
-  repo: GitRepo,
-  user = "",
-  password = ""
-) {
-  const link = repo.links.find(l => l.type === "stage_link")
-  if (!link?.href) throw adtException("Stage link not found")
-  const headers = {
-    "Content-Type": "application/abapgit.adt.repo.stage.v1+xml"
-  }
-
-  const resp = await h.request(link.href, { headers })
-  const raw = xmlNode(fullParse(resp.body), "abapgitstaging:abapgitstaging")
+const deserializeStaging = (body: string) => {
+  const raw = xmlNode(fullParse(body), "abapgitstaging:abapgitstaging")
   const parsefile = (x: any) =>
     ({
       ...stripNs(xmlNodeAttr(x)),
       links: xmlArray(x, "atom:link")
         .map(xmlNodeAttr)
         .map(stripNs)
+        .map(l => ({ ...l, href: decodeEntity(l.href) }))
     } as GitStagingFile)
   const parseObject = (x: any) => {
     const attrs = stripNs(xmlNodeAttr(x))
@@ -254,11 +265,121 @@ export async function stageRepo(
     "abapgitstaging:ignored_objects",
     "abapgitstaging:abapgitobject"
   ).map(parseObject)
+  const commentNode = xmlNode(raw, "abapgitstaging:abapgit_comment")
   const extractUser = (p: string) =>
-    stripNs(
-      xmlNodeAttr(xmlNode(raw, "abapgitstaging:abapgit_comment", p))
-    ) as GitUser
+    stripNs(xmlNodeAttr(xmlNode(commentNode, p))) as GitUser
+  const comment = commentNode["@_abapgitstaging:comment"] || ""
   const author = extractUser("abapgitstaging:author")
   const committer = extractUser("abapgitstaging:author")
-  return { staged, unstaged, ignored, author, committer }
+  const result: GitStaging = {
+    staged,
+    unstaged,
+    ignored,
+    comment,
+    author,
+    committer
+  }
+  return result
+}
+
+const serializeStaging = (s: GitStaging) => {
+  const formatFile = (f: GitStagingFile) => {
+    const { links, ...rest } = f
+    return `  <abapgitstaging:abapgitfile ${toXmlAttributes(
+      rest,
+      "abapgitstaging"
+    )}>${links
+      .map(l => ({ ...l, href: encodeEntity(l.href) }))
+      .map(l => `<atom:link ${toXmlAttributes(l, "")}/>`)
+      .join("")}
+  </abapgitstaging:abapgitfile>`
+  }
+
+  const formatObject = (obj: GitStagingObject) => {
+    const { abapGitFiles, wbkey, ...rest } = obj
+    return `<abapgitstaging:abapgitobject ${toXmlAttributes(
+      rest,
+      "adtcore"
+    )} abapgitstaging:wbkey="${obj.wbkey}">
+    ${obj.abapGitFiles.map(formatFile).join("")}
+ </abapgitstaging:abapgitobject>`
+  }
+  const formatObjects = (objects: GitStagingObject[], root: string) => {
+    if (!objects.length) return `<${root}/>`
+    return `<${root}>${objects.map(formatObject).join("")}</${root}>`
+  }
+
+  const unstaged = formatObjects(s.unstaged, "abapgitstaging:unstaged_objects")
+  const staged = formatObjects(s.staged, "abapgitstaging:staged_objects")
+  const ignored = formatObjects(s.ignored, "abapgitstaging:ignored_objects")
+  const comment = `<abapgitstaging:abapgit_comment abapgitstaging:comment="${s.comment}">
+  <abapgitstaging:author abapgitstaging:name="${s.author.name}" abapgitstaging:email="${s.author.email}"/>
+  <abapgitstaging:committer abapgitstaging:name="${s.committer.name}" abapgitstaging:email="${s.committer.email}"/>
+</abapgitstaging:abapgit_comment>
+`
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+  <abapgitstaging:abapgitstaging xmlns:abapgitstaging="http://www.sap.com/adt/abapgit/staging"
+         xmlns:adtcore="http://www.sap.com/adt/core"
+         xmlns:atom="http://www.w3.org/2005/Atom">
+  ${unstaged}
+  ${staged}
+  ${ignored}
+  ${comment}
+  </abapgitstaging:abapgitstaging>`
+}
+
+export async function checkRepo(
+  h: AdtHTTP,
+  repo: GitRepo,
+  user = "",
+  password = ""
+) {
+  const clink = repo.links.find(l => l.type === "check_link")
+  if (!clink?.href) throw adtException("Check link not found")
+  const headers: any = {
+    Accept: "text/plain"
+  }
+  if (user) headers.Username = user
+  if (password) headers.Password = btoa(password)
+  await h.request(clink.href, { method: "POST", headers })
+}
+
+export async function pushRepo(
+  h: AdtHTTP,
+  repo: GitRepo,
+  staging: GitStaging,
+  user = "",
+  password = ""
+) {
+  const link = repo.links.find(l => l.type === "push_link")
+  if (!link?.href) throw adtException("Push link not found")
+  const headers: any = {
+    Accept: "application/abapgit.adt.repo.stage.v1+xml"
+  }
+  headers["Content-Type"] = headers.Accept
+  if (user) headers.Username = user
+  if (password) headers.Password = btoa(password)
+  const body = serializeStaging(staging)
+
+  await h.request(link.href, { method: "POST", headers, body })
+}
+
+export async function stageRepo(
+  h: AdtHTTP,
+  repo: GitRepo,
+  user = "",
+  password = ""
+) {
+  const link = repo.links.find(l => l.type === "stage_link")
+  if (!link?.href) throw adtException("Stage link not found")
+  const headers = {
+    "Content-Type": "application/abapgit.adt.repo.stage.v1+xml"
+  }
+  const qs: any = {}
+  if (user) qs.Username = user
+  if (password) qs.Password = btoa(password)
+
+  const resp = await h.request(link.href, { headers, qs })
+  return deserializeStaging(resp.body)
 }
