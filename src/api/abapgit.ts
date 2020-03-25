@@ -1,8 +1,21 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { boolFromAbap, fullParse, xmlArray, xmlNode } from "../utilities"
+import {
+  boolFromAbap,
+  fullParse,
+  xmlArray,
+  xmlNode,
+  xmlNodeAttr,
+  stripNs
+} from "../utilities"
 
 import { parse } from "fast-xml-parser"
+import { adtException } from "../AdtException"
 
+export interface GitLink {
+  href: string
+  rel: string
+  type?: string
+}
 export interface GitRepo {
   key: string
   sapPackage: string
@@ -10,18 +23,18 @@ export interface GitRepo {
   branch_name: string
   created_by: string
   created_at: Date
-  link: string
+  links: GitLink[]
 }
 
 export interface GitExternalInfo {
   access_mode: "PUBLIC" | "PRIVATE"
-  branches: Array<{
+  branches: {
     sha1: string
     name: string
     type: string
     is_head: boolean
     display_name: string
-  }>
+  }[]
 }
 
 export interface GitObject {
@@ -31,6 +44,33 @@ export interface GitObject {
   obj_status: string
   msg_type: string
   msg_text: string
+}
+
+export interface GitStagingFile {
+  name: string
+  path: string
+  localState: string
+  links: GitLink[]
+}
+export interface GitStagingObject {
+  wbkey: string
+  uri: string
+  type: string
+  name: string
+  abapGitFiles: GitStagingFile[]
+}
+
+export interface GitUser {
+  name: string
+  email: string
+}
+
+export interface GitStaging {
+  staged: GitStagingObject[]
+  unstaged: GitStagingObject[]
+  ignored: GitStagingObject[]
+  author: GitUser
+  committer: GitUser
 }
 
 export async function gitRepos(h: AdtHTTP) {
@@ -47,10 +87,9 @@ export async function gitRepos(h: AdtHTTP) {
       url,
       branch_name,
       created_by,
-      created_at,
-      "atom:link": l
+      created_at
     } = x
-
+    const links = xmlArray(x, "atom:link").map(xmlNodeAttr)
     const repo: GitRepo = {
       key,
       sapPackage,
@@ -58,7 +97,7 @@ export async function gitRepos(h: AdtHTTP) {
       branch_name,
       created_by,
       created_at: new Date(created_at),
-      link: l["@_href"]
+      links
     }
     return repo
   })
@@ -169,4 +208,57 @@ export async function unlinkRepo(h: AdtHTTP, repoId: string) {
     method: "DELETE",
     headers
   })
+}
+
+export async function stageRepo(
+  h: AdtHTTP,
+  repo: GitRepo,
+  user = "",
+  password = ""
+) {
+  const link = repo.links.find(l => l.type === "stage_link")
+  if (!link?.href) throw adtException("Stage link not found")
+  const headers = {
+    "Content-Type": "application/abapgit.adt.repo.stage.v1+xml"
+  }
+
+  const resp = await h.request(link.href, { headers })
+  const raw = xmlNode(fullParse(resp.body), "abapgitstaging:abapgitstaging")
+  const parsefile = (x: any) =>
+    ({
+      ...stripNs(xmlNodeAttr(x)),
+      links: xmlArray(x, "atom:link")
+        .map(xmlNodeAttr)
+        .map(stripNs)
+    } as GitStagingFile)
+  const parseObject = (x: any) => {
+    const attrs = stripNs(xmlNodeAttr(x))
+    const abapGitFiles = xmlArray(x, "abapgitstaging:abapgitfile").map(
+      parsefile
+    )
+    return { ...attrs, abapGitFiles } as GitStagingObject
+  }
+
+  const unstaged = xmlArray(
+    raw,
+    "abapgitstaging:unstaged_objects",
+    "abapgitstaging:abapgitobject"
+  ).map(parseObject)
+  const staged = xmlArray(
+    raw,
+    "abapgitstaging:staged_objects",
+    "abapgitstaging:abapgitobject"
+  ).map(parseObject)
+  const ignored = xmlArray(
+    raw,
+    "abapgitstaging:ignored_objects",
+    "abapgitstaging:abapgitobject"
+  ).map(parseObject)
+  const extractUser = (p: string) =>
+    stripNs(
+      xmlNodeAttr(xmlNode(raw, "abapgitstaging:abapgit_comment", p))
+    ) as GitUser
+  const author = extractUser("abapgitstaging:author")
+  const committer = extractUser("abapgitstaging:author")
+  return { staged, unstaged, ignored, author, committer }
 }

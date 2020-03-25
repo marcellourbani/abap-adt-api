@@ -79,7 +79,9 @@ import {
   usageReferenceSnippets,
   userTransports,
   validateNewObject,
-  ValidateOptions
+  ValidateOptions,
+  GitRepo,
+  stageRepo
 } from "./api"
 import { followUrl } from "./utilities"
 
@@ -724,6 +726,10 @@ export class ADTClient {
 
   public gitUnlinkRepo(repoId: string) {
     return unlinkRepo(this.h, repoId)
+  }
+
+  public stageRepo(repo: GitRepo, user = "", password = "") {
+    return stageRepo(this.h, repo, user, password)
   }
 
   public annotationDefinitions() {

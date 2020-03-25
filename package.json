@@ -1,6 +1,6 @@
 {
   "name": "abap-adt-api",
-  "version": "0.5.38",
+  "version": "1.0.0",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "build",
   "main": "build/index.js",
@@ -35,6 +35,7 @@
     "@types/sprintf-js": "^1.1.2",
     "@types/tough-cookie": "^2.3.6",
     "chalk": "^3.0.0",
+    "client-oauth2": "^4.2.5",
     "jest": "^25.1.0",
     "ts-jest": "^25.2.1",
     "tslint": "^6.1.0",
