@@ -18,7 +18,14 @@ import { adtException } from "../AdtException"
 export interface GitLink {
   href: string
   rel: string
-  type?: string
+  type?:
+    | "pull_link"
+    | "stage_link"
+    | "push_link"
+    | "check_link"
+    | "status_link"
+    | "log_link"
+    | string
 }
 export interface GitRepo {
   key: string
@@ -373,13 +380,12 @@ export async function stageRepo(
 ) {
   const link = repo.links.find(l => l.type === "stage_link")
   if (!link?.href) throw adtException("Stage link not found")
-  const headers = {
+  const headers: any = {
     "Content-Type": "application/abapgit.adt.repo.stage.v1+xml"
   }
-  const qs: any = {}
-  if (user) qs.Username = user
-  if (password) qs.Password = btoa(password)
+  if (user) headers.Username = user
+  if (password) headers.Password = btoa(password)
 
-  const resp = await h.request(link.href, { headers, qs })
+  const resp = await h.request(link.href, { headers })
   return deserializeStaging(resp.body)
 }

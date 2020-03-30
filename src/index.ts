@@ -30,6 +30,7 @@ export {
   GitObject,
   GitRepo,
   GitStaging,
+  GitStagingFile,
   GitStagingObject,
   GitUser,
   GroupTypeIds,

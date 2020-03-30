@@ -59,7 +59,7 @@ export async function revisions(
   if (!revisionUrl)
     throw adtException(`Revision URL not found for object ${name}`)
 
-  const headers = { Accept: "application/*" }
+  const headers = { Accept: "application/atom+xml;type=feed" }
 
   const response = await h.request(revisionUrl, {
     method: "GET",

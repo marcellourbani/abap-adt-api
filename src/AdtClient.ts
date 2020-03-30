@@ -359,9 +359,19 @@ export class ADTClient {
   public unLock(objectUrl: string, lockHandle: string) {
     return unLock(this.h, objectUrl, lockHandle)
   }
-
-  public getObjectSource(objectSourceUrl: string) {
-    return getObjectSource(this.h, objectSourceUrl)
+  /**
+   * Retrieves a resource content (i.e. a program's source code)
+   *
+   * @param objectSourceUrl Resource URL
+   * @param gitUser Username, only used for abapGit objects
+   * @param gitPassword password, only used for abapGit objects
+   */
+  public getObjectSource(
+    objectSourceUrl: string,
+    gitUser?: string,
+    gitPassword?: string
+  ) {
+    return getObjectSource(this.h, objectSourceUrl, gitUser, gitPassword)
   }
 
   public setObjectSource(

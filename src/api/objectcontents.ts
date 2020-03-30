@@ -1,7 +1,7 @@
 import { parse } from "fast-xml-parser"
 import { ValidateObjectUrl, ValidateStateful } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlArray } from "../utilities"
+import { xmlArray, btoa } from "../utilities"
 
 export interface AdtLock {
   LOCK_HANDLE: string
@@ -13,9 +13,17 @@ export interface AdtLock {
   MODIFICATION_SUPPORT: string
 }
 
-export async function getObjectSource(h: AdtHTTP, objectSourceUrl: string) {
+export async function getObjectSource(
+  h: AdtHTTP,
+  objectSourceUrl: string,
+  gitUser?: string,
+  gitPassword?: string
+) {
   ValidateObjectUrl(objectSourceUrl)
-  const response = await h.request(objectSourceUrl)
+  const headers: any = {}
+  if (gitUser) headers.Username = gitUser
+  if (gitPassword) headers.Password = btoa(gitPassword)
+  const response = await h.request(objectSourceUrl, { headers })
   return response.body
 }
 

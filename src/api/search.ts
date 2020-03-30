@@ -82,7 +82,10 @@ export async function abapDocumentation(
   language = "EN"
 ) {
   ValidateObjectUrl(objectUri)
-  const headers = { "Content-Type": "text/plain", Accept: "text/html" }
+  const headers = {
+    "Content-Type": "text/plain",
+    Accept: "application/vnd.sap.adt.docu.v1+html"
+  }
   const uri = `${objectUri}#start=${line},${column}`
   const qs = { uri, language, format: "eclipse" }
   const response = await h.request(`/sap/bc/adt/docu/abap/langu`, {
