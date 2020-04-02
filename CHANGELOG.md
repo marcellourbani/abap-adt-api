@@ -4,6 +4,17 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 1.1.0
+
+### Added
+
+- create transport by transpot layer
+
+### Fixed
+
+- ABAP help in older systems
+- better type definition exports
+
 ## 1.0.0
 
 ### Added

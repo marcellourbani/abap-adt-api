@@ -84,7 +84,7 @@ export async function abapDocumentation(
   ValidateObjectUrl(objectUri)
   const headers = {
     "Content-Type": "text/plain",
-    Accept: "application/vnd.sap.adt.docu.v1+html"
+    Accept: "application/vnd.sap.adt.docu.v1+html,text/html"
   }
   const uri = `${objectUri}#start=${line},${column}`
   const qs = { uri, language, format: "eclipse" }

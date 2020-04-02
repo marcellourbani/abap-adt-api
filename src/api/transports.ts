@@ -43,14 +43,14 @@ export interface TransportInfo {
   AS4USER: string
   PDEVCLASS: string
   DLVUNIT: string
-  MESSAGES?: Array<{
+  MESSAGES?: {
     SEVERITY: string
     SPRSL: string
     ARBGB: string
     MSGNR: number
     VARIABLES: string[]
     TEXT: string
-  }>
+  }[]
   NAMESPACE: string
   RESULT: string
   RECORDING: string
@@ -135,12 +135,15 @@ export async function createTransport(
   REF: string,
   REQUEST_TEXT: string,
   DEVCLASS: string,
-  OPERATION: string = "I"
+  OPERATION: string = "I",
+  transportLayer = ""
 ): Promise<string> {
   ValidateObjectUrl(REF)
   const body = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF, OPERATION })
+  const qs = transportLayer ? { transportLayer } : {}
   const response = await h.request("/sap/bc/adt/cts/transports", {
     body,
+    qs,
     headers: {
       Accept: "text/plain",
       "Content-Type":

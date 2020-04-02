@@ -137,11 +137,11 @@ export interface CompletionElementInfo {
   type: string
   href: string
   doc: string
-  components: Array<{
+  components: {
     "adtcore:type": string
     "adtcore:name": string
-    entries: Array<{ key: string; value: string }>
-  }>
+    entries: { key: string; value: string }[]
+  }[]
 }
 
 export interface DefinitionLocation {
