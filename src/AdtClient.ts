@@ -6,51 +6,20 @@ import {
   AbapClassStructure,
   AbapObjectStructure,
   ActivationResult,
-  AdtCompatibilityGraph,
-  AdtCoreDiscoveryResult,
   AdtDiscoveryResult,
-  AdtLock,
-  ClassComponent,
-  CompletionElementInfo,
-  CompletionProposal,
   CreatableTypeIds,
-  DdicElement,
-  DdicObjectReference,
-  DefinitionLocation,
-  Delta,
   FixProposal,
-  FragmentLocation,
-  GitExternalInfo,
-  GitObject,
   GitRepo,
   GitStaging,
-  HierarchyNode,
   InactiveObject,
-  MainInclude,
   NewObjectOptions,
   NodeParents,
   NodeStructure,
-  ObjectType,
-  ObjectTypeDescriptor,
-  PackageValueHelpResult,
   PackageValueHelpType,
-  PathStep,
-  PrettyPrinterSettings,
   PrettyPrinterStyle,
-  Revision,
-  SearchResult,
   SyntaxCheckResult,
-  SystemUser,
-  TransportAddUserResponse,
-  TransportInfo,
-  TransportOwnerResponse,
-  TransportReleaseReport,
-  TransportsOfUser,
-  UnitTestClass,
   UsageReference,
-  UsageReferenceSnippet,
   ValidateOptions,
-  ValidationResult,
   abapDocumentation,
   activate,
   adtCompatibilityGraph,
@@ -115,7 +84,9 @@ import {
   usageReferenceSnippets,
   usageReferences,
   userTransports,
-  validateNewObject
+  validateNewObject,
+  remoteRepoInfo,
+  switchRepoBranch,
 } from "./api"
 import { followUrl } from "./utilities"
 
@@ -144,17 +115,17 @@ export class ADTClient {
     if (isPackageType(object.metaData["adtcore:type"])) return object.objectUrl
     if (isClassStructure(object)) {
       const mainInclude = object.includes.find(
-        x => x["class:includeType"] === "main"
+        (x) => x["class:includeType"] === "main"
       )
       const mainLink =
         mainInclude &&
-        (mainInclude.links.find(x => x.type === "text/plain") ||
-          mainInclude.links.find(x => !x.type)) // CDS have no type for the plain text link...
+        (mainInclude.links.find((x) => x.type === "text/plain") ||
+          mainInclude.links.find((x) => !x.type)) // CDS have no type for the plain text link...
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     } else {
       const source = object.metaData["abapsource:sourceUri"]
       if (source) return followUrl(object.objectUrl, source)
-      const mainLink = object.links.find(x => x.type === "text/plain")
+      const mainLink = object.links.find((x) => x.type === "text/plain")
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     }
     return withDefault
@@ -165,7 +136,7 @@ export class ADTClient {
   public static classIncludes(clas: AbapClassStructure) {
     const includes = new Map<classIncludes, string>()
     for (const i of clas.includes) {
-      const mainLink = i.links.find(x => x.type === "text/plain")
+      const mainLink = i.links.find((x) => x.type === "text/plain")
       includes.set(
         i["class:includeType"] as classIncludes,
         followUrl(clas.objectUrl, mainLink!.href)
@@ -217,7 +188,7 @@ export class ADTClient {
     )
   }
 
-  private wrapFetcher: (f: BearerFetcher) => BearerFetcher = fetcher => {
+  private wrapFetcher: (f: BearerFetcher) => BearerFetcher = (fetcher) => {
     let fetchBearer: Promise<string>
     if (this.fetcher) return this.fetcher
     this.fetcher = () => {
@@ -302,7 +273,7 @@ export class ADTClient {
 
   public get sessionID() {
     const cookies = this.h.cookies() || []
-    const sc = cookies.find(c => !!c.key.match(/SAP_SESSIONID/))
+    const sc = cookies.find((c) => !!c.key.match(/SAP_SESSIONID/))
     return sc ? sc.value : ""
   }
 
@@ -478,20 +449,20 @@ export class ADTClient {
         parentName,
         parentPath,
         responsible,
-        transport
+        transport,
       })
     } else return createObject(this.h, optionsOrType)
   }
 
   public async featureDetails(title: string) {
     if (!this.discovery) this.discovery = await this.adtDiscovery()
-    return this.discovery.find(d => d.title === title)
+    return this.discovery.find((d) => d.title === title)
   }
 
   public async collectionFeatureDetails(url: string) {
     if (!this.discovery) this.discovery = await this.adtDiscovery()
-    return this.discovery.find(f =>
-      f.collection.find(c => c.templateLinks.find(l => l.template === url))
+    return this.discovery.find((f) =>
+      f.collection.find((c) => c.templateLinks.find((l) => l.template === url))
     )
   }
 
@@ -581,7 +552,7 @@ export class ADTClient {
     const response = await this.h.request(
       "/sap/bc/adt/oo/classrun/" + className.toUpperCase(),
       {
-        method: "POST"
+        method: "POST",
       }
     )
     return response.body
@@ -795,6 +766,20 @@ export class ADTClient {
 
   public checkRepo(repo: GitRepo, user = "", password = "") {
     return checkRepo(this.h, repo, user, password)
+  }
+
+  public remoteRepoInfo(repo: GitRepo, user = "", password = "") {
+    return remoteRepoInfo(this.h, repo, user, password)
+  }
+
+  public switchRepoBranch(
+    repo: GitRepo,
+    branch: string,
+    create = false,
+    user = "",
+    password = ""
+  ) {
+    return switchRepoBranch(this.h, repo, branch, create, user, password)
   }
 
   public annotationDefinitions() {

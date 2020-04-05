@@ -29,12 +29,14 @@ export {
   FragmentLocation,
   FunctionGroupMetaData,
   GenericMetaData,
+  GitBranch,
   GitExternalInfo,
   GitObject,
   GitRepo,
   GitStaging,
   GitStagingFile,
   GitStagingObject,
+  GitRemoteInfo,
   GitUser,
   GroupTypeIds,
   GroupValidateOptions,
@@ -104,5 +106,5 @@ export {
   isNonGroupType,
   isPackageType,
   objectPath,
-  parentTypeId
+  parentTypeId,
 } from "./api"

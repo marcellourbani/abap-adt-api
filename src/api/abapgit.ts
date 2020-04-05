@@ -9,7 +9,7 @@ import {
   btoa,
   toXmlAttributes,
   decodeEntity,
-  encodeEntity
+  encodeEntity,
 } from "../utilities"
 
 import { parse } from "fast-xml-parser"
@@ -91,12 +91,25 @@ export interface GitStaging {
   committer: GitUser
 }
 
+export interface GitBranch {
+  sha1: string
+  name: string
+  type: string
+  is_head: string
+  display_name: string
+}
+
+export interface GitRemoteInfo {
+  access_mode: string
+  branches: GitBranch[]
+}
+
 export async function gitRepos(h: AdtHTTP) {
   const response = await h.request(`/sap/bc/adt/abapgit/repos`)
   const raw = parse(response.body, {
     ignoreAttributes: false,
     parseAttributeValue: false,
-    parseNodeValue: false
+    parseNodeValue: false,
   })
   return xmlArray(raw, "repositories", "repository").map((x: any) => {
     const {
@@ -111,7 +124,7 @@ export async function gitRepos(h: AdtHTTP) {
       deserialized_email,
       deserialized_at,
       status,
-      status_text
+      status_text,
     } = x
     const links = xmlArray(x, "atom:link").map(xmlNodeAttr)
     const repo: GitRepo = {
@@ -127,7 +140,7 @@ export async function gitRepos(h: AdtHTTP) {
       deserialized_at,
       status,
       status_text,
-      links
+      links,
     }
     return repo
   })
@@ -141,7 +154,7 @@ export async function externalRepoInfo(
 ) {
   const headers = {
     "Content-Type": "application/abapgit.adt.repo.info.ext.request.v1+xml",
-    Accept: "application/abapgit.adt.repo.info.ext.response.v1+xml"
+    Accept: "application/abapgit.adt.repo.info.ext.response.v1+xml",
   }
   const response = await h.request(`/sap/bc/adt/abapgit/externalrepoinfo`, {
     method: "POST", // encodeEntity?
@@ -151,7 +164,7 @@ export async function externalRepoInfo(
             <user>${user}</user>
             <password>${password}</password>
           </repository_ext>`,
-    headers
+    headers,
   })
   const raw = fullParse(response.body)
   // tslint:disable-next-line: variable-name
@@ -163,7 +176,7 @@ export async function externalRepoInfo(
     "branch"
   ).map((branch: any) => ({
     ...branch,
-    is_head: boolFromAbap(branch && branch.is_head)
+    is_head: boolFromAbap(branch && branch.is_head),
   }))
   return { access_mode, branches } as GitExternalInfo
 }
@@ -183,7 +196,7 @@ export async function createRepo(
   password = ""
 ) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.v1+xml"
+    "Content-Type": "application/abapgit.adt.repo.v1+xml",
   }
   const body = `<?xml version="1.0" ?>
   <repository>
@@ -197,7 +210,7 @@ export async function createRepo(
   const response = await h.request(`/sap/bc/adt/abapgit/repos`, {
     method: "POST",
     body,
-    headers // encodeEntity?
+    headers, // encodeEntity?
   })
 
   return parseObjects(response.body)
@@ -212,7 +225,7 @@ export async function pullRepo(
   password = ""
 ) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.v1+xml"
+    "Content-Type": "application/abapgit.adt.repo.v1+xml",
   }
   branch = `<branch>${branch}</branch>`
   transport = transport
@@ -224,7 +237,7 @@ export async function pullRepo(
   const response = await h.request(`/sap/bc/adt/abapgit/repos/${repoId}/pull`, {
     method: "POST",
     body,
-    headers
+    headers,
   })
 
   return parseObjects(response.body)
@@ -232,11 +245,11 @@ export async function pullRepo(
 
 export async function unlinkRepo(h: AdtHTTP, repoId: string) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.v1+xml"
+    "Content-Type": "application/abapgit.adt.repo.v1+xml",
   }
   await h.request(`/sap/bc/adt/abapgit/repos/${repoId}`, {
     method: "DELETE",
-    headers
+    headers,
   })
 }
 const deserializeStaging = (body: string) => {
@@ -247,7 +260,7 @@ const deserializeStaging = (body: string) => {
       links: xmlArray(x, "atom:link")
         .map(xmlNodeAttr)
         .map(stripNs)
-        .map(l => ({ ...l, href: decodeEntity(l.href) }))
+        .map((l) => ({ ...l, href: decodeEntity(l.href) })),
     } as GitStagingFile)
   const parseObject = (x: any) => {
     const attrs = stripNs(xmlNodeAttr(x))
@@ -284,7 +297,7 @@ const deserializeStaging = (body: string) => {
     ignored,
     comment,
     author,
-    committer
+    committer,
   }
   return result
 }
@@ -296,8 +309,8 @@ const serializeStaging = (s: GitStaging) => {
       rest,
       "abapgitstaging"
     )}>${links
-      .map(l => ({ ...l, href: encodeEntity(l.href) }))
-      .map(l => `<atom:link ${toXmlAttributes(l, "")}/>`)
+      .map((l) => ({ ...l, href: encodeEntity(l.href) }))
+      .map((l) => `<atom:link ${toXmlAttributes(l, "")}/>`)
       .join("")}
   </abapgitstaging:abapgitfile>`
   }
@@ -342,10 +355,10 @@ export async function checkRepo(
   user = "",
   password = ""
 ) {
-  const clink = repo.links.find(l => l.type === "check_link")
+  const clink = repo.links.find((l) => l.type === "check_link")
   if (!clink?.href) throw adtException("Check link not found")
   const headers: any = {
-    Accept: "text/plain"
+    Accept: "text/plain",
   }
   if (user) headers.Username = user
   if (password) headers.Password = btoa(password)
@@ -359,10 +372,10 @@ export async function pushRepo(
   user = "",
   password = ""
 ) {
-  const link = repo.links.find(l => l.type === "push_link")
+  const link = repo.links.find((l) => l.type === "push_link")
   if (!link?.href) throw adtException("Push link not found")
   const headers: any = {
-    Accept: "application/abapgit.adt.repo.stage.v1+xml"
+    Accept: "application/abapgit.adt.repo.stage.v1+xml",
   }
   headers["Content-Type"] = headers.Accept
   if (user) headers.Username = user
@@ -378,14 +391,67 @@ export async function stageRepo(
   user = "",
   password = ""
 ) {
-  const link = repo.links.find(l => l.type === "stage_link")
+  const link = repo.links.find((l) => l.type === "stage_link")
   if (!link?.href) throw adtException("Stage link not found")
   const headers: any = {
-    "Content-Type": "application/abapgit.adt.repo.stage.v1+xml"
+    "Content-Type": "application/abapgit.adt.repo.stage.v1+xml",
   }
   if (user) headers.Username = user
   if (password) headers.Password = btoa(password)
 
   const resp = await h.request(link.href, { headers })
   return deserializeStaging(resp.body)
+}
+
+export async function remoteRepoInfo(
+  h: AdtHTTP,
+  repo: GitRepo,
+  user = "",
+  password = ""
+) {
+  const headers: any = {
+    "Content-Type": "application/abapgit.adt.repo.info.ext.request.v1+xml",
+    Accept: "application/abapgit.adt.repo.info.ext.response.v1+xml",
+  }
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<repository_ext>
+<url>${repo.url}</url>
+<user>${user}</user>
+<password>${password}</password>
+</repository_ext>`
+
+  const resp = await h.request("/sap/bc/adt/abapgit/externalrepoinfo", {
+    headers,
+    body,
+    method: "POST",
+  })
+  const raw = parse(resp.body)?.repository_external
+  const { access_mode, branches } = raw
+  return {
+    access_mode,
+    branches: xmlArray(branches, "branch"),
+  } as GitRemoteInfo
+}
+
+export async function switchRepoBranch(
+  h: AdtHTTP,
+  repo: GitRepo,
+  branch: string,
+  create = false,
+  user = "",
+  password = ""
+) {
+  const headers: any = {}
+  if (user) headers.Username = user
+  if (password) headers.Password = btoa(password)
+
+  await h.request(
+    `/sap/bc/adt/abapgit//repos/${repo.key}/branches/${encodeURIComponent(
+      branch
+    )}?create=${create}`,
+    {
+      headers,
+      method: "POST",
+    }
+  )
 }

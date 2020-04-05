@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 1.2.0
+
+### Added
+
+- git repo remote info
+- git repo switch/create branch
+
 ## 1.1.0
 
 ### Added
