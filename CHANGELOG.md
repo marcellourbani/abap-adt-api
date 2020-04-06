@@ -4,14 +4,21 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## 1.2.0
+## [1.2.1] 2020-04-05ts
+
+### Fixed
+
+- deprecated duplicated API
+- better module exports
+
+## [1.2.0] 2020-04-05
 
 ### Added
 
 - git repo remote info
 - git repo switch/create branch
 
-## 1.1.0
+## [1.1.0] 2020-04-02
 
 ### Added
 
@@ -22,7 +29,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - ABAP help in older systems
 - better type definition exports
 
-## 1.0.0
+## [1.0.0] 2020-03-30
 
 ### Added
 

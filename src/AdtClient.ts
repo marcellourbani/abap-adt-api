@@ -87,6 +87,38 @@ import {
   validateNewObject,
   remoteRepoInfo,
   switchRepoBranch,
+  MainInclude,
+  TransportInfo,
+  AdtCompatibilityGraph,
+  AdtCoreDiscoveryResult,
+  AdtLock,
+  ClassComponent,
+  CompletionElementInfo,
+  CompletionProposal,
+  DdicElement,
+  DdicObjectReference,
+  DefinitionLocation,
+  Delta,
+  FragmentLocation,
+  GitExternalInfo,
+  GitObject,
+  GitRemoteInfo,
+  HierarchyNode,
+  ObjectType,
+  ObjectTypeDescriptor,
+  PackageValueHelpResult,
+  PathStep,
+  PrettyPrinterSettings,
+  Revision,
+  SearchResult,
+  SystemUser,
+  TransportAddUserResponse,
+  TransportOwnerResponse,
+  TransportReleaseReport,
+  TransportsOfUser,
+  UnitTestClass,
+  UsageReferenceSnippet,
+  ValidationResult
 } from "./api"
 import { followUrl } from "./utilities"
 
@@ -449,7 +481,7 @@ export class ADTClient {
         parentName,
         parentPath,
         responsible,
-        transport,
+        transport
       })
     } else return createObject(this.h, optionsOrType)
   }
@@ -552,7 +584,7 @@ export class ADTClient {
     const response = await this.h.request(
       "/sap/bc/adt/oo/classrun/" + className.toUpperCase(),
       {
-        method: "POST",
+        method: "POST"
       }
     )
     return response.body
@@ -768,6 +800,9 @@ export class ADTClient {
     return checkRepo(this.h, repo, user, password)
   }
 
+  /**
+   * @deprecated since 1.2.1, duplicate of externalRepoInfo
+   */
   public remoteRepoInfo(repo: GitRepo, user = "", password = "") {
     return remoteRepoInfo(this.h, repo, user, password)
   }

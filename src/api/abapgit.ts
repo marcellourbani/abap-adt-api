@@ -43,15 +43,16 @@ export interface GitRepo {
   links: GitLink[]
 }
 
+export interface GitBranch {
+  sha1: string
+  name: string
+  type: string
+  is_head: string
+  display_name: string
+}
 export interface GitExternalInfo {
   access_mode: "PUBLIC" | "PRIVATE"
-  branches: {
-    sha1: string
-    name: string
-    type: string
-    is_head: boolean
-    display_name: string
-  }[]
+  branches: GitBranch[]
 }
 
 export interface GitObject {
@@ -91,14 +92,9 @@ export interface GitStaging {
   committer: GitUser
 }
 
-export interface GitBranch {
-  sha1: string
-  name: string
-  type: string
-  is_head: string
-  display_name: string
-}
-
+/**
+ * @deprecated since 1.2.1, duplicate of GitExternalInfo
+ */
 export interface GitRemoteInfo {
   access_mode: string
   branches: GitBranch[]
@@ -403,6 +399,9 @@ export async function stageRepo(
   return deserializeStaging(resp.body)
 }
 
+/**
+ * @deprecated since 1.2.1, duplicate of externalRepoInfo
+ */
 export async function remoteRepoInfo(
   h: AdtHTTP,
   repo: GitRepo,

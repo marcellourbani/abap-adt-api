@@ -36,6 +36,9 @@ export {
   GitStaging,
   GitStagingFile,
   GitStagingObject,
+  /**
+   * @deprecated since 1.2.1, duplicate of GitExternalInfo
+   */
   GitRemoteInfo,
   GitUser,
   GroupTypeIds,
