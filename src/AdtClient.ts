@@ -139,6 +139,11 @@ interface HttpOptions {
 export class ADTClient {
   private discovery?: AdtDiscoveryResult[]
   private fetcher?: () => Promise<string>
+
+  public get httpClient() {
+    return this.h
+  }
+
   public static mainInclude(
     object: AbapObjectStructure,
     withDefault = true
