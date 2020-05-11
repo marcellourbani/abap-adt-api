@@ -4,6 +4,17 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [2.0.0] 2020-05-11
+
+### Added
+
+- inactive object list
+
+### Fixed
+
+- optional types in object metadata
+- some minor typing issue
+
 ## [1.3.0] 2020-04-05
 
 ### Added

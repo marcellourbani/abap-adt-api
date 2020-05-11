@@ -3,17 +3,17 @@ import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr, xmlRoot } from "../utilities"
 
 export interface GenericMetaData {
-  "abapsource:activeUnicodeCheck": boolean
-  "abapsource:fixPointArithmetic": boolean
-  "abapsource:sourceUri": string
+  "abapsource:activeUnicodeCheck"?: boolean
+  "abapsource:fixPointArithmetic"?: boolean
+  "abapsource:sourceUri"?: string
   "adtcore:changedAt": number
   "adtcore:changedBy": string
   "adtcore:createdAt": number
-  "adtcore:description": string
-  "adtcore:descriptionTextLimit": number
+  "adtcore:description"?: string
+  "adtcore:descriptionTextLimit"?: number
   "adtcore:language": string
-  "adtcore:masterLanguage": string
-  "adtcore:masterSystem": string
+  "adtcore:masterLanguage"?: string
+  "adtcore:masterSystem"?: string
   "adtcore:name": string
   "adtcore:responsible": string
   "adtcore:type": string

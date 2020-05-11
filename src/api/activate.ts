@@ -47,6 +47,15 @@ function toElement(source: any) {
   } as InactiveObjectElement
 }
 
+function parseInactive(raw: any): InactiveObjectRecord[] {
+  return xmlArray(raw, "ioc:inactiveObjects", "ioc:entry").map((obj: any) => {
+    return {
+      object: toElement(obj["ioc:object"]),
+      transport: toElement(obj["ioc:transport"])
+    }
+  })
+}
+
 export async function activate(
   h: AdtHTTP,
   object: InactiveObject | InactiveObject[],
@@ -110,14 +119,7 @@ export async function activate(
   let inactive: InactiveObjectRecord[] = []
   if (response.body) {
     const raw = fullParse(response.body)
-    inactive = xmlArray(raw, "ioc:inactiveObjects", "ioc:entry").map(
-      (obj: any) => {
-        return {
-          object: toElement(obj["ioc:object"]),
-          transport: toElement(obj["ioc:transport"])
-        }
-      }
-    )
+    inactive = parseInactive(raw)
     messages = xmlArray(raw, "chkl:messages", "msg").map((m: any) => {
       const message = xmlNodeAttr(m)
       message.shortText = (m.shortText && m.shortText.txt) || "Syntax error"
@@ -152,4 +154,17 @@ export function inactiveObjectsInResults(
     const { user, deleted, ...rest } = o!
     return rest
   })
+}
+
+export async function inactiveObjects(h: AdtHTTP) {
+  const headers = {
+    Accept:
+      "application/vnd.sap.adt.inactivectsobjects.v1+xml, application/xml;q=0.8"
+  }
+
+  const response = await h.request("/sap/bc/adt/activation/inactiveobjects", {
+    headers
+  })
+
+  return parseInactive(fullParse(response.body))
 }

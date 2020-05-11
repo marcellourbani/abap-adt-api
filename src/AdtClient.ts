@@ -118,7 +118,8 @@ import {
   TransportsOfUser,
   UnitTestClass,
   UsageReferenceSnippet,
-  ValidationResult
+  ValidationResult,
+  inactiveObjects
 } from "./api"
 import { followUrl } from "./utilities"
 
@@ -152,17 +153,17 @@ export class ADTClient {
     if (isPackageType(object.metaData["adtcore:type"])) return object.objectUrl
     if (isClassStructure(object)) {
       const mainInclude = object.includes.find(
-        (x) => x["class:includeType"] === "main"
+        x => x["class:includeType"] === "main"
       )
       const mainLink =
         mainInclude &&
-        (mainInclude.links.find((x) => x.type === "text/plain") ||
-          mainInclude.links.find((x) => !x.type)) // CDS have no type for the plain text link...
+        (mainInclude.links.find(x => x.type === "text/plain") ||
+          mainInclude.links.find(x => !x.type)) // CDS have no type for the plain text link...
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     } else {
       const source = object.metaData["abapsource:sourceUri"]
       if (source) return followUrl(object.objectUrl, source)
-      const mainLink = object.links.find((x) => x.type === "text/plain")
+      const mainLink = object.links.find(x => x.type === "text/plain")
       if (mainLink) return followUrl(object.objectUrl, mainLink.href)
     }
     return withDefault
@@ -173,7 +174,7 @@ export class ADTClient {
   public static classIncludes(clas: AbapClassStructure) {
     const includes = new Map<classIncludes, string>()
     for (const i of clas.includes) {
-      const mainLink = i.links.find((x) => x.type === "text/plain")
+      const mainLink = i.links.find(x => x.type === "text/plain")
       includes.set(
         i["class:includeType"] as classIncludes,
         followUrl(clas.objectUrl, mainLink!.href)
@@ -225,7 +226,7 @@ export class ADTClient {
     )
   }
 
-  private wrapFetcher: (f: BearerFetcher) => BearerFetcher = (fetcher) => {
+  private wrapFetcher: (f: BearerFetcher) => BearerFetcher = fetcher => {
     let fetchBearer: Promise<string>
     if (this.fetcher) return this.fetcher
     this.fetcher = () => {
@@ -310,7 +311,7 @@ export class ADTClient {
 
   public get sessionID() {
     const cookies = this.h.cookies() || []
-    const sc = cookies.find((c) => !!c.key.match(/SAP_SESSIONID/))
+    const sc = cookies.find(c => !!c.key.match(/SAP_SESSIONID/))
     return sc ? sc.value : ""
   }
 
@@ -394,6 +395,10 @@ export class ADTClient {
         objectNameOrObjects,
         objectUrlOrPreauditReq as boolean // validated downstream
       )
+  }
+
+  public inactiveObjects() {
+    return inactiveObjects(this.h)
   }
 
   public mainPrograms(includeUrl: string) {
@@ -493,13 +498,13 @@ export class ADTClient {
 
   public async featureDetails(title: string) {
     if (!this.discovery) this.discovery = await this.adtDiscovery()
-    return this.discovery.find((d) => d.title === title)
+    return this.discovery.find(d => d.title === title)
   }
 
   public async collectionFeatureDetails(url: string) {
     if (!this.discovery) this.discovery = await this.adtDiscovery()
-    return this.discovery.find((f) =>
-      f.collection.find((c) => c.templateLinks.find((l) => l.template === url))
+    return this.discovery.find(f =>
+      f.collection.find(c => c.templateLinks.find(l => l.template === url))
     )
   }
 

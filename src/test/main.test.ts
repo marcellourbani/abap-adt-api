@@ -333,6 +333,17 @@ test(
 )
 
 test(
+  "list inactive objects",
+  runTest(async (c: ADTClient) => {
+    const inactive = await c.inactiveObjects()
+    expect(inactive).toBeDefined()
+    expect(Array.isArray(inactive)).toBe(true)
+    if (inactive.length > 0) {
+      expect(inactive[0].object?.["adtcore:name"]).toBe("3")
+    }
+  })
+)
+test(
   "getMainPrograms",
   runTest(async (c: ADTClient) => {
     const result = await c.mainPrograms(

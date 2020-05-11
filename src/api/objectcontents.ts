@@ -24,7 +24,7 @@ export async function getObjectSource(
   if (gitUser) headers.Username = gitUser
   if (gitPassword) headers.Password = btoa(gitPassword)
   const response = await h.request(objectSourceUrl, { headers })
-  return response.body
+  return response.body as string
 }
 
 export async function setObjectSource(

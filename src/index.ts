@@ -109,5 +109,5 @@ export {
   isNonGroupType,
   isPackageType,
   objectPath,
-  parentTypeId,
+  parentTypeId
 } from "./api"
