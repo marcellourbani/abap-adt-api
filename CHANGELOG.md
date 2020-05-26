@@ -4,6 +4,12 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [2.0.1] 2020-05-26
+
+### fixed
+
+- no strip in some xml parsing
+
 ## [2.0.0] 2020-05-11
 
 ### Added

@@ -67,11 +67,7 @@ export const xmlRoot = (o: any) => o[ok(o)[0]]
 export const stripNs = (x: any) =>
   x &&
   ok(x).reduce((obj, key) => {
-    const nk =
-      key
-        .split(":")
-        .slice(1)
-        .join(":") || key
+    const nk = key.split(":").slice(1).join(":") || key
     if (nk in obj) obj[key] = key
     else obj[nk] = x[key]
     return obj
@@ -90,6 +86,7 @@ export const xmlNodeAttr = (n: any) =>
 export const fullParse = (xml: string) =>
   parse(xml, {
     ignoreAttributes: false,
+    trimValues: false,
     parseAttributeValue: true
   })
 

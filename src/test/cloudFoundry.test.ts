@@ -11,16 +11,9 @@ const {
   user = "",
   repopkg = "",
   repouser = "",
-  repopwd = "",
+  repopwd = ""
 } = JSON.parse(process.env.ADT_CP || "") as { [key: string]: string }
 
-const oauth = new ClientOAuth2({
-  authorizationUri: `${uaaUrl}/oauth/authorize`,
-  accessTokenUri: `${uaaUrl}/oauth/token`,
-  redirectUri: "http://localhost/notfound",
-  clientId,
-  clientSecret,
-})
 let oldToken: string = ""
 
 const fetchToken = async () => {
@@ -31,18 +24,19 @@ const fetchToken = async () => {
       accessTokenUri: `${uaaUrl}/oauth/token`,
       redirectUri: "http://localhost/notfound",
       clientId,
-      clientSecret,
+      clientSecret
     })
       .createToken(accessToken, refreshToken, tokenType, {})
       .refresh()
-      .then((t) => t.accessToken))
+      .then(t => t.accessToken))
   return oldToken
 }
 test("abapgit repos on CF", async () => {
   jest.setTimeout(10000) // this usually takes longer than the default 5000
+  if (!clientId) return
   const client = new ADTClient(url, user, fetchToken)
   const repos = await client.gitRepos()
-  const repo = repos.find((r) => r.sapPackage === repopkg)
+  const repo = repos.find(r => r.sapPackage === repopkg)
   expect(repo).toBeDefined()
   const staged = await client.stageRepo(repo!, repouser, repopwd)
   expect(staged).toBeDefined()
@@ -51,7 +45,7 @@ test("abapgit repos on CF", async () => {
   const branches = await client.remoteRepoInfo(repo!, repouser, repopwd)
 
   expect(
-    branches.branches.map((b) => b.display_name).find((n) => n === "master")
+    branches.branches.map(b => b.display_name).find(n => n === "master")
   ).toBe("master")
 
   // commented out as would commit at every jest run...
