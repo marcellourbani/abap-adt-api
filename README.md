@@ -2,7 +2,7 @@
 
 This library simplifies access to the ADT REST interface.
 
-Supports a good share of what Eclipse tools can do with a simple JS/TS interface
+Supports a good share of what Eclipse tools can do with a simple JS/TS interface.
 
 Designed for general use, mostly used in [ABAP remote filesystem extension for visual studio code](https://github.com/marcellourbani/vscode_abap_remote_fs)
 
