@@ -1,10 +1,10 @@
 # ADT - Abap Developer Tools client
 
-This library simplifies access to the ADT REST interface
+This library simplifies access to the ADT REST interface.
 
-Supports a good share of what Eclipse tools can do with a simple JS/TS interface
+Supports a good share of what Eclipse tools can do with a simple JS/TS interface.
 
-Dedigned for general use, mostly used in [ABAP remote filesystem extension for visual studio code](https://github.com/marcellourbani/vscode_abap_remote_fs)
+Designed for general use, mostly used in [ABAP remote filesystem extension for visual studio code](https://github.com/marcellourbani/vscode_abap_remote_fs)
 
 ## Sample usage
 
