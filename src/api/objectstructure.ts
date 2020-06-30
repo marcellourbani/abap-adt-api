@@ -111,7 +111,7 @@ export async function objectStructure(
 
   const metaData: AbapMetaData = attr
   if (isClassMetaData(metaData)) {
-    const includes = root["class:include"].map(convertIncludes)
+    const includes = xmlArray(root, "class:include").map(convertIncludes)
     return { objectUrl, metaData, includes, links } as AbapClassStructure
   }
   return { objectUrl, metaData, links }
