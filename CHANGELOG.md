@@ -4,6 +4,16 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [2.1.0] 2020-07-14
+
+### Added
+
+- maximum creatable object name length
+
+### fixed
+
+- missing details in unit testing
+
 ## [2.0.2] 2020-06-30
 
 ### fixed

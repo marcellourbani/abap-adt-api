@@ -78,9 +78,13 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   })
   const raw = fullParse(response.body)
   const parseDetail = (alert: any) =>
-    xmlArray(alert, "details", "detail").map((d: any) =>
-      decodeEntity((d && d["@_text"]) || "")
-    )
+    xmlArray(alert, "details", "detail").reduce((result: string[], d: any) => {
+      const main = decodeEntity((d && d["@_text"]) || "")
+      const children = xmlArray(d, "details", "detail")
+        .map((dd: any) => (dd && `\n\t${dd["@_text"]}`) || "")
+        .join("")
+      return main ? [...result, main + children] : result
+    }, [])
   const parseStack = (alert: any) =>
     xmlArray(alert, "stack", "stackEntry").map(x => {
       const entry = xmlNodeAttr(x)

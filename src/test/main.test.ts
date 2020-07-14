@@ -742,6 +742,10 @@ test(
       )
       expect(failure).toBeDefined()
       expect(failure!.stack[0]).toBeDefined()
+      const failuretext = failure?.details.find(f =>
+        f.match(/Expected \[FOO\]/)
+      )
+      expect(failuretext).toBeDefined()
     }
   })
 )

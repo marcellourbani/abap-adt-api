@@ -28,6 +28,7 @@ export interface CreatableType {
   nameSpace: string
   label: string
   typeId: CreatableTypeIds
+  maxLen: number
 }
 
 interface BaseValidateOptions {
@@ -285,7 +286,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:program="http://www.sap.com/adt/programs/programs"',
     rootName: "program:abapProgram",
     typeId: "PROG/P",
-    validationPath: "programs/validation"
+    validationPath: "programs/validation",
+    maxLen: 30
   },
   {
     creationPath: "oo/classes",
@@ -293,7 +295,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:class="http://www.sap.com/adt/oo/classes"',
     rootName: "class:abapClass",
     typeId: "CLAS/OC",
-    validationPath: "oo/validation/objectname"
+    validationPath: "oo/validation/objectname",
+    maxLen: 30
   },
   {
     creationPath: "oo/interfaces",
@@ -301,7 +304,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:intf="http://www.sap.com/adt/oo/interfaces"',
     rootName: "intf:abapInterface",
     typeId: "INTF/OI",
-    validationPath: "oo/validation/objectname"
+    validationPath: "oo/validation/objectname",
+    maxLen: 30
   },
   {
     creationPath: "programs/includes",
@@ -309,7 +313,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:include="http://www.sap.com/adt/programs/includes"',
     rootName: "include:abapInclude",
     typeId: "PROG/I",
-    validationPath: "includes/validation"
+    validationPath: "includes/validation",
+    maxLen: 30
   },
   {
     creationPath: "functions/groups",
@@ -317,7 +322,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:group="http://www.sap.com/adt/functions/groups"',
     rootName: "group:abapFunctionGroup",
     typeId: "FUGR/F",
-    validationPath: "functions/validation"
+    validationPath: "functions/validation",
+    maxLen: 26
   },
   {
     creationPath: "functions/groups/%s/fmodules",
@@ -325,7 +331,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:fmodule="http://www.sap.com/adt/functions/fmodules"',
     rootName: "fmodule:abapFunctionModule",
     typeId: "FUGR/FF",
-    validationPath: "functions/validation"
+    validationPath: "functions/validation",
+    maxLen: 30
   },
   {
     creationPath: "functions/groups/%s/includes",
@@ -333,7 +340,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:finclude="http://www.sap.com/adt/functions/fincludes"',
     rootName: "finclude:abapFunctionGroupInclude",
     typeId: "FUGR/I",
-    validationPath: "functions/validation"
+    validationPath: "functions/validation",
+    maxLen: 3
   },
   {
     creationPath: "ddic/ddl/sources",
@@ -341,7 +349,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:ddl="http://www.sap.com/adt/ddic/ddlsources"',
     rootName: "ddl:ddlSource",
     typeId: "DDLS/DF",
-    validationPath: "ddic/ddl/validation"
+    validationPath: "ddic/ddl/validation",
+    maxLen: 30
   },
   {
     creationPath: "acm/dcl/sources",
@@ -349,7 +358,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:dcl="http://www.sap.com/adt/acm/dclsources"',
     rootName: "dcl:dclSource",
     typeId: "DCLS/DL",
-    validationPath: "acm/dcl/validation"
+    validationPath: "acm/dcl/validation",
+    maxLen: 30
   },
   {
     creationPath: "ddic/ddlx/sources",
@@ -357,7 +367,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:ddlx="http://www.sap.com/adt/ddic/ddlxsources"',
     rootName: "ddlx:ddlxSource",
     typeId: "DDLX/EX",
-    validationPath: "ddic/ddlx/sources/validation"
+    validationPath: "ddic/ddlx/sources/validation",
+    maxLen: 30
   },
   {
     creationPath: "ddic/ddla/sources",
@@ -365,7 +376,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:ddla="http://www.sap.com/adt/ddic/ddlasources"',
     rootName: "ddla:ddlaSource",
     typeId: "DDLA/ADF",
-    validationPath: "ddic/ddla/sources/validation"
+    validationPath: "ddic/ddla/sources/validation",
+    maxLen: 30
   },
   {
     creationPath: "packages",
@@ -373,7 +385,8 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:pak="http://www.sap.com/adt/packages"',
     rootName: "pak:package",
     typeId: "DEVC/K",
-    validationPath: "packages/validation"
+    validationPath: "packages/validation",
+    maxLen: 30
   }
 ]
 ctypes.forEach(v => CreatableTypes.set(v.typeId, v))
