@@ -1,4 +1,4 @@
-import { parse } from "fast-xml-parser"
+import { parse, X2jOptionsOptional } from "fast-xml-parser"
 import { AllHtmlEntities } from "html-entities"
 
 export const isObject = (x: any): x is object => !!x && typeof x === 'object'
@@ -87,11 +87,12 @@ export const xmlNodeAttr = (n: any) =>
       return part
     }, {})
 
-export const fullParse = (xml: string) =>
+export const fullParse = (xml: string, options: X2jOptionsOptional = {}) =>
   parse(xml, {
     ignoreAttributes: false,
     trimValues: false,
-    parseAttributeValue: true
+    parseAttributeValue: true,
+    ...options
   })
 
 export function toInt(x?: string) {

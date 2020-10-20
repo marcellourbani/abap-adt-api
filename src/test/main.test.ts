@@ -1118,7 +1118,7 @@ test(
     jest.setTimeout(8000) // this usually takes longer than the default 5000
     if (await hasAbapGit(c)) {
       const repoinfo = await c.gitExternalRepoInfo(
-        "https://github.com/marcellourbani/abapGit.git"
+        "https://github.com/abapGit/abapGit.git"
       )
       expect(repoinfo).toBeDefined()
       expect(repoinfo.access_mode).toBe("PUBLIC")

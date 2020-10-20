@@ -10,6 +10,8 @@ import {
   toXmlAttributes,
   decodeEntity,
   encodeEntity,
+  isString,
+  toInt,
 } from "../utilities"
 
 import { parse } from "fast-xml-parser"
@@ -19,13 +21,13 @@ export interface GitLink {
   href: string
   rel: string
   type?:
-    | "pull_link"
-    | "stage_link"
-    | "push_link"
-    | "check_link"
-    | "status_link"
-    | "log_link"
-    | string
+  | "pull_link"
+  | "stage_link"
+  | "push_link"
+  | "check_link"
+  | "status_link"
+  | "log_link"
+  | string
 }
 export interface GitRepo {
   key: string
@@ -47,7 +49,7 @@ export interface GitBranch {
   sha1: string
   name: string
   type: string
-  is_head: string
+  is_head: boolean
   display_name: string
 }
 export interface GitExternalInfo {
@@ -100,40 +102,49 @@ export interface GitRemoteInfo {
   branches: GitBranch[]
 }
 
+const parseDate = (d: string) => {
+  const match = d.match(/(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/)
+  if (!match) return new Date() // wrong but valid
+  const [Y, M, D, h, m, s] = match.slice(1)
+  return new Date(Date.UTC(toInt(Y), toInt(M) - 1, toInt(D), toInt(h), toInt(m), toInt(s)))
+}
+
 export async function gitRepos(h: AdtHTTP) {
   const response = await h.request(`/sap/bc/adt/abapgit/repos`)
   const raw = parse(response.body, {
     ignoreAttributes: false,
     parseAttributeValue: false,
     parseNodeValue: false,
+    ignoreNameSpace: true
   })
   return xmlArray(raw, "repositories", "repository").map((x: any) => {
     const {
       key,
       package: sapPackage,
       url,
-      branch_name,
-      created_by,
-      created_at,
-      created_email,
-      deserialized_by,
-      deserialized_email,
-      deserialized_at,
       status,
       status_text,
     } = x
-    const links = xmlArray(x, "atom:link").map(xmlNodeAttr)
+    // tslint:disable: variable-name
+    const branch_name = x.branch_name || x.branchName || ""
+    const created_by = x.created_by || x.createdBy || ""
+    const created_at = x.created_at || x.createdAt || ""
+    const created_email = x.created_email || x.createdEmail || ""
+    const deserialized_by = x.deserialized_by || x.deserializedBy || ""
+    const deserialized_email = x.deserialized_email || x.deserializedEmail || ""
+    const deserialized_at = x.deserialized_at || x.deserializedAt || ""
+    const links = xmlArray(x, "link").map(xmlNodeAttr)
     const repo: GitRepo = {
       key,
       sapPackage,
       url,
       branch_name,
       created_by,
-      created_at: new Date(created_at),
+      created_at: parseDate(created_at),
       created_email,
       deserialized_by,
       deserialized_email,
-      deserialized_at,
+      deserialized_at: deserialized_at && parseDate(deserialized_at),
       status,
       status_text,
       links,
@@ -149,29 +160,33 @@ export async function externalRepoInfo(
   password = ""
 ) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.info.ext.request.v1+xml",
-    Accept: "application/abapgit.adt.repo.info.ext.response.v1+xml",
+    "Content-Type": "application/abapgit.adt.repo.info.ext.request.v2+xml",
+    Accept: "application/abapgit.adt.repo.info.ext.response.v2+xml",
   }
+  const body = `<?xml version="1.0" ?>
+  <abapgitexternalrepo:externalRepoInfoRequest xmlns:abapgitexternalrepo="http://www.sap.com/adt/abapgit/externalRepo">
+    <abapgitexternalrepo:url>${repourl}</abapgitexternalrepo:url>
+    <abapgitexternalrepo:user>${user}</abapgitexternalrepo:user>
+    <abapgitexternalrepo:password>${password}</abapgitexternalrepo:password>
+  </abapgitexternalrepo:externalRepoInfoRequest>`
+
   const response = await h.request(`/sap/bc/adt/abapgit/externalrepoinfo`, {
     method: "POST", // encodeEntity?
-    body: `<?xml version="1.0" ?>
-          <repository_ext>
-            <url>${repourl}</url>
-            <user>${user}</user>
-            <password>${password}</password>
-          </repository_ext>`,
+    body,
     headers,
   })
-  const raw = fullParse(response.body)
+  const raw = fullParse(response.body, { ignoreNameSpace: true })
   // tslint:disable-next-line: variable-name
-  const access_mode = xmlNode(raw, "repository_external", "access_mode")
+  const access_mode = xmlNode(raw, "externalRepoInfo", "accessMode")
   const branches = xmlArray(
     raw,
-    "repository_external",
-    "branches",
+    "externalRepoInfo",
     "branch"
   ).map((branch: any) => ({
-    ...branch,
+    name: branch.name,
+    type: branch.type,
+    sha1: branch.sha1,
+    display_name: branch.displayName,
     is_head: boolFromAbap(branch && branch.is_head),
   }))
   return { access_mode, branches } as GitExternalInfo
@@ -179,7 +194,24 @@ export async function externalRepoInfo(
 
 const parseObjects = (body: any) => {
   const raw = fullParse(body)
-  return xmlArray(raw, "objects", "object") as GitObject[]
+  return xmlArray(raw, "objects", "object").map((r: any) => {
+    const {
+      type,
+      name,
+      package: pkg,
+      status,
+      msgType,
+      msgText,
+    } = r
+    const obj: GitObject = {
+      obj_type: type,
+      obj_name: name,
+      package: pkg,
+      obj_status: status,
+      msg_type: msgType,
+      msg_text: msgText,
+    }
+  })
 }
 
 export async function createRepo(
@@ -195,14 +227,14 @@ export async function createRepo(
     "Content-Type": "application/abapgit.adt.repo.v1+xml",
   }
   const body = `<?xml version="1.0" ?>
-  <repository>
-    <branch>${branch}</branch>
-    <transportRequest>${transport}</transportRequest>
-    <package>${packageName}</package>
-    <url>${repourl}</url>
-    <user>${user}</user>
-    <password>${password}</password>
-  </repository>`
+  <abapgitrepo:repository xmlns:abapgitrepo="http://www.sap.com/adt/abapgit/repositories">
+    <abapgitrepo:branchName>${branch}</abapgitrepo:branchName>
+    <abapgitrepo:transportRequest>${transport}</abapgitrepo:transportRequest>
+    <abapgitrepo:package>${packageName}</abapgitrepo:package>
+    <abapgitrepo:url>${repourl}</abapgitrepo:url>
+    <abapgitrepo:remoteUser>${user}</abapgitrepo:remoteUser>
+    <abapgitrepo:remotePassword>${password}</abapgitrepo:remotePassword>
+  </abapgitrepo:repository>`
   const response = await h.request(`/sap/bc/adt/abapgit/repos`, {
     method: "POST",
     body,
@@ -221,15 +253,15 @@ export async function pullRepo(
   password = ""
 ) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.v1+xml",
+    "Content-Type": "application/abapgit.adt.repo.v3+xml",
   }
-  branch = `<branch>${branch}</branch>`
+  branch = `<abapgitrepo:branchName>${branch}</abapgitrepo:branchName>`
   transport = transport
-    ? `<transportRequest>${transport}</transportRequest>`
+    ? `<abapgitrepo:transportRequest>${transport}</abapgitrepo:transportRequest>`
     : ""
-  user = user ? `<user>${user}</user>` : ""
-  password = password ? `<password>${password}</password>` : ""
-  const body = `<?xml version="1.0" ?><repository>${branch}${transport}${user}${password}</repository>`
+  user = user ? `<abapgitrepo:remoteUser>${user}</abapgitrepo:remoteUser>` : ""
+  password = password ? `<abapgitrepo:remotePassword>${password}</abapgitrepo:remotePassword>` : ""
+  const body = `<?xml version="1.0" ?><abapgitrepo:repository>${branch}${transport}${user}${password}</abapgitrepo:repository>`
   const response = await h.request(`/sap/bc/adt/abapgit/repos/${repoId}/pull`, {
     method: "POST",
     body,
@@ -241,7 +273,7 @@ export async function pullRepo(
 
 export async function unlinkRepo(h: AdtHTTP, repoId: string) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.v1+xml",
+    "Content-Type": "application/abapgit.adt.repo.v3+xml",
   }
   await h.request(`/sap/bc/adt/abapgit/repos/${repoId}`, {
     method: "DELETE",
