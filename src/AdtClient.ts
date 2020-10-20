@@ -1,4 +1,3 @@
-import { isString } from "util"
 import { adtException } from "./AdtException"
 import { AdtHTTP, ClientOptions, session_types, BearerFetcher } from "./AdtHTTP"
 
@@ -121,7 +120,7 @@ import {
   ValidationResult,
   inactiveObjects
 } from "./api"
-import { followUrl } from "./utilities"
+import { followUrl, isString } from "./utilities"
 
 export function createSSLConfig(
   allowUnauthorized: boolean,

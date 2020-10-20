@@ -1,7 +1,9 @@
 import { parse } from "fast-xml-parser"
 import { AllHtmlEntities } from "html-entities"
-import { isArray, isObject, isString } from "util"
 
+export const isObject = (x: any): x is object => !!x && typeof x === 'object'
+export const isArray = (x: any): x is any[] => Array.isArray(x)
+export const isString = (x: any): x is string => typeof (x) === "string"
 export function JSON2AbapXML(original: any, root: string = "DATA") {
   // only flat objects for now, might extend later...
   let inner = ""
@@ -22,6 +24,7 @@ export function xmlNode(xml: any, ...path: string[]): any {
   let current = xml
 
   path.some(key => {
+    // @ts-ignore
     if (isObject(current)) current = current[key]
     return !current
   })
@@ -45,6 +48,7 @@ export function xmlFlatArray<T>(xml: any, ...path: string[]): T[] {
 
   if (isObject(xml)) {
     const [idx, ...rest] = path
+    // @ts-ignore
     return xmlFlatArray(xml[idx], ...rest)
   }
 
@@ -145,8 +149,8 @@ export const toXmlAttributes = (o: any, prefix: string) => {
   const sep = prefix ? ":" : ""
   return o
     ? Object.getOwnPropertyNames(o)
-        .sort()
-        .map(k => `${prefix}${sep}${k.replace(/^@_/, "")}="${o[k]}"`)
-        .join(" ")
+      .sort()
+      .map(k => `${prefix}${sep}${k.replace(/^@_/, "")}="${o[k]}"`)
+      .join(" ")
     : ""
 }

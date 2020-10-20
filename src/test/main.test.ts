@@ -1,7 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
 import chalk from "chalk"
-import { isArray, isString } from "util"
 import {
   ADTClient,
   isAdtError,
@@ -12,6 +11,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes } from "../api"
+import { isArray, isString } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -708,9 +708,9 @@ const findBy = <T, K extends keyof T>(
   return cs
     ? array.find(e => e[fname] === value)
     : array.find(e => {
-        const cur = e[fname]
-        return isString(cur) && cur.toUpperCase() === value.toUpperCase()
-      })
+      const cur = e[fname]
+      return isString(cur) && cur.toUpperCase() === value.toUpperCase()
+    })
 }
 
 test(

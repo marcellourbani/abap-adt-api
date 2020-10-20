@@ -1,8 +1,7 @@
 import { sprintf } from "sprintf-js"
-import { isString } from "util"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, encodeEntity } from "../utilities"
+import { fullParse, xmlArray, encodeEntity, isString } from "../utilities"
 
 export type PackageTypeId = "DEVC/K"
 
@@ -52,7 +51,7 @@ export interface PackageSpecificData {
 }
 export interface PackageValidateOptions
   extends PackageSpecificData,
-    BaseValidateOptions {
+  BaseValidateOptions {
   objtype: PackageTypeId
   packagename: string
 }
@@ -68,7 +67,7 @@ export interface NewObjectOptions {
 }
 export interface NewPackageOptions
   extends NewObjectOptions,
-    PackageSpecificData {
+  PackageSpecificData {
   objtype: PackageTypeId
 }
 export const hasPackageOptions = (o: any): o is PackageSpecificData =>
@@ -117,9 +116,8 @@ function createBody(options: NewObjectOptions, type: CreatableType) {
 xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="${encodeEntity(
         options.description
       )}"
-adtcore:name="${
-        options.name
-      }" adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
+adtcore:name="${options.name
+        }" adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
 <adtcore:packageRef adtcore:name="${options.name}"/>
 <pak:attributes pak:packageType="structure"/>
 <pak:superPackage/>

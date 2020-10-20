@@ -1,9 +1,9 @@
-import { isString } from "util"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   followUrl,
   fullParse,
+  isString,
   xmlArray,
   xmlNode,
   xmlNodeAttr
