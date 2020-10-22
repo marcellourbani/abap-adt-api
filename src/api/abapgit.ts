@@ -110,7 +110,8 @@ const parseDate = (d: string) => {
 }
 
 export async function gitRepos(h: AdtHTTP) {
-  const response = await h.request(`/sap/bc/adt/abapgit/repos`)
+  const headers = { Accept: "application/abapgit.adt.repos.v2+xml" }
+  const response = await h.request(`/sap/bc/adt/abapgit/repos`, { headers })
   const raw = parse(response.body, {
     ignoreAttributes: false,
     parseAttributeValue: false,
@@ -224,14 +225,14 @@ export async function createRepo(
   password = ""
 ) {
   const headers = {
-    "Content-Type": "application/abapgit.adt.repo.v1+xml",
+    "Content-Type": "application/abapgit.adt.repo.v3+xml",
   }
   const body = `<?xml version="1.0" ?>
   <abapgitrepo:repository xmlns:abapgitrepo="http://www.sap.com/adt/abapgit/repositories">
-    <abapgitrepo:branchName>${branch}</abapgitrepo:branchName>
-    <abapgitrepo:transportRequest>${transport}</abapgitrepo:transportRequest>
     <abapgitrepo:package>${packageName}</abapgitrepo:package>
     <abapgitrepo:url>${repourl}</abapgitrepo:url>
+    <abapgitrepo:branchName>${branch}</abapgitrepo:branchName>
+    <abapgitrepo:transportRequest>${transport}</abapgitrepo:transportRequest>
     <abapgitrepo:remoteUser>${user}</abapgitrepo:remoteUser>
     <abapgitrepo:remotePassword>${password}</abapgitrepo:remotePassword>
   </abapgitrepo:repository>`
@@ -261,7 +262,8 @@ export async function pullRepo(
     : ""
   user = user ? `<abapgitrepo:remoteUser>${user}</abapgitrepo:remoteUser>` : ""
   password = password ? `<abapgitrepo:remotePassword>${password}</abapgitrepo:remotePassword>` : ""
-  const body = `<?xml version="1.0" ?><abapgitrepo:repository>${branch}${transport}${user}${password}</abapgitrepo:repository>`
+  const body = `<?xml version="1.0" ?><abapgitrepo:repository xmlns:abapgitrepo="http://www.sap.com/adt/abapgit/repositories">
+    ${branch}${transport}${user}${password}</abapgitrepo:repository>`
   const response = await h.request(`/sap/bc/adt/abapgit/repos/${repoId}/pull`, {
     method: "POST",
     body,
