@@ -479,7 +479,7 @@ export async function switchRepoBranch(
   if (password) headers.Password = btoa(password)
 
   await h.request(
-    `/sap/bc/adt/abapgit//repos/${repo.key}/branches/${encodeURIComponent(
+    `/sap/bc/adt/abapgit/repos/${repo.key}/branches/${encodeURIComponent(
       branch
     )}?create=${create}`,
     {
