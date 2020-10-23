@@ -1,8 +1,7 @@
 import { sprintf } from "sprintf-js"
-import { isString } from "util"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, encodeEntity } from "../utilities"
+import { fullParse, xmlArray, encodeEntity, isString } from "../utilities"
 
 export type PackageTypeId = "DEVC/K"
 
@@ -52,7 +51,7 @@ export interface PackageSpecificData {
 }
 export interface PackageValidateOptions
   extends PackageSpecificData,
-    BaseValidateOptions {
+  BaseValidateOptions {
   objtype: PackageTypeId
   packagename: string
 }
@@ -68,7 +67,7 @@ export interface NewObjectOptions {
 }
 export interface NewPackageOptions
   extends NewObjectOptions,
-    PackageSpecificData {
+  PackageSpecificData {
   objtype: PackageTypeId
 }
 export const hasPackageOptions = (o: any): o is PackageSpecificData =>
@@ -92,7 +91,8 @@ export type ValidateOptions =
   | ObjectValidateOptions
   | GroupValidateOptions
   | PackageValidateOptions
-
+const xmlEntry = (value: string, key: string) => value ? `<${key}>${encodeEntity(value)}</${key}>}` : `<${key}/>`
+const xmlAttribute = (value: string, key: string) => value ? `${key}="${encodeEntity(value)}"` : ``
 function createBody(options: NewObjectOptions, type: CreatableType) {
   const responsible = `adtcore:responsible="${options.responsible}"`
   switch (options.objtype) {
@@ -110,23 +110,22 @@ function createBody(options: NewObjectOptions, type: CreatableType) {
         </${type.rootName}>`
     case "DEVC/K":
       const po = options as NewPackageOptions
-      const layer = po.transportLayer ? `pak:name="${po.transportLayer}"` : ""
-      const compname = po.swcomp ? `pak:name="${po.swcomp}"` : ""
+      const compname = xmlAttribute(po.swcomp, `pak:name`)
+      const description = xmlAttribute(po.description, "adtcore:description")
+      const superp = xmlAttribute(po.parentName, "adtcore:name")
+      const pkgname = xmlAttribute(options.name, "adtcore:name")
+      const pkgtype = xmlAttribute(po.packagetype, "pak:packageType")
       return `<?xml version="1.0" encoding="UTF-8"?>
 <pak:package xmlns:pak="http://www.sap.com/adt/packages"
-xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="${encodeEntity(
-        options.description
-      )}"
-adtcore:name="${
-        options.name
-      }" adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
-<adtcore:packageRef adtcore:name="${options.name}"/>
-<pak:attributes pak:packageType="structure"/>
-<pak:superPackage/>
+xmlns:adtcore="http://www.sap.com/adt/core" ${description}
+${pkgname} adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
+<adtcore:packageRef  adtcore:name="YMU_RAP"/>
+<pak:attributes ${pkgtype}/>
+<pak:superPackage ${superp}/>
 <pak:applicationComponent/>
 <pak:transport>
  <pak:softwareComponent ${compname}/>
- <pak:transportLayer ${layer}/>
+ <pak:transportLayer pak:name="${encodeEntity(po.transportLayer)}"/>
 </pak:transport>
 <pak:translation/>
 <pak:useAccesses/>

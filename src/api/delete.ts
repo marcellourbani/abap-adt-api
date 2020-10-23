@@ -27,8 +27,8 @@ export async function objectRegistrationInfo(h: AdtHTTP, objectUrl: string) {
   return {
     developer: xmlNodeAttr(raw["reg:developer"]),
     object: xmlNodeAttr(raw["reg:object"]),
-    ...(xmlNodeAttr(raw) as RegistrationInfo)
-  }
+    ...xmlNodeAttr(raw)
+  } as RegistrationInfo
 }
 
 export async function deleteObject(

@@ -1,7 +1,6 @@
 import { parse } from "fast-xml-parser"
-import { isString } from "util"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlArray } from "../utilities"
+import { isString, xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
 
 export function isNodeParent(t: string): t is NodeParents {
@@ -63,7 +62,7 @@ const parsePackageResponse = (data: string): NodeStructure => {
     nodes = xmlArray(root, "TREE_CONTENT", "SEU_ADT_REPOSITORY_OBJ_NODE")
     for (const node of nodes)
       if (!isString(node.OBJECT_NAME)) {
-        node.OBJECT_NAME = (node.OBJECT_NAME || "").toString()
+        node.OBJECT_NAME = (node.OBJECT_NAME as any || "").toString()
         node.TECH_NAME = (node.TECH_NAME || "").toString()
       }
     categories = xmlArray(root, "CATEGORIES", "SEU_ADT_OBJECT_CATEGORY_INFO")
