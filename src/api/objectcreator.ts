@@ -16,6 +16,8 @@ export type NonGroupTypeIds =
   | "DDLS/DF"
   | "DDLX/EX"
   | "DDLA/ADF"
+  | "TABL/DT"
+  | "SRVD/SRV"
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
@@ -27,6 +29,7 @@ export interface CreatableType {
   nameSpace: string
   label: string
   typeId: CreatableTypeIds
+  extra?: string
   maxLen: number
 }
 
@@ -138,7 +141,7 @@ ${pkgname} adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
           xmlns:adtcore="http://www.sap.com/adt/core"
           adtcore:description="${encodeEntity(options.description)}"
           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-          ${responsible}>
+          ${responsible} ${type.extra || ""}>
           <adtcore:packageRef adtcore:name="${options.parentName}"/>
         </${type.rootName}>`
   }
@@ -385,6 +388,25 @@ const ctypes: CreatableType[] = [
     rootName: "pak:package",
     typeId: "DEVC/K",
     validationPath: "packages/validation",
+    maxLen: 30
+  },
+  {
+    creationPath: "ddic/tables",
+    label: "Table",
+    nameSpace: 'xmlns:blue="http://www.sap.com/wbobj/blue"',
+    rootName: "blue:blueSource",
+    typeId: "TABL/DT",
+    validationPath: "ddic/tables/validation",
+    maxLen: 16
+  },
+  {
+    creationPath: "ddic/srvd/sources",
+    label: "Service definition",
+    nameSpace: 'xmlns:srvd="http://www.sap.com/adt/ddic/srvdsources"',
+    rootName: "srvd:srvdSource",
+    typeId: "SRVD/SRV",
+    validationPath: "ddic/srvd/sources/validation",
+    extra: `srvd:srvdSourceType="S"`,
     maxLen: 30
   }
 ]
