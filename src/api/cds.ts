@@ -1,9 +1,9 @@
-import { isArray } from "util"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
   formatQS,
   fullParse,
+  isArray,
   toInt,
   xmlArray,
   xmlNode,
@@ -208,4 +208,27 @@ export async function ddicRepositoryAccess(
       path: attr["ddl:path"] || ""
     } as DdicObjectReference
   })
+}
+
+async function publishUnpublishServiceBinding(h: AdtHTTP, base: string, name: string, version: string) {
+  const headers = { Accept: "application/*" }
+  const qs = `servicename=${encodeURIComponent(name)}&serviceversion=${version}`
+  const url = `/sap/bc/adt/businessservices/odatav2/${base}?${qs}`
+  const body = `<adtcore:objectReferences xmlns:adtcore="http://www.sap.com/adt/core">
+  <adtcore:objectReference adtcore:name="${name}"/>
+  </adtcore:objectReferences>`
+  const response = await h.request(url, { headers, method: "POST", body })
+  const raw = fullParse(response.body)
+  const data = xmlNode(raw, "asx:abap/asx:values/DATA")
+  const severity: string = xmlNode(data, "SEVERITY")
+  const shortText: string = xmlNode(data, "SHORT_TEXT")
+  const longText: string = xmlNode(data, "LONG_TEXT")
+  return { severity, shortText, longText }
+}
+
+export async function publishServiceBinding(h: AdtHTTP, name: string, version: string) {
+  return publishUnpublishServiceBinding(h, "publishjobs", name, version)
+}
+export async function unpublishServiceBinding(h: AdtHTTP, name: string, version: string) {
+  return publishUnpublishServiceBinding(h, "unpublishjobs", name, version)
 }

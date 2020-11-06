@@ -118,7 +118,9 @@ import {
   UnitTestClass,
   UsageReferenceSnippet,
   ValidationResult,
-  inactiveObjects
+  inactiveObjects,
+  publishServiceBinding,
+  unpublishServiceBinding
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -847,5 +849,13 @@ export class ADTClient {
 
   public ddicRepositoryAccess(path: string | string[]) {
     return ddicRepositoryAccess(this.h, path)
+  }
+
+  public publishServiceBinding(name: string, version: string) {
+    return publishServiceBinding(this.h, name, version)
+  }
+
+  public unPublishServiceBinding(name: string, version: string) {
+    return unpublishServiceBinding(this.h, name, version)
   }
 }

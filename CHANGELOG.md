@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](http://keepachangelog.com/)
 - create authorization object
 - create data element
 - create service binding
+- (ub)publish service binding
 
 ## [2.2.0] 2020-11-02
 
