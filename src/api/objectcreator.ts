@@ -18,6 +18,10 @@ export type NonGroupTypeIds =
   | "DDLA/ADF"
   | "TABL/DT"
   | "SRVD/SRV"
+  | "AUTH"
+  | "DTEL/DE"
+  | "SRVB/SVB"
+  | "SUSO/B"
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
@@ -73,8 +77,27 @@ export interface NewPackageOptions
   PackageSpecificData {
   objtype: PackageTypeId
 }
+
+export type BindingCategory = "0" | "1"
+export const BindinTypes = [
+  { description: "Odata V2 - Web API", bindingType: "ODATA", category: "0" },
+  { description: "Odata V2 - UI", bindingType: "ODATA", category: "1" },
+]
+export interface NewBindingOptions extends NewObjectOptions {
+  service: string
+  bindingtype: "ODATA"
+  category: BindingCategory
+}
+
 export const hasPackageOptions = (o: any): o is PackageSpecificData =>
-  !!(o as any).swcomp
+  !!o?.swcomp
+
+export const isPackageOptions = (o: NewObjectOptions): o is NewPackageOptions =>
+  (o as any)?.objType === "DEVC/K" && hasPackageOptions(o)
+
+export const isBindingOptions = (o: NewObjectOptions): o is NewBindingOptions =>
+  (o as any)?.objType === "SRVB/SVB" && !!(o as any)?.service && !!(o as any)?.bindingtype
+
 export interface ObjectType {
   CAPABILITIES: string[]
   CATEGORY: string
@@ -96,29 +119,14 @@ export type ValidateOptions =
   | PackageValidateOptions
 const xmlEntry = (value: string, key: string) => value ? `<${key}>${encodeEntity(value)}</${key}>}` : `<${key}/>`
 const xmlAttribute = (value: string, key: string) => value ? `${key}="${encodeEntity(value)}"` : ``
-function createBody(options: NewObjectOptions, type: CreatableType) {
+function createBodyPackage(options: NewPackageOptions) {
   const responsible = `adtcore:responsible="${options.responsible}"`
-  switch (options.objtype) {
-    case "FUGR/FF":
-    case "FUGR/I":
-      return `<?xml version="1.0" encoding="UTF-8"?>
-        <${type.rootName} ${type.nameSpace}
-           xmlns:adtcore="http://www.sap.com/adt/core"
-           adtcore:description="${encodeEntity(options.description)}"
-           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-           ${responsible}>
-             <adtcore:containerRef adtcore:name="${options.parentName}"
-               adtcore:type="FUGR/F"
-               adtcore:uri="${options.parentPath}"/>
-        </${type.rootName}>`
-    case "DEVC/K":
-      const po = options as NewPackageOptions
-      const compname = xmlAttribute(po.swcomp, `pak:name`)
-      const description = xmlAttribute(po.description, "adtcore:description")
-      const superp = xmlAttribute(po.parentName, "adtcore:name")
-      const pkgname = xmlAttribute(options.name, "adtcore:name")
-      const pkgtype = xmlAttribute(po.packagetype, "pak:packageType")
-      return `<?xml version="1.0" encoding="UTF-8"?>
+  const compname = xmlAttribute(options.swcomp, `pak:name`)
+  const description = xmlAttribute(options.description, "adtcore:description")
+  const superp = xmlAttribute(options.parentName, "adtcore:name")
+  const pkgname = xmlAttribute(options.name, "adtcore:name")
+  const pkgtype = xmlAttribute(options.packagetype, "pak:packageType")
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <pak:package xmlns:pak="http://www.sap.com/adt/packages"
 xmlns:adtcore="http://www.sap.com/adt/core" ${description}
 ${pkgname} adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
@@ -128,22 +136,70 @@ ${pkgname} adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
 <pak:applicationComponent/>
 <pak:transport>
  <pak:softwareComponent ${compname}/>
- <pak:transportLayer pak:name="${encodeEntity(po.transportLayer)}"/>
+ <pak:transportLayer pak:name="${encodeEntity(options.transportLayer)}"/>
 </pak:transport>
 <pak:translation/>
 <pak:useAccesses/>
 <pak:packageInterfaces/>
 <pak:subPackages/>
 </pak:package>`
-    default:
-      return `<?xml version="1.0" encoding="UTF-8"?>
+}
+
+function createBodyFunc(options: NewObjectOptions, type: CreatableType) {
+  const responsible = `adtcore:responsible="${options.responsible}"`
+  return `<?xml version="1.0" encoding="UTF-8"?>
+        <${type.rootName} ${type.nameSpace}
+           xmlns:adtcore="http://www.sap.com/adt/core"
+           adtcore:description="${encodeEntity(options.description)}"
+           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
+           ${responsible}>
+             <adtcore:containerRef adtcore:name="${options.parentName}"
+               adtcore:type="FUGR/F"
+               adtcore:uri="${options.parentPath}"/>
+        </${type.rootName}>`
+}
+
+function createBodySimple(options: NewObjectOptions, type: CreatableType, body = "") {
+  const responsible = `adtcore:responsible="${options.responsible}"`
+  body = body || `<adtcore:packageRef adtcore:name="${options.parentName}"/>`
+  return `<?xml version="1.0" encoding="UTF-8"?>
         <${type.rootName} ${type.nameSpace}
           xmlns:adtcore="http://www.sap.com/adt/core"
           adtcore:description="${encodeEntity(options.description)}"
           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
           ${responsible} ${type.extra || ""}>
-          <adtcore:packageRef adtcore:name="${options.parentName}"/>
+          ${body}
         </${type.rootName}>`
+}
+
+function createBodyBinding(options: NewBindingOptions, type: CreatableType) {
+  const body = `<adtcore:packageRef adtcore:name="${options.parentName}"/>
+      <srvb:services srvb:name="${options.name}">
+          <srvb:content srvb:version="0001">
+              <srvb:serviceDefinition adtcore:name="${options.service}"/>
+          </srvb:content>
+      </srvb:services>
+      <srvb:binding srvb:category="0" srvb:type="${options.bindingtype}" srvb:version="V2">
+          <srvb:implementation adtcore:name=""/>
+      </srvb:binding>`
+  return createBodySimple(options, type, body)
+}
+
+function createBody(options: NewObjectOptions, type: CreatableType) {
+  switch (type.typeId) {
+    case "DEVC/K":
+      if (isPackageOptions(options))
+        return createBodyPackage(options)
+      throw adtException("Can't create a Package with incomplete data");
+    case "FUGR/FF":
+    case "FUGR/I":
+      return createBodyFunc(options, type)
+    case "SRVB/SVB":
+      if (isBindingOptions(options))
+        return createBodyBinding(options, type)
+      throw adtException("Can't create service binding with incomplete data");
+    default:
+      return createBodySimple(options, type)
   }
 }
 
@@ -195,10 +251,9 @@ export function objectPath(
 export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
-  // const body = packageBody(options, ot)
+  if (!ot.validationPath) throw adtException(`Validation not supported for object ${ot} ${options.objname}`)
   const response = await h.request("/sap/bc/adt/" + ot.validationPath, {
     method: "POST",
-    // body,
     qs: options
   })
   const raw = fullParse(response.body)
@@ -408,6 +463,51 @@ const ctypes: CreatableType[] = [
     validationPath: "ddic/srvd/sources/validation",
     extra: `srvd:srvdSourceType="S"`,
     maxLen: 30
+  },
+  {
+    creationPath: "aps/iam/auth",
+    rootName: "auth:auth",
+    nameSpace: 'xmlns:auth="http://www.sap.com/iam/auth"',
+    label: "Authorization field",
+    typeId: "AUTH",
+    validationPath: "aps/iam/auth/validation",
+    maxLen: 10
+  },
+  {
+    creationPath: "/sap/bc/adt/aps/iam/suso",
+    validationPath: "aps/iam/suso/validation",
+    rootName: "susob:suso",
+    nameSpace: `xmlns:susob="http://www.sap.com/iam/suso"`,
+    label: "Authorization object",
+    typeId: "SUSO/B",
+    maxLen: 10
+  },
+  {
+    creationPath: "ddic/dataelements",
+    validationPath: "ddic/dataelements/validation",
+    rootName: "blue:wbobj",
+    nameSpace: 'xmlns:blue="http://www.sap.com/wbobj/dictionary/dtel"',
+    label: "Data Element",
+    typeId: "DTEL/DE",
+    maxLen: 30
+  },
+  {
+    creationPath: "businessservices/bindings",
+    validationPath: "businessservices/bindings/validation",
+    rootName: "srvb:serviceBinding",
+    nameSpace: 'xmlns:srvb="http://www.sap.com/adt/ddic/ServiceBindings"',
+    label: "Service binding",
+    typeId: "SRVB/SVB",
+    maxLen: 26
   }
 ]
 ctypes.forEach(v => CreatableTypes.set(v.typeId, v))
+  // {
+  //   creationPath: "",
+  //   validationPath:"",
+  //   rootName: "",
+  //   nameSpace: ``,
+  //   label: "",
+  //   typeId: "",
+  //   maxLen: 10
+  // },

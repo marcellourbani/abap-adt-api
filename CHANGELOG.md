@@ -4,6 +4,15 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## Unreleased
+
+### Added
+
+- create authorization field
+- create authorization object
+- create data element
+- create service binding
+
 ## [2.2.0] 2020-11-02
 
 ### Added
