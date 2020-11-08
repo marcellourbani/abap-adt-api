@@ -22,6 +22,7 @@ export type NonGroupTypeIds =
   | "DTEL/DE"
   | "SRVB/SVB"
   | "SUSO/B"
+  | "MSAG/N"
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
@@ -474,7 +475,7 @@ const ctypes: CreatableType[] = [
     maxLen: 10
   },
   {
-    creationPath: "/sap/bc/adt/aps/iam/suso",
+    creationPath: "aps/iam/suso",
     validationPath: "aps/iam/suso/validation",
     rootName: "susob:suso",
     nameSpace: `xmlns:susob="http://www.sap.com/iam/suso"`,
@@ -499,6 +500,15 @@ const ctypes: CreatableType[] = [
     label: "Service binding",
     typeId: "SRVB/SVB",
     maxLen: 26
+  },
+  {
+    creationPath: "messageclass",
+    validationPath: "messageclass/validation",
+    rootName: "mc:messageClass",
+    nameSpace: `xmlns:mc="http://www.sap.com/adt/MessageClass"`,
+    label: "Message class",
+    typeId: "MSAG/N",
+    maxLen: 20
   }
 ]
 ctypes.forEach(v => CreatableTypes.set(v.typeId, v))
