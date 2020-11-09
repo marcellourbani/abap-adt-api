@@ -94,10 +94,10 @@ export const hasPackageOptions = (o: any): o is PackageSpecificData =>
   !!o?.swcomp
 
 export const isPackageOptions = (o: NewObjectOptions): o is NewPackageOptions =>
-  (o as any)?.objType === "DEVC/K" && hasPackageOptions(o)
+  (o as any)?.objtype === "DEVC/K" && hasPackageOptions(o)
 
 export const isBindingOptions = (o: NewObjectOptions): o is NewBindingOptions =>
-  (o as any)?.objType === "SRVB/SVB" && !!(o as any)?.service && !!(o as any)?.bindingtype
+  (o as any)?.objtype === "SRVB/SVB" && !!(o as any)?.service && !!(o as any)?.bindingtype
 
 export interface ObjectType {
   CAPABILITIES: string[]
