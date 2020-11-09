@@ -10,7 +10,7 @@ import {
   UnitTestAlertKind
 } from "../"
 import { session_types } from "../AdtHTTP"
-import { classIncludes } from "../api"
+import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions } from "../api"
 import { isArray, isString } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
@@ -1358,3 +1358,18 @@ test(
     expect(distance?.type).toBe("TABL/DTF")
   })
 )
+
+test("type validation for service binding options", () => {
+  const testdata: NewObjectOptions | NewBindingOptions = {
+    "description": "f",
+    "name": "YMU_BFOO",
+    "objtype": "SRVB/SVB",
+    "parentName": "YMU_RAP_TRAVEL",
+    "parentPath": "/sap/bc/adt/packages/YMU_RAP_TRAVEL",
+    "responsible": "CB0000000083",
+    "bindingtype": "ODATA",
+    "category": "0",
+    "service": "YMU_RAP_UI_TRAVEL"
+  }
+  expect(isBindingOptions(testdata)).toBe(true)
+})

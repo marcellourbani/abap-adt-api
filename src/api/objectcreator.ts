@@ -81,8 +81,8 @@ export interface NewPackageOptions
 
 export type BindingCategory = "0" | "1"
 export const BindinTypes = [
-  { description: "Odata V2 - Web API", bindingType: "ODATA", category: "0" },
-  { description: "Odata V2 - UI", bindingType: "ODATA", category: "1" },
+  { description: "Odata V2 - Web API", bindingtype: "ODATA", category: "0" },
+  { description: "Odata V2 - UI", bindingtype: "ODATA", category: "1" },
 ]
 export interface NewBindingOptions extends NewObjectOptions {
   service: string
