@@ -11,7 +11,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions } from "../api"
-import { isArray, isString } from "../utilities"
+import { fullParse, isArray, isString } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -698,6 +698,39 @@ ENDCLASS.`
     expect(edit && edit.range.start.column).toBe(63)
   })
 )
+
+test("xml parser", () => {
+  const xml = `<unit> <content>data: x type string,
+          bar type any.</content> </unit>`
+  const { content } = fullParse(xml).unit
+  expect(content).toMatch(/data: x type string,\n\s*bar type any./)
+
+})
+test(
+  "fix proposals variable",
+  runTest(async (c: ADTClient) => {
+    const source = `CLASS zapiadt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC.public section.methods bar. .ENDCLASS.
+    CLASS zapiadt_testcase_class1 IMPLEMENTATION.
+      METHOD foo.
+         data: x type string.
+         bar = 2.
+      ENDMETHOD.
+    ENDCLASS.`
+    const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+
+    const fixProposals = await c.fixProposals(uri, source, 5, 11)
+    expect(fixProposals).toBeDefined()
+    expect(fixProposals.length).toBeGreaterThan(0)
+    expect(fixProposals[0]["adtcore:type"]).toBe("declare_local_variable")
+    const edits = await c.fixEdits(fixProposals[0], source)
+    expect(edits.length).toBeGreaterThan(0)
+    const edit = edits[0]
+    expect(edit && edit.content.match(/\n\s+bar type any\./gi)).toBeTruthy()
+    expect(edit && edit.range.start.line).toBe(4)
+    expect(edit && edit.range.start.column).toBe(9)
+  })
+)
+
 const findBy = <T, K extends keyof T>(
   array: T[],
   fname: K,
