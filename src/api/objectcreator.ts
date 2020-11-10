@@ -6,6 +6,7 @@ import { fullParse, xmlArray, encodeEntity, isString } from "../utilities"
 export type PackageTypeId = "DEVC/K"
 
 export type GroupTypeIds = "FUGR/FF" | "FUGR/I"
+export type BindingTypeId = "SRVB/SVB"
 export type NonGroupTypeIds =
   | "CLAS/OC"
   | "FUGR/F"
@@ -20,13 +21,12 @@ export type NonGroupTypeIds =
   | "SRVD/SRV"
   | "AUTH"
   | "DTEL/DE"
-  | "SRVB/SVB"
   | "SUSO/B"
   | "MSAG/N"
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
-export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds | PackageTypeId
+export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds | PackageTypeId | BindingTypeId
 export interface CreatableType {
   validationPath: string
   creationPath: string
@@ -39,7 +39,6 @@ export interface CreatableType {
 }
 
 interface BaseValidateOptions {
-  objtype: CreatableTypeIds
   objname: string
   description: string
 }
@@ -64,6 +63,13 @@ export interface PackageValidateOptions
   packagename: string
 }
 
+export interface BindingValidationOptions extends BaseValidateOptions {
+  objtype: BindingTypeId
+  serviceBindingVersion: "ODATA\\V2",
+  serviceDefinition: string,
+  package: string
+}
+
 export interface NewObjectOptions {
   objtype: CreatableTypeIds
   name: string
@@ -85,6 +91,7 @@ export const BindinTypes = [
   { description: "Odata V2 - UI", bindingtype: "ODATA", category: "1" },
 ]
 export interface NewBindingOptions extends NewObjectOptions {
+  objtype: BindingTypeId
   service: string
   bindingtype: "ODATA"
   category: BindingCategory
@@ -118,6 +125,8 @@ export type ValidateOptions =
   | ObjectValidateOptions
   | GroupValidateOptions
   | PackageValidateOptions
+  | BindingValidationOptions
+
 const xmlEntry = (value: string, key: string) => value ? `<${key}>${encodeEntity(value)}</${key}>}` : `<${key}/>`
 const xmlAttribute = (value: string, key: string) => value ? `${key}="${encodeEntity(value)}"` : ``
 function createBodyPackage(options: NewPackageOptions) {

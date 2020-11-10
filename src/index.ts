@@ -12,6 +12,7 @@ export {
   AdtGraphNode,
   AdtLock,
   BindinTypes,
+  BindingValidationOptions,
   ClassComponent,
   ClassInclude,
   ClassMetaData,

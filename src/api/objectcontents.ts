@@ -37,10 +37,11 @@ export async function setObjectSource(
   ValidateObjectUrl(objectSourceUrl)
   ValidateStateful(h)
   const qs: any = { lockHandle }
+  const ctype = source.match(/^<\?xml\s/i) ? "application/*" : "text/plain; charset=utf-8"
   if (transport) qs.corrNr = transport
   await h.request(objectSourceUrl, {
     body: source,
-    headers: { "content-type": "text/plain; charset=utf-8" },
+    headers: { "content-type": ctype },
     method: "PUT",
     qs
   })

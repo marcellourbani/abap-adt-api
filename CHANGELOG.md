@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [2.3.3]
+
+### Fixed
+
+- create service binding
+- save xml based objects
+
 ## [2.3.0] 2020-11-08
 
 ### Added
