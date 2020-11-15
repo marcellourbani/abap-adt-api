@@ -1,0 +1,14 @@
+### abapgit_old
+GET {{baseUrl}}/sap/bc/adt/programs/programs/zabapgit_old/source/main/versions
+Authorization: Basic {{acuser}}:{{acpassword}}
+Accept: application/atom+xml;type=feed
+Cache-Control:no-cache
+withCredentials:true
+x-csrf-token:o-Dpt85T6fpB8JaWn0UC2w==
+X-sap-adt-sessiontype:stateless
+
+### Source
+GET {{baseUrl}}/sap/bc/adt/programs/programs/zabapgit_old/source/main
+Authorization: Basic {{acuser}}:{{acpassword}}
+Cache-Control:no-cache
+Accept: text/plain

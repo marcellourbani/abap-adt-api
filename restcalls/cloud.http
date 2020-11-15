@@ -1,0 +1,70 @@
+### refresh token
+# @name refresh
+POST {{loginUrl}}/oauth/token
+Accept: application/json, application/x-www-form-urlencoded
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic {{clientId}}:{{clientSecret}}
+
+refresh_token={{refreshToken}}&grant_type=refresh_token
+
+###
+@accessToken = {{refresh.response.body.access_token}}
+@csrf = {{getbearer.response.headers.x-csrf-token}}
+### properties
+# @name getbearer
+GET {{url}}/sap/bc/adt/repository/informationsystem/objectproperties/values?uri=%2Fsap%2Fbc%2Fadt%2Fddic%2Ftables%2F%252fdmo%252ftravel%2Fsource%2Fmain
+Accept: application/vnd.sap.adt.repository.objproperties.result.v1+xml
+Authorization: bearer {{accessToken}}
+x-csrf-token: fetch
+
+### get contents metadata
+GET {{url}}/sap/bc/adt/datapreview/ddic/%2FDMO%2FTRAVEL/metadata HTTP/1.1
+Authorization: bearer {{accessToken}}
+Accept: application/vnd.sap.adt.datapreview.table.v1+xml
+
+### get contents
+POST {{url}}/sap/bc/adt/datapreview/ddic?rowNumber=2&ddicEntityName=%2FDMO%2FTRAVEL HTTP/1.1
+Authorization: bearer {{accessToken}}
+Content-Type: text/plain
+Accept: application/xml, application/vnd.sap.adt.datapreview.table.v1+xml
+x-csrf-token: {{csrf}}
+
+SELECT * FROM YMU_RAP_ABOOK WHERE BOOKING_ID = '0005'
+
+
+### get contents
+POST {{url}}/sap/bc/adt/datapreview/ddic?rowNumber=100&ddicEntityName=%2FDMO%2FTRAVEL HTTP/1.1
+Authorization: bearer {{accessToken}}
+Content-Type: text/plain
+Accept: application/xml, application/vnd.sap.adt.datapreview.table.v1+xml
+x-csrf-token: {{csrf}}
+
+SELECT COUNT( * )  FROM YMU_RAP_ABOOK WHERE BOOKING_ID = '0005'
+
+### run query
+POST {{url}}/sap/bc/adt/datapreview/freestyle?rowNumber=2 HTTP/1.1
+Authorization: bearer {{accessToken}}
+Content-Type: text/plain
+Accept: application/xml, application/vnd.sap.adt.datapreview.table.v1+xml
+x-csrf-token: {{csrf}}
+
+SELECT CARRIER_ID,CUSTOMER_ID,FLIGHT_DATE FROM /DMO/BOOKING WHERE BOOKING_ID = '0005'
+
+### run query on cds view
+POST {{url}}/sap/bc/adt/datapreview/freestyle?rowNumber=2 HTTP/1.1
+Authorization: bearer {{accessToken}}
+Content-Type: text/plain
+Accept: application/xml, application/vnd.sap.adt.datapreview.table.v1+xml
+x-csrf-token: {{csrf}}
+
+SELECT * FROM /DMO/C_BookSuppl_Processor_M
+
+### Binding details
+GET {{url}}/sap/bc/adt/businessservices/bindings/ymu_rap_ui_travel_o2
+Authorization: bearer {{accessToken}}
+Accept: application/*
+
+### Binding details
+GET {{url}}/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001 HTTP/1.1
+Authorization: bearer {{accessToken}}
+Accept: application/vnd.sap.adt.businessservices.odatav2.v1+xml, application/vnd.sap.adt.businessservices.odatav2.v2+xml

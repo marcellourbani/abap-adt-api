@@ -1,0 +1,54 @@
+#### Discovery
+GET  {{baseUrl}}/sap/bc/adt/discovery
+Authorization: Basic {{acuser}}:{{acpassword}}
+Accept: application/*
+
+### Feeds
+GET {{baseUrl}}/sap/bc/adt/feeds
+Authorization: Basic {{acuser}}:{{acpassword}}
+Accept: application/atom+xml;type=feed
+
+#### Debugger
+GET  {{baseUrl}}/sap/bc/adt/debugger
+Authorization: Basic {{acuser}}:{{acpassword}}
+Accept: application/*
+
+
+
+### CL_TPDA_ADT_RES_DEBUGGER BADI_ADT_RFC_TRACING
+# @name debugStatus
+GET  {{baseUrl}}/sap/bc/adt/debugger/listeners?debuggingMode=user&requestUser=DEVELOPER&terminalId=71999B60AA6349CF91D0A23773B3C728&ideId=77F4D4
+Authorization: Basic {{acuser}}:{{acpassword}}
+Accept: application/*
+x-csrf-token: fetch
+
+### Start listening - expected to stay alive until debug is active
+POST {{baseUrl}}/sap/bc/adt/debugger/listeners?debuggingMode=user&requestUser=DEVELOPER&terminalId=71999B60AA6349CF91D0A23773B3C728&ideId=77F4D41CA92911607C04C77AF896FAE3&checkConflict=true&isNotifiedOnConflict=true HTTP/1.1
+Authorization: Basic {{acuser}}:{{acpassword}}
+Accept: application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.debugger.DebuggeesList
+User-Agent: Eclipse/4.15.0.v20200305-0155 (linux; x86_64; Java ) ADT/3.10.1
+X-sap-adt-profiling: server-time
+X-CSRF-Token: {{debugStatus.response.headers.x-csrf-token}}
+
+### set settings, stateful
+# <?xml version="1.0" encoding="utf-8"?><dbg:settings systemDebugging="false" createExceptionObject="false" backgroundRFC="false" sharedObjectDebugging="false" showDataAging="false" updateDebugging="false" xmlns:dbg="http://www.sap.com/adt/debugger"/>
+POST {{baseUrl}}/sap/bc/adt/debugger?method=setDebuggerSettings HTTP/1.1
+Content-Type: application/xml
+Accept: application/xml
+User-Agent: Eclipse/4.15.0.v20200305-0155 (linux; x86_64; Java ) ADT/3.10.1
+X-sap-adt-profiling: server-time
+
+<?xml version="1.0" encoding="UTF-8"?><dbg:settings xmlns:dbg="http://www.sap.com/adt/debugger" systemDebugging="false" createExceptionObject="false" backgroundRFC="false" sharedObjectDebugging="false" showDataAging="false"></dbg:settings>
+
+### Delete breakpoint
+DELETE {{baseUrl}}/sap/bc/adt/debugger/breakpoints/KIND%3D0.SOURCETYPE%3DABAP.MAIN_PROGRAM%3DZROMAN.INCLUDE%3DZROMAN.LINE_NR%3D24?scope=external&debuggingMode=user&requestUser=DEVELOPER&terminalId=71999B60AA6349CF91D0A23773B3C728&ideId=77F4D41CA92911607C04C77AF896FAE3
+Accept: application/xml
+
+### Set brakpoint
+# response: <?xml version="1.0" encoding="utf-8"?><dbg:breakpoints xmlns:dbg="http://www.sap.com/adt/debugger"><breakpoint kind="line" clientId="390:/NPL_001_developer_en/.adt/programs/programs/zroman/zroman.asprog" id="KIND=0.SOURCETYPE=ABAP.MAIN_PROGRAM=ZROMAN.INCLUDE=ZROMAN.LINE_NR=23" nonAbapFlavour="" adtcore:uri="/sap/bc/adt/programs/programs/zroman/source/main#start=23" adtcore:type="PROG/P" adtcore:name="ZROMAN                                  ZROMAN" xmlns:adtcore="http://www.sap.com/adt/core"/></dbg:breakpoints>
+POST {{baseUrl}}/sap/bc/adt/debugger/breakpoints
+Content-Type: application/xml
+Accept: application/xml
+
+<?xml version="1.0" encoding="UTF-8"?><dbg:breakpoints scope="external" debuggingMode="user" requestUser="DEVELOPER" terminalId="71999B60AA6349CF91D0A23773B3C728" ideId="77F4D41CA92911607C04C77AF896FAE3" systemDebugging="false" deactivated="false" xmlns:dbg="http://www.sap.com/adt/debugger"><syncScope mode="full"></syncScope><breakpoint kind="line" id="KIND=0.SOURCETYPE=ABAP.MAIN_PROGRAM=ZROMAN.INCLUDE=ZROMAN.LINE_NR=23" clientId="390:/NPL_001_developer_en/.adt/programs/programs/zroman/zroman.asprog" skipCount="0" adtcore:uri="/sap/bc/adt/programs/programs/zroman/source/main#start=23" xmlns:adtcore="http://www.sap.com/adt/core"></breakpoint></dbg:breakpoints>
+
