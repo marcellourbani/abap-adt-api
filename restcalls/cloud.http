@@ -68,3 +68,4 @@ Accept: application/*
 GET {{url}}/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001&srvdname=YMU_RAP_UI_TRAVEL
 Authorization: bearer {{accessToken}}
 Accept: application/vnd.sap.adt.businessservices.odatav2.v1+xml, application/vnd.sap.adt.businessservices.odatav2.v2+xml
+

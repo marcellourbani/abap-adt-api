@@ -97,6 +97,40 @@ export interface ServiceBindingService {
     serviceDefinition: ServiceBindingPackageRef;
 }
 
+export interface BindingServiceResult {
+    link: Link;
+    services: BindingService[];
+}
+
+export interface BindingService {
+    repositoryId: string;
+    serviceId: string;
+    serviceVersion: string;
+    serviceUrl: string;
+    annotationUrl: string;
+    published: string;
+    created: string;
+    serviceInformation: BindingServiceInformation;
+}
+
+export interface BindingServiceInformation {
+    name: string;
+    version: string;
+    url: string;
+    collection: BindingServiceCollection[];
+}
+
+export interface BindingServiceCollection {
+    name: string;
+    navigation: BindingServiceNavigation[];
+}
+
+export interface BindingServiceNavigation {
+    name: string;
+    target: string;
+}
+
+
 export const parseServiceBinding = (xml: string) => {
     const s = fullParse(xml, { ignoreNameSpace: true, parseAttributeValue: false })
     const attrs = xmlNodeAttr(s.serviceBinding)
@@ -206,4 +240,33 @@ export async function tablecontents(
     return queryResult
 }
 
-// /sap/bc/adt/datapreview/freestyle?rowNumber=100
+export const parseBindingDetails = (xml: string) => {
+    const s = fullParse(xml, { ignoreNameSpace: true, parseAttributeValue: false })
+    const link = xmlNodeAttr(s?.serviceList?.link)
+    const parseCollection = (c: any) => {
+        const name = c["@_name"]
+        const navigation = xmlArray(c, "navigation").map(xmlNodeAttr)
+        return { name, navigation }
+    }
+    const parseService = (s: any) => {
+        const base = xmlNodeAttr(s)
+        const serviceInformation = xmlNodeAttr(s.serviceInformation)
+        serviceInformation.collection = xmlArray(s, "serviceInformation", "collection").map(parseCollection)
+        return ({ ...base, serviceInformation })
+    }
+    const services = xmlArray(s, "serviceList", "services").map(parseService)
+    return { link, services } as BindingServiceResult
+}
+
+export const servicePreviewUrl = (service: BindingService, collectionName: string) => {
+    const { serviceId, serviceInformation: { collection, url, name, version } } = service
+    const annotation = `${name.substr(0, 28)}_VAN`
+    const baseUrl = url.replace(/(https?:\/\/[^\/]+).*/, "$1")
+    const cn = collection.find(c => c.name === collectionName)
+    if (!cn) return
+    const encrypt = (s: string) => s.split("").map(c => String.fromCharCode(c.charCodeAt(0) + 20)).join("")
+    const names = cn.navigation.map(n => n.name).join("@@")
+    const targets = cn.navigation.map(n => n.target).join("@@")
+    const rawparm = [serviceId, cn.name, names, targets, annotation, version].join("##")
+    return `${baseUrl}/sap/bc/adt/businessservices/odatav2/feap?feapParams=${encodeURIComponent(encrypt(rawparm))}`
+}
