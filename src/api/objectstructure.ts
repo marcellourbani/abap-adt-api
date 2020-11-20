@@ -43,6 +43,7 @@ export interface Link {
   href: string
   rel: string
   type?: string
+  title?: string;
 }
 export type classIncludes =
   | "definitions"

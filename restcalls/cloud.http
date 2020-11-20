@@ -1,3 +1,6 @@
+### variables
+@accessToken = {{refresh.response.body.access_token}}
+@csrf = {{getbearer.response.headers.x-csrf-token}}
 ### refresh token
 # @name refresh
 POST {{loginUrl}}/oauth/token
@@ -7,9 +10,6 @@ Authorization: Basic {{clientId}}:{{clientSecret}}
 
 refresh_token={{refreshToken}}&grant_type=refresh_token
 
-###
-@accessToken = {{refresh.response.body.access_token}}
-@csrf = {{getbearer.response.headers.x-csrf-token}}
 ### properties
 # @name getbearer
 GET {{url}}/sap/bc/adt/repository/informationsystem/objectproperties/values?uri=%2Fsap%2Fbc%2Fadt%2Fddic%2Ftables%2F%252fdmo%252ftravel%2Fsource%2Fmain
@@ -64,7 +64,7 @@ GET {{url}}/sap/bc/adt/businessservices/bindings/ymu_rap_ui_travel_o2
 Authorization: bearer {{accessToken}}
 Accept: application/*
 
-### Binding details
-GET {{url}}/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001 HTTP/1.1
+### Binding service details
+GET {{url}}/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001&srvdname=YMU_RAP_UI_TRAVEL
 Authorization: bearer {{accessToken}}
 Accept: application/vnd.sap.adt.businessservices.odatav2.v1+xml, application/vnd.sap.adt.businessservices.odatav2.v2+xml
