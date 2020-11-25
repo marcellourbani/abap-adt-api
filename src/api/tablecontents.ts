@@ -223,23 +223,6 @@ export function parseQueryResponse(body: string) {
     return { columns, values }
 }
 
-
-export async function tablecontents(
-    h: AdtHTTP,
-    ddicEntityName: string,
-    rowNumber: number = 100,
-    decode = true
-) {
-    const qs = { rowNumber, ddicEntityName }
-    const response = await h.request(
-        `/sap/bc/adt/datapreview/ddic`,
-        { qs, headers: { Accept: "application/*" }, method: "POST" }
-    )
-    const queryResult = parseQueryResponse(response.body)
-    if (decode) return decodeQueryResult(queryResult)
-    return queryResult
-}
-
 export const parseBindingDetails = (xml: string) => {
     const s = fullParse(xml, { ignoreNameSpace: true, parseAttributeValue: false })
     const link = xmlNodeAttr(s?.serviceList?.link)
@@ -269,4 +252,62 @@ export const servicePreviewUrl = (service: BindingService, collectionName: strin
     const targets = cn.navigation.map(n => n.target).join("@@")
     const rawparm = [serviceId, cn.name, names, targets, annotation, version].join("##")
     return `${baseUrl}/sap/bc/adt/businessservices/odatav2/feap?feapParams=${encodeURIComponent(encrypt(rawparm))}`
+}
+
+
+export async function tableContents(
+    h: AdtHTTP,
+    ddicEntityName: string,
+    rowNumber: number = 100,
+    decode = true,
+    sqlQuery = ""
+) {
+    const qs = { rowNumber, ddicEntityName }
+    const response = await h.request(
+        `/sap/bc/adt/datapreview/ddic`,
+        { qs, headers: { Accept: "application/*" }, method: "POST", body: sqlQuery }
+    )
+    const queryResult = parseQueryResponse(response.body)
+    if (decode) return decodeQueryResult(queryResult)
+    return queryResult
+}
+
+export async function runQuery(
+    h: AdtHTTP,
+    sqlQuery: string,
+    rowNumber: number = 100,
+    decode = true
+) {
+    const qs = { rowNumber }
+    const response = await h.request(
+        `/sap/bc/adt/datapreview/freestyle`,
+        { qs, headers: { Accept: "application/*" }, method: "POST", body: sqlQuery }
+    )
+    const queryResult = parseQueryResponse(response.body)
+    if (decode) return decodeQueryResult(queryResult)
+    return queryResult
+}
+
+// ### Binding service details
+// GET {{url}}/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001&srvdname=YMU_RAP_UI_TRAVEL
+// Authorization: bearer {{accessToken}}
+// Accept: application/vnd.sap.adt.businessservices.odatav2.v1+xml, application/vnd.sap.adt.businessservices.odatav2.v2+xml
+
+export async function bindingDetails(
+    h: AdtHTTP,
+    binding: ServiceBinding,
+    index = 0
+) {
+    const url = `/sap/bc/adt/businessservices/odatav2/${binding.name}`
+    const service = binding.services[index]
+    const qs = {
+        "servicename": service.name,
+        "serviceversion": binding.binding.version,
+        "srvdname": binding.binding.implementation.name
+    }
+    const response = await h.request(
+        url,
+        { qs, headers: { Accept: "application/*" }, method: "GET" }
+    )
+    return parseBindingDetails(response.body)
 }

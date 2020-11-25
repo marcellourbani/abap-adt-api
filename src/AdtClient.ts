@@ -120,7 +120,9 @@ import {
   ValidationResult,
   inactiveObjects,
   publishServiceBinding,
-  unpublishServiceBinding
+  unpublishServiceBinding,
+  tableContents,
+  runQuery
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -857,5 +859,23 @@ export class ADTClient {
 
   public unPublishServiceBinding(name: string, version: string) {
     return unpublishServiceBinding(this.h, name, version)
+  }
+
+  /** Reads table data - usually returns one line more than requested */
+  public tableContents(
+    ddicEntityName: string,
+    rowNumber: number = 100,
+    decode = true,
+    sqlQuery = ""
+  ) {
+    return tableContents(this.h, ddicEntityName, rowNumber, decode, sqlQuery)
+  }
+
+  public runQuery(
+    sqlQuery: string,
+    rowNumber: number = 100,
+    decode = true
+  ) {
+    return runQuery(this.h, sqlQuery, rowNumber, decode)
   }
 }

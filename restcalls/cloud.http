@@ -29,8 +29,6 @@ Content-Type: text/plain
 Accept: application/xml, application/vnd.sap.adt.datapreview.table.v1+xml
 x-csrf-token: {{csrf}}
 
-SELECT * FROM YMU_RAP_ABOOK WHERE BOOKING_ID = '0005'
-
 
 ### get contents
 POST {{url}}/sap/bc/adt/datapreview/ddic?rowNumber=100&ddicEntityName=%2FDMO%2FTRAVEL HTTP/1.1

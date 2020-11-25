@@ -54,3 +54,25 @@ test("abapgit repos on CF", async () => {
   // staged.unstaged = []
   // await client.pushRepo(repo!, staged, repouser, repopwd)
 })
+
+test("read table", async () => {
+  if (!clientId) return
+  const client = new ADTClient(url, user, fetchToken)
+  const data = await client.tableContents("/DMO/TRAVEL", 2)
+
+  expect(data.values.length).toBe(3)
+  expect(data.columns[0].name in data.values[0]).toBeTruthy()
+
+})
+
+test("run SQL", async () => {
+  if (!clientId) return
+  const client = new ADTClient(url, user, fetchToken)
+  const data = await client.runQuery("SELECT TRAVEL_ID,CUSTOMER_ID,STATUS FROM /DMO/TRAVEL", 2)
+
+  expect(data.values.length).toBe(2)
+  expect(data.columns.length).toBe(3)
+  expect(data.columns[0].name).toBe("TRAVEL_ID")
+  expect(data.values[0].TRAVEL_ID).toBeTruthy()
+
+})
