@@ -521,12 +521,3 @@ const ctypes: CreatableType[] = [
   }
 ]
 ctypes.forEach(v => CreatableTypes.set(v.typeId, v))
-  // {
-  //   creationPath: "",
-  //   validationPath:"",
-  //   rootName: "",
-  //   nameSpace: ``,
-  //   label: "",
-  //   typeId: "",
-  //   maxLen: 10
-  // },

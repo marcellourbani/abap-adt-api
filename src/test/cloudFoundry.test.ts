@@ -1,5 +1,6 @@
 import { ADTClient } from "../AdtClient"
 import ClientOAuth2 from "client-oauth2"
+import { parseServiceBinding, servicePreviewUrl } from "../"
 const {
   accessToken = "",
   refreshToken = "",
@@ -11,7 +12,8 @@ const {
   user = "",
   repopkg = "",
   repouser = "",
-  repopwd = ""
+  repopwd = "",
+  bindingName = ""
 } = JSON.parse(process.env.ADT_CP || "") as { [key: string]: string }
 
 let oldToken: string = ""
@@ -74,5 +76,24 @@ test("run SQL", async () => {
   expect(data.columns.length).toBe(3)
   expect(data.columns[0].name).toBe("TRAVEL_ID")
   expect(data.values[0].TRAVEL_ID).toBeTruthy()
+
+})
+
+test("service bindings", async () => {
+  if (!clientId) return
+  const client = new ADTClient(url, user, fetchToken)
+  const source = await client.getObjectSource(`/sap/bc/adt/businessservices/bindings/${bindingName}`)
+  const binding = parseServiceBinding(source)
+  expect(binding.name.toLowerCase()).toBe(bindingName.toLowerCase())
+
+  const bdetails = await client.bindingDetails(binding)
+
+  // not much of a test as we don't know the details
+  expect(bdetails.services.length).toBeGreaterThan(0)
+  const collections = bdetails.services[0].serviceInformation.collection
+  expect(collections.length).toBeGreaterThan(0)
+
+  const previewLinks = collections.map(c => servicePreviewUrl(bdetails.services[0], c.name))
+  for (const l of previewLinks) expect(l).toMatch(/https:\/\//i)
 
 })

@@ -1,5 +1,5 @@
 import { URL } from "url"
-import { BindingService, BindingServiceResult, decodeQueryResult, extractBindingUrls, parseBindingDetails, parseQueryResponse, parseServiceBinding, servicePreviewUrl } from "../api/tablecontents"
+import { BindingService, BindingServiceResult, decodeQueryResult, extractBindingLinks, parseBindingDetails, parseQueryResponse, parseServiceBinding, servicePreviewUrl } from "../api/tablecontents"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 
 test("parse table data", () => {
@@ -32,10 +32,14 @@ test("parse service binding", () => {
     expect(bindings.name).toBe("YMU_RAP_UI_TRAVEL_O2")
     expect(bindings.links[0].href).toBe("/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2")
     expect(bindings.services[0].version).toBe("0001")
+    expect(bindings.services[0].serviceDefinition.name).toBe("YMU_RAP_UI_TRAVEL")
     expect(bindings.releaseSupported).toBe(false)
     expect(bindings.published).toBe(true)
-    const urls = extractBindingUrls(bindings)
-    expect(urls[0].url).toBe("/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001&srvdname=YMU_RAP_UI_TRAVEL")
+    const urls = extractBindingLinks(bindings)
+    expect(urls[0].url).toBe("/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2")
+    expect(urls[0].query).toStrictEqual({ servicename: "YMU_RAP_UI_TRAVEL_O2", serviceversion: "0001", srvdname: "YMU_RAP_UI_TRAVEL" })
+    expect(urls[0].service.name).toBe("YMU_RAP_UI_TRAVEL_O2")
+
 })
 
 test("parse binding details", () => {

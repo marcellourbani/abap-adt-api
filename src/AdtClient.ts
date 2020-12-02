@@ -122,7 +122,9 @@ import {
   publishServiceBinding,
   unpublishServiceBinding,
   tableContents,
-  runQuery
+  runQuery,
+  bindingDetails,
+  ServiceBinding
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -814,7 +816,7 @@ export class ADTClient {
   }
 
   /**
-   * @deprecated since 1.2.1, duplicate of externalRepoInfo
+   * @deprecated since 1.2.1, duplicate of gitExternalRepoInfo
    */
   public remoteRepoInfo(repo: GitRepo, user = "", password = "") {
     return remoteRepoInfo(this.h, repo, user, password)
@@ -871,11 +873,16 @@ export class ADTClient {
     return tableContents(this.h, ddicEntityName, rowNumber, decode, sqlQuery)
   }
 
+  /** Runs a given SQL query on the target */
   public runQuery(
     sqlQuery: string,
     rowNumber: number = 100,
     decode = true
   ) {
     return runQuery(this.h, sqlQuery, rowNumber, decode)
+  }
+
+  public bindingDetails(binding: ServiceBinding, index = 0) {
+    return bindingDetails(this.h, binding, index)
   }
 }

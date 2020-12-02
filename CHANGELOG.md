@@ -4,7 +4,17 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
-## [2.3.3]
+## [2.4.0] 2020-12-02
+
+### Added
+
+- SQL interface
+- table selection
+- service binding parsing
+- service binding details
+- service binding preview links
+
+## [2.3.3] 2020-11-10
 
 ### Fixed
 

@@ -1,3 +1,4 @@
+import { adtException } from "../AdtException";
 import { AdtHTTP } from "../AdtHTTP";
 import { fullParse, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities";
 import { Link } from "./objectstructure";
@@ -138,25 +139,26 @@ export const parseServiceBinding = (xml: string) => {
         attrs[key] = !`${attrs[key]}`.match(/false/i)
     const packageRef = xmlNodeAttr(s.serviceBinding.packageRef)
     const links = s.serviceBinding.link.map(xmlNodeAttr)
-    const parseService = (service: any) => {
-        const { "@_name": name, content: { "@_version": version, "@_releaseState": releaseState } } = service
-        const serviceDefinition = xmlNodeAttr(service.content.serviceDefinition)
+    const parseService = (name: string) => (service: any) => {
+        const { "@_version": version, "@_releaseState": releaseState } = service
+        const serviceDefinition = xmlNodeAttr(service.serviceDefinition)
         return { name, version, releaseState, serviceDefinition }
     }
-    const services = xmlArray(s, "serviceBinding", "services").map(parseService)
+    const { "@_name": serviceName } = xmlNode(s, "serviceBinding", "services")
+    const services = xmlArray(s, "serviceBinding", "services", "content").map(parseService(serviceName))
     const parseBinding = (b: any) => ({ ...xmlNodeAttr(b), implementation: { ...xmlNodeAttr(b.implementation) } })
     const binding = parseBinding(s.serviceBinding.binding)
 
     return { ...attrs, packageRef, links, services, binding } as ServiceBinding
 }
 
-export const extractBindingUrls = (binding: ServiceBinding) => {
-    const base = binding.links.find(l => l.rel === "http://www.sap.com/categories/odatav2")
-    if (!base) return []
+export const extractBindingLinks = (binding: ServiceBinding) => {
+    const url = binding.links.find(l => l.rel === "http://www.sap.com/categories/odatav2")?.href
+    if (!url) return []
     return binding.services.map(service => {
-        const { name, version, serviceDefinition: { name: sdname } } = service
-        const url = `${base.href}?servicename=${name}&serviceversion=${version}&srvdname=${sdname}`
-        return { service, url }
+        const { name: servicename, version: serviceversion, serviceDefinition: { name: srvdname } } = service
+        const query = { servicename, serviceversion, srvdname }
+        return { service, query, url }
     })
 }
 
@@ -288,23 +290,14 @@ export async function runQuery(
     return queryResult
 }
 
-// ### Binding service details
-// GET {{url}}/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2?servicename=YMU_RAP_UI_TRAVEL_O2&serviceversion=0001&srvdname=YMU_RAP_UI_TRAVEL
-// Authorization: bearer {{accessToken}}
-// Accept: application/vnd.sap.adt.businessservices.odatav2.v1+xml, application/vnd.sap.adt.businessservices.odatav2.v2+xml
-
 export async function bindingDetails(
     h: AdtHTTP,
     binding: ServiceBinding,
     index = 0
 ) {
-    const url = `/sap/bc/adt/businessservices/odatav2/${binding.name}`
-    const service = binding.services[index]
-    const qs = {
-        "servicename": service.name,
-        "serviceversion": binding.binding.version,
-        "srvdname": binding.binding.implementation.name
-    }
+    const queries = extractBindingLinks(binding)
+    const { query: qs, url } = queries[index]
+    if (!qs || !url) throw adtException("Binding not found")
     const response = await h.request(
         url,
         { qs, headers: { Accept: "application/*" }, method: "GET" }

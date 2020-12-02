@@ -126,7 +126,6 @@ export {
   isPackageOptions,
   isPackageType,
   objectPath,
-  extractBindingUrls,
   parentTypeId,
   parseServiceBinding,
   servicePreviewUrl,
