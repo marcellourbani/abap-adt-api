@@ -159,7 +159,7 @@ test(
       "OK_CODE"
     )
     expect(fragment.line).toBe(5)
-    expect(resp.nodes.length).toBe(2)
+    if (resp.nodes.length) expect(resp.nodes.length).toBe(2) // in newer systems this is empty for includes
   })
 )
 
@@ -489,10 +489,13 @@ test(
 test(
   "objectRegistration",
   runTest(async (c: ADTClient) => {
-    const result = await c.objectRegistrationInfo(
-      "/sap/bc/adt/programs/programs/zapidummytestprog1"
-    )
-    expect(result).toBeDefined()
+    const hasregistration = await c.collectionFeatureDetails("/sap/bc/adt/sscr/registration/objects")
+    if (hasregistration) { // removed in 1909
+      const result = await c.objectRegistrationInfo(
+        "/sap/bc/adt/programs/programs/zapidummytestprog1"
+      )
+      expect(result).toBeDefined()
+    }
   })
 )
 
@@ -767,7 +770,7 @@ test(
         "TEST_FAILURE"
       )
       expect(testfail).toBeDefined()
-      expect(testfail!.alerts.length).toBe(2)
+      expect(testfail!.alerts.length).toBeGreaterThan(0)
       const failure = findBy(
         testfail!.alerts,
         "kind",
@@ -1047,8 +1050,11 @@ test(
         // ignore
       }
       expect(clone.stateful).toBe(session_types.stateless)
-      const result = await clone.objectRegistrationInfo(obj)
-      expect(result).toBeDefined()
+      const hasregistration = await c.collectionFeatureDetails("/sap/bc/adt/sscr/registration/objects")
+      if (hasregistration) { // removed in 1909
+        const result = await clone.objectRegistrationInfo(obj)
+        expect(result).toBeDefined()
+      }
     } finally {
       c.dropSession()
     }
@@ -1209,7 +1215,7 @@ test(
   "Console application/IF_OO_ADT_CLASSRUN",
   runTest(async (c: ADTClient) => {
     const result = await c.runClass("ZAPIADT_TESTCASE_CONSOLE")
-    expect(result).toBe("Hello world!\n\n")
+    expect(result).toMatch(/Hello world!\n+/)
   })
 )
 

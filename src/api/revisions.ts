@@ -43,7 +43,15 @@ export function getRevisionLink(
   if (link) return followUrl(struct.objectUrl, link.href)
   return ""
 }
-
+const extractVersion = (entry: any) => {
+  const ADTTYPE = "application/vnd.sap.adt.transportrequests.v1+xml"
+  const base = xmlNode(entry, "atom:link")
+  if (Array.isArray(base)) {
+    const vlink = base.find(l => l["@_type"] === ADTTYPE) || base[0]
+    return xmlNode(vlink, "@_adtcore:name") || ""
+  }
+  else return xmlNode(base, "@_adtcore:name") || ""
+}
 export async function revisions(
   h: AdtHTTP,
   objectUrl: string | AbapObjectStructure,
@@ -70,7 +78,7 @@ export async function revisions(
   const versions = xmlArray(raw, "atom:feed", "atom:entry").map(
     (entry: any) => {
       const uri = xmlNode(entry, "atom:content", "@_src") || ""
-      const version = xmlNode(entry, "atom:link", "@_adtcore:name") || ""
+      const version = extractVersion(entry)
       const versionTitle = xmlNode(entry, "atom:title") || ""
       const date = xmlNode(entry, "atom:updated") || ""
       const author = xmlNode(entry, "atom:author", "atom:name")

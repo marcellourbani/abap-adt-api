@@ -211,7 +211,7 @@ export async function codeCompletionElement(
   offset: number
 ): Promise<CompletionElementInfo | string> {
   const qs = { uri: `${url}#start=${line},${offset}` }
-  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const headers = { "Content-Type": "text/plain", Accept: "application/*" }
 
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/elementinfo",
@@ -350,12 +350,12 @@ export interface ReferenceUri {
 }
 export interface UsageReferenceSnippet {
   objectIdentifier: string
-  snippets: Array<{
+  snippets: {
     uri: ReferenceUri
     matches: string
     content: string
     description: string
-  }>
+  }[]
 }
 
 function splitReferenceUri(url: string, matches: string) {

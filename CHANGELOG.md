@@ -4,6 +4,17 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## Unreleased
+
+### Fixed
+
+- core discovery for hana 1909
+- include components unit test for hana 1909
+- skipped sscr test in hana (removed API)
+- fixed content type in completion
+- fixed test for abap unit in hana 1909
+- fixed revisions for hana 1909
+
 ## [2.4.0] 2020-12-02
 
 ### Added

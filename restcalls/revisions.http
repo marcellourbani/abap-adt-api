@@ -1,6 +1,6 @@
 ### abapgit_old
 GET {{baseUrl}}/sap/bc/adt/programs/programs/zabapgit_old/source/main/versions
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Accept: application/atom+xml;type=feed
 Cache-Control:no-cache
 withCredentials:true
@@ -9,6 +9,6 @@ X-sap-adt-sessiontype:stateless
 
 ### Source
 GET {{baseUrl}}/sap/bc/adt/programs/programs/zabapgit_old/source/main
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Cache-Control:no-cache
 Accept: text/plain

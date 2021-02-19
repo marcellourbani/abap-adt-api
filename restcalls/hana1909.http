@@ -1,0 +1,48 @@
+@csrf = {{getcsrf.response.headers.x-csrf-token}}
+### core discovery 
+# @name getcsrf
+GET {{baseUrl}}/sap/bc/adt/core/discovery
+Authorization: Basic {{user}}:{{password}}
+Accept: application/atomsvc+xml
+x-csrf-token: fetch
+
+### Graph
+GET {{baseUrl}}/sap/bc/adt/compatibility/graph
+Authorization: Basic {{user}}:{{password}}
+Accept: application/xml
+
+### Discovery
+GET {{baseUrl}}/sap/bc/adt/discovery
+Authorization: Basic {{user}}:{{password}}
+Accept: application/atomsvc+xml
+
+### Objecttypes
+GET {{baseUrl}}/sap/bc/adt/repository/informationsystem/objecttypes?maxItemCount=999&name=*&data=usedByProvider
+Authorization: Basic {{user}}:{{password}}
+Accept: application/xml
+
+### typestructures
+POST {{baseUrl}}/sap/bc/adt/repository/typestructure
+Authorization: Basic {{user}}:{{password}}
+Accept: application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.RepositoryTypeList
+x-csrf-token: {{csrf}}
+
+### users
+GET {{baseUrl}}/sap/bc/adt/system/users
+Authorization: Basic {{user}}:{{password}}
+Accept    : application/atom+xml;type=feed
+
+### tr configurations
+GET {{baseUrl}}/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations
+Authorization: Basic {{user}}:{{password}}
+Accept: application/*
+
+### configuration, url from previous
+GET {{baseUrl}}/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations/0242AC1100021EEB9CB819072C585EAB
+Authorization: Basic {{user}}:{{password}}
+Accept: application/vnd.sap.adt.configuration.v1+xml
+
+### transports
+GET {{baseUrl}}/sap/bc/adt/cts/transportrequests?targets=true&configUri=%2Fsap%2Fbc%2Fadt%2Fcts%2Ftransportrequests%2Fsearchconfiguration%2Fconfigurations%2F0242AC1100021EEB9CB819072C585EAB
+Authorization: Basic {{user}}:{{password}}
+Accept: application/vnd.sap.adt.transportorganizer.v1+xml, application/vnd.sap.adt.transportorganizertree.v1+xml

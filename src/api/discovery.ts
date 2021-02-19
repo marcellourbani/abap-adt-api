@@ -56,7 +56,7 @@ export async function adtDiscovery(h: AdtHTTP) {
 export async function adtCoreDiscovery(h: AdtHTTP) {
   const response = await h.request("/sap/bc/adt/core/discovery")
   const ret = fullParse(response.body)
-  const workspaces: any = xmlArray(ret, "app:service", "app:workspace")
+  const workspaces: any = xmlArray(ret, "app:service", "app:workspace").filter((w: any) => w["app:collection"])
 
   return workspaces.map((w: any) => {
     const collection = w["app:collection"]

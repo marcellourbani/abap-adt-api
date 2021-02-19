@@ -1,16 +1,16 @@
 #### Discovery
 GET  {{baseUrl}}/sap/bc/adt/discovery
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Accept: application/*
 
 ### Feeds
 GET {{baseUrl}}/sap/bc/adt/feeds
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Accept: application/atom+xml;type=feed
 
 #### Debugger
 GET  {{baseUrl}}/sap/bc/adt/debugger
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Accept: application/*
 
 
@@ -18,13 +18,13 @@ Accept: application/*
 ### CL_TPDA_ADT_RES_DEBUGGER BADI_ADT_RFC_TRACING
 # @name debugStatus
 GET  {{baseUrl}}/sap/bc/adt/debugger/listeners?debuggingMode=user&requestUser=DEVELOPER&terminalId=71999B60AA6349CF91D0A23773B3C728&ideId=77F4D4
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Accept: application/*
 x-csrf-token: fetch
 
 ### Start listening - expected to stay alive until debug is active
 POST {{baseUrl}}/sap/bc/adt/debugger/listeners?debuggingMode=user&requestUser=DEVELOPER&terminalId=71999B60AA6349CF91D0A23773B3C728&ideId=77F4D41CA92911607C04C77AF896FAE3&checkConflict=true&isNotifiedOnConflict=true HTTP/1.1
-Authorization: Basic {{acuser}}:{{acpassword}}
+Authorization: Basic {{user}}:{{password}}
 Accept: application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.debugger.DebuggeesList
 User-Agent: Eclipse/4.15.0.v20200305-0155 (linux; x86_64; Java ) ADT/3.10.1
 X-sap-adt-profiling: server-time
