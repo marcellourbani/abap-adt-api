@@ -11,7 +11,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions } from "../api"
-import { fullParse, isArray, isString } from "../utilities"
+import { fullParse, isArray, isString, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -1000,6 +1000,19 @@ test(
     expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
   })
 )
+test("read transport configurations", runTest(async (c: ADTClient) => {
+  const conf = await c.transportConfigurations()
+  expect(conf[0]).toBeDefined()
+  expect(conf[0].changedBy).toBeDefined()
+  expect(conf[0].link.startsWith("/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations/")).toBeTruthy()
+}))
+
+
+test("read transport configuration details", runTest(async (c: ADTClient) => {
+  const conf = await c.transportConfigurations()
+  const cfg = await c.getTransportConfiguration(conf[0].link)
+  expect(cfg.User).toBeTruthy()
+}))
 
 test(
   "System users",

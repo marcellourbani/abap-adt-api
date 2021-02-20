@@ -6,6 +6,7 @@ import {
   decodeEntity,
   fullParse,
   JSON2AbapXML,
+  parseSapDate,
   xmlArray,
   xmlNode,
   xmlNodeAttr
@@ -59,6 +60,32 @@ export interface TransportInfo {
   TADIRDEVC?: string
   URI?: string
   LOCKS?: TransportLock
+}
+
+export interface TransportConfigurationEntry {
+  createdBy: string;
+  changedBy: string;
+  client: string;
+  link: string;
+  createdAt: number;
+  changedAt: number;
+}
+export enum TransportDateFilter {
+  SinceYesterday = 0,
+  SincleTwoWeeks = 1,
+  SinceFourWeeks = 2,
+  DateRange = 3
+}
+export interface TransportConfiguration {
+  WorkbenchRequests: boolean;
+  TransportOfCopies: boolean;
+  Released: boolean;
+  User: string;
+  CustomizingRequests: boolean;
+  FromDate: number;
+  ToDate: number;
+  DateFilter: TransportDateFilter;
+  Modifiable: boolean;
 }
 
 function extractLocks(raw: any): TransportLock | undefined {
@@ -266,8 +293,8 @@ export async function transportRelease(
   const action = IgnoreATC
     ? "relObjigchkatc"
     : ignoreLocks
-    ? "relwithignlock"
-    : "newreleasejobs"
+      ? "relwithignlock"
+      : "newreleasejobs"
   const response = await h.request(
     `/sap/bc/adt/cts/transportrequests/${transportNumber}/${action}`,
     {
@@ -378,4 +405,64 @@ export async function transportReference(
   const raw = fullParse(response.body)
   const link = xmlNodeAttr(xmlNode(raw, "tm:root", "atom:link"))
   return link.href as string
+}
+const parseTransportConfigItemList = (body: string) => {
+  const raw = fullParse(body, { parseAttributeValue: false })
+  return xmlArray(raw, "configurations:configurations", "configuration:configuration").map((conf: any) => {
+    const { "atom:link": { "@_href": link }, ...rest } = conf
+    const { createdAt, changedAt, ...attrs } = xmlNodeAttr(rest)
+    const item: TransportConfigurationEntry = { ...attrs, link, createdAt: Date.parse(createdAt), changedAt: Date.parse(changedAt) }
+    return item
+  })
+}
+
+export async function transportConfigurations(
+  h: AdtHTTP
+) {
+  const headers = { Accept: "application/vnd.sap.adt.configurations.v1+xml" }
+  const url = "/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations"
+  const response = await h.request(url, { headers })
+  return parseTransportConfigItemList(response.body)
+}
+
+
+const parseTransportConfig = (r: string) => {
+  const raw = fullParse(r, { parseAttributeValue: false })
+
+  const props = xmlArray(raw, "configuration:configuration", "configuration:properties", "configuration:property")
+    .map((p: any) => {
+      return { key: p["@_key"], value: p["#text"] }
+    })
+  const cfg: any = {}
+  for (const { key, value } of props) cfg[key] = value
+  const WorkbenchRequests = cfg.WorkbenchRequests
+  const TransportOfCopies = cfg.TransportOfCopies
+  const Released = cfg.Released
+  const User = cfg.User
+  const CustomizingRequests = cfg.CustomizingRequests
+  const FromDate = cfg.FromDate && parseSapDate(`${cfg.FromDate}`)
+  const ToDate = cfg.ToDate && parseSapDate(`${cfg.ToDate}`)
+  const DateFilter = cfg.DateFilter
+  const Modifiable = cfg.Modifiable
+
+  return {
+    WorkbenchRequests,
+    TransportOfCopies,
+    Released,
+    User,
+    CustomizingRequests,
+    FromDate,
+    ToDate,
+    DateFilter,
+    Modifiable
+  } as TransportConfiguration
+}
+
+export async function getTransportConfiguration(
+  h: AdtHTTP,
+  url: string
+) {
+  const headers = { Accept: "application/vnd.sap.adt.configuration.v1+xml" }
+  const response = await h.request(url, { headers })
+  return parseTransportConfig(response.body)
 }

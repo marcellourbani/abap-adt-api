@@ -124,7 +124,9 @@ import {
   tableContents,
   runQuery,
   bindingDetails,
-  ServiceBinding
+  ServiceBinding,
+  transportConfigurations,
+  getTransportConfiguration
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -701,6 +703,13 @@ export class ADTClient {
     superTypes = false
   ) {
     return typeHierarchy(this.h, url, body, line, offset, superTypes)
+  }
+  public transportConfigurations() {
+    return transportConfigurations(this.h)
+  }
+
+  public getTransportConfiguration(url: string) {
+    return getTransportConfiguration(this.h, url)
   }
 
   public userTransports(user: string, targets = true) {

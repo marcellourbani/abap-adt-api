@@ -101,6 +101,13 @@ export function toInt(x?: string) {
   return 0
 }
 
+export const parseSapDate = (d: string) => {
+  const match = d.match(/(\d\d\d\d)(\d\d)(\d\d)/)
+  if (!match) return new Date() // wrong but valid
+  const [Y, M, D] = match.slice(1)
+  return Date.UTC(toInt(Y), toInt(M) - 1, toInt(D))
+}
+
 export const [decodeEntity, encodeEntity] = (() => {
   let entities: AllHtmlEntities | undefined
   return [
