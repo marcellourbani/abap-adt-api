@@ -32,6 +32,11 @@ GET {{baseUrl}}/sap/bc/adt/system/users
 Authorization: Basic {{user}}:{{password}}
 Accept    : application/atom+xml;type=feed
 
+### tr config metadata
+GET {{baseUrl}}/sap/bc/adt/cts/transportrequests/searchconfiguration/metadata
+Authorization: Basic {{user}}:{{password}}
+Accept: application/*
+
 ### tr configurations
 GET {{baseUrl}}/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations
 Authorization: Basic {{user}}:{{password}}
@@ -46,3 +51,23 @@ Accept: application/vnd.sap.adt.configuration.v1+xml
 GET {{baseUrl}}/sap/bc/adt/cts/transportrequests?targets=true&configUri=%2Fsap%2Fbc%2Fadt%2Fcts%2Ftransportrequests%2Fsearchconfiguration%2Fconfigurations%2F0242AC1100021EEB9CB819072C585EAB
 Authorization: Basic {{user}}:{{password}}
 Accept: application/vnd.sap.adt.transportorganizer.v1+xml, application/vnd.sap.adt.transportorganizertree.v1+xml
+
+### save transport config - needs etag from read config
+PUT {{baseUrl}}/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations/0242AC1100021EEB9CB819072C585EAB
+Authorization: Basic {{user}}:{{password}}
+Accept    : application/vnd.sap.adt.configuration.v1+xml
+Content-Type: application/vnd.sap.adt.configuration.v1+xml
+x-csrf-token: {{csrf}}
+If-Match: 20210220150417
+
+<configuration:configuration xmlns:configuration="http://www.sap.com/adt/configuration">
+<configuration:properties>
+<configuration:property key="WorkbenchRequests">true</configuration:property>
+<configuration:property key="TransportOfCopies">false</configuration:property>
+<configuration:property key="User">DEVELOPER</configuration:property>
+<configuration:property key="Released">true</configuration:property>
+<configuration:property key="CustomizingRequests">false</configuration:property>
+<configuration:property key="DateFilter">2</configuration:property>
+<configuration:property key="Modifiable">true</configuration:property>
+</configuration:properties>
+</configuration:configuration>

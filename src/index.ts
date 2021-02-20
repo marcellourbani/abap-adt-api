@@ -94,6 +94,8 @@ export {
   SyntaxCheckResult,
   SystemUser,
   TransportAddUserResponse,
+  SimpleTransportConfiguration,
+  RangeTransportConfiguration,
   TransportConfiguration,
   TransportConfigurationEntry,
   TransportDateFilter,

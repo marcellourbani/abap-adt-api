@@ -7,6 +7,7 @@ import {
   fullParse,
   JSON2AbapXML,
   parseSapDate,
+  toSapDate,
   xmlArray,
   xmlNode,
   xmlNodeAttr
@@ -67,6 +68,7 @@ export interface TransportConfigurationEntry {
   changedBy: string;
   client: string;
   link: string;
+  etag: string,
   createdAt: number;
   changedAt: number;
 }
@@ -76,17 +78,30 @@ export enum TransportDateFilter {
   SinceFourWeeks = 2,
   DateRange = 3
 }
-export interface TransportConfiguration {
+
+export interface SimpleTransportConfiguration {
+  DateFilter: TransportDateFilter.SinceYesterday | TransportDateFilter.SincleTwoWeeks | TransportDateFilter.SinceFourWeeks
   WorkbenchRequests: boolean;
   TransportOfCopies: boolean;
   Released: boolean;
   User: string;
   CustomizingRequests: boolean;
-  FromDate: number;
-  ToDate: number;
-  DateFilter: TransportDateFilter;
   Modifiable: boolean;
 }
+
+export interface RangeTransportConfiguration {
+  DateFilter: TransportDateFilter;
+  FromDate: number;
+  ToDate: number;
+  WorkbenchRequests: boolean;
+  TransportOfCopies: boolean;
+  Released: boolean;
+  User: string;
+  CustomizingRequests: boolean;
+  Modifiable: boolean;
+}
+
+export type TransportConfiguration = SimpleTransportConfiguration | RangeTransportConfiguration
 
 function extractLocks(raw: any): TransportLock | undefined {
   const lock = raw && raw.CTS_OBJECT_LOCK
@@ -257,6 +272,61 @@ export async function userTransports(h: AdtHTTP, user: string, targets = true) {
   return retval
 }
 
+export async function transportsByConfig(h: AdtHTTP, configUri: string, targets = true) {
+  const response = await h.request("/sap/bc/adt/cts/transportrequests", {
+    qs: { configUri, targets }
+  })
+
+  const raw = fullParse(response.body)
+  const workbench = xmlArray(raw, "tm:root", "tm:workbench", "tm:target").map(
+    parseTargets
+  )
+
+  const customizing = xmlArray(
+    raw,
+    "tm:root",
+    "tm:customizing",
+    "tm:target"
+  ).map(parseTargets)
+
+  const retval: TransportsOfUser = { workbench, customizing }
+  return retval
+}
+
+const serializeTransportConfig = (cfg: TransportConfiguration) => {
+  const w = (k: string, v: string) => `<configuration:property key="${k}">${v}</configuration:property>`
+  const p = <T extends Record<string, any>>(v: T, k: string) => w(k, v[k])
+  const td = (d: number) => `${toSapDate(new Date(d))}`
+  const datelimit = cfg.DateFilter === TransportDateFilter.DateRange ?
+    `${w("FromDate", td(cfg.FromDate))}${w("ToDate", td(cfg.ToDate))}` : ""
+  return "".concat(
+    `<configuration:configuration xmlns:configuration="http://www.sap.com/adt/configuration"> <configuration:properties>`,
+    p(cfg, "WorkbenchRequests"),
+    p(cfg, "CustomizingRequests"),
+    p(cfg, "TransportOfCopies"),
+    p(cfg, "DateFilter"),
+    p(cfg, "Modifiable"),
+    p(cfg, "Released"),
+    p(cfg, "User"),
+    datelimit,
+    `</configuration:properties> </configuration:configuration>`
+  )
+}
+
+export async function setTransportsConfig(h: AdtHTTP, uri: string, etag: string, config: TransportConfiguration) {
+
+  const body = serializeTransportConfig(config)
+  const headers = {
+    "Accept": "application/vnd.sap.adt.configuration.v1+xml",
+    "Content-Type": "application/vnd.sap.adt.configuration.v1+xml",
+    "If-Match": etag
+  }
+
+  const response = await h.request(uri, { method: "PUT", headers, body })
+
+  return parseTransportConfig(response.body)
+}
+
 function validateTransport(transportNumber: string) {
   if (transportNumber.length !== 10 || !transportNumber.match(/^[a-z]\w\wk/i))
     adtException("Invalid transport number:" + transportNumber)
@@ -409,9 +479,9 @@ export async function transportReference(
 const parseTransportConfigItemList = (body: string) => {
   const raw = fullParse(body, { parseAttributeValue: false })
   return xmlArray(raw, "configurations:configurations", "configuration:configuration").map((conf: any) => {
-    const { "atom:link": { "@_href": link }, ...rest } = conf
+    const { "atom:link": { "@_href": link, "@_etag": etag }, ...rest } = conf
     const { createdAt, changedAt, ...attrs } = xmlNodeAttr(rest)
-    const item: TransportConfigurationEntry = { ...attrs, link, createdAt: Date.parse(createdAt), changedAt: Date.parse(changedAt) }
+    const item: TransportConfigurationEntry = { ...attrs, link, etag, createdAt: Date.parse(createdAt), changedAt: Date.parse(changedAt) }
     return item
   })
 }

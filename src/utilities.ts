@@ -108,6 +108,8 @@ export const parseSapDate = (d: string) => {
   return Date.UTC(toInt(Y), toInt(M) - 1, toInt(D))
 }
 
+export const toSapDate = (d: Date) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate()
+
 export const [decodeEntity, encodeEntity] = (() => {
   let entities: AllHtmlEntities | undefined
   return [

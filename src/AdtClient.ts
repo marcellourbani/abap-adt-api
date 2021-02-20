@@ -126,7 +126,10 @@ import {
   bindingDetails,
   ServiceBinding,
   transportConfigurations,
-  getTransportConfiguration
+  getTransportConfiguration,
+  transportsByConfig,
+  setTransportsConfig,
+  TransportConfiguration
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -515,6 +518,19 @@ export class ADTClient {
     )
   }
 
+  public async findCollectionByUrl(url: string) {
+    if (!this.discovery) this.discovery = await this.adtDiscovery()
+    for (const discoveryResult of this.discovery) {
+      const collection = discoveryResult.collection.find(c => c.href === url)
+      if (collection) return { discoveryResult, collection }
+    }
+  }
+
+  public hasTransportConfig = async () => {
+    const collection = await this.findCollectionByUrl("/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations") || {}
+    return !!collection
+  }
+
   public createTestInclude(clas: string, lockHandle: string, transport = "") {
     return createTestInclude(this.h, clas, lockHandle, transport)
   }
@@ -712,8 +728,16 @@ export class ADTClient {
     return getTransportConfiguration(this.h, url)
   }
 
+  public setTransportsConfig(uri: string, etag: string, config: TransportConfiguration) {
+    return setTransportsConfig(this.h, uri, etag, config)
+  }
+
   public userTransports(user: string, targets = true) {
     return userTransports(this.h, user, targets)
+  }
+
+  public transportsByConfig(configUri: string, targets = true) {
+    return transportsByConfig(this.h, configUri, targets)
   }
 
   public transportDelete(transportNumber: string) {

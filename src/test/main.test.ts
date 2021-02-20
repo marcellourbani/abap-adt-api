@@ -987,10 +987,43 @@ ENDCLASS.`
 )
 
 test(
-  "user transports",
+  "user transports - older",
   runTest(async (c: ADTClient) => {
     jest.setTimeout(8000) // this usually takes longer than the default 5000
+    // in newer systems this is based on a transport configuration
+    if (await c.hasTransportConfig()) return
     const transports = await c.userTransports(process.env.ADT_USER!)
+    expect(transports.workbench.length).toBeGreaterThan(0)
+    let hit: any
+    for (const s of transports.workbench)
+      for (const t of s.modifiable)
+        if (t["tm:number"] === process.env.ADT_TRANS) hit = t
+    expect(hit).toBeDefined()
+    expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
+  })
+)
+test(
+  "user transports - newer",
+  runTest(async (c: ADTClient) => {
+    jest.setTimeout(8000) // this usually takes longer than the default 5000
+    // in newer systems this is based on a transport configuration
+    if (!await c.hasTransportConfig()) return
+    // this requires database changes
+    if (process.env.ADT_ENABLE_ALL !== "YES") return
+    const configs = await c.transportConfigurations()
+    const oldconfig = await c.getTransportConfiguration(configs[0].link)
+    // make sure the config is for the current user
+    const User = (process.env.ADT_USER || "").toUpperCase()
+    await c.setTransportsConfig(configs[0].link, configs[0].etag, {
+      ...oldconfig,
+      WorkbenchRequests: true, User: process.env.ADT_USER!
+    })
+    // read transports
+    const transports = await c.transportsByConfig(configs[0].link)
+    //reset old config
+    const newconfigs = await c.transportConfigurations()
+    await c.setTransportsConfig(newconfigs[0].link, newconfigs[0].etag, oldconfig)
+    // assert transport results
     expect(transports.workbench.length).toBeGreaterThan(0)
     let hit: any
     for (const s of transports.workbench)
@@ -1005,6 +1038,7 @@ test("read transport configurations", runTest(async (c: ADTClient) => {
   expect(conf[0]).toBeDefined()
   expect(conf[0].changedBy).toBeDefined()
   expect(conf[0].link.startsWith("/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations/")).toBeTruthy()
+  expect(conf[0].etag).toMatch(/^\d+$/)
 }))
 
 
