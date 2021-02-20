@@ -527,7 +527,7 @@ export class ADTClient {
   }
 
   public hasTransportConfig = async () => {
-    const collection = await this.findCollectionByUrl("/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations") || {}
+    const collection = await this.findCollectionByUrl("/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations")
     return !!collection
   }
 
