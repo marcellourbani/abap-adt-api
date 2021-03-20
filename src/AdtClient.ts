@@ -129,7 +129,8 @@ import {
   getTransportConfiguration,
   transportsByConfig,
   setTransportsConfig,
-  TransportConfiguration
+  TransportConfiguration,
+  createTransportsConfig
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -730,6 +731,10 @@ export class ADTClient {
 
   public setTransportsConfig(uri: string, etag: string, config: TransportConfiguration) {
     return setTransportsConfig(this.h, uri, etag, config)
+  }
+
+  public createTransportsConfig() {
+    return createTransportsConfig(this.h)
   }
 
   public userTransports(user: string, targets = true) {

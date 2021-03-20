@@ -313,6 +313,15 @@ const serializeTransportConfig = (cfg: TransportConfiguration) => {
   )
 }
 
+export async function createTransportsConfig(h: AdtHTTP) {
+  const headers = { "Accept": "application/vnd.sap.adt.configuration.v1+xml" }
+  const uri = "/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations"
+  const response = await h.request(uri, { method: "POST", headers })
+
+  return parseTransportConfig(response.body)
+
+}
+
 export async function setTransportsConfig(h: AdtHTTP, uri: string, etag: string, config: TransportConfiguration) {
 
   const body = serializeTransportConfig(config)
