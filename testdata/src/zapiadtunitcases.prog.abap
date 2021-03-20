@@ -1,5 +1,5 @@
 *
-REPORT ZAPIADTUNITCASES.
+REPORT zapiadtunitcases.
 CONSTANTS:cgreeting TYPE string VALUE 'Hello,world!'.
 
 
@@ -37,7 +37,7 @@ CLASS lcl_test1 IMPLEMENTATION.
   METHOD test_failure.
     DATA:g TYPE string.
 
-    cl_aunit_warning_c=>create_by_id( param1 = 'TEST' ).
+    cl_aunit_warning_c=>internal_problem( msg = 'TEST' ).
 
     PERFORM foo CHANGING g.
     assert_equals( act = g exp = 'FOO' ).
