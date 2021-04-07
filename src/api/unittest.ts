@@ -51,7 +51,9 @@ export interface UnitTestClass {
   durationCategory: string
   riskLevel: string
   testmethods: UnitTestMethod[]
+  alerts: UnitTestAlert[]
 }
+
 export async function runUnitTest(h: AdtHTTP, url: string) {
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const body = `<?xml version="1.0" encoding="UTF-8"?>
@@ -110,9 +112,9 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   ).map(c => {
     return {
       ...xmlNodeAttr(c),
+      alerts: xmlArray(c, "alerts", "alert").map(parseAlert),
       testmethods: xmlFlatArray(c, "testMethods", "testMethod").map(parseMethod)
     }
   })
-
   return classes
 }
