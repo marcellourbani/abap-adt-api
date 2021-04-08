@@ -8,6 +8,11 @@ GET {{baseUrl}}/sap/bc/adt/feeds
 Authorization: Basic {{user}}:{{password}}
 Accept: application/atom+xml;type=feed
 
+### Dumps Feed
+GET {{baseUrl}}/sap/bc/adt/runtime/dumps?$query=and(%20equals(%20responsible,%20DEVELOPER%20)%20)&$inlinecount=allpages&$top=50
+Authorization: Basic {{user}}:{{password}}
+Accept: application/atom+xml;type=feed
+
 #### Debugger
 GET  {{baseUrl}}/sap/bc/adt/debugger
 Authorization: Basic {{user}}:{{password}}

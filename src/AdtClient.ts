@@ -130,7 +130,8 @@ import {
   transportsByConfig,
   setTransportsConfig,
   TransportConfiguration,
-  createTransportsConfig
+  createTransportsConfig,
+  feeds
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -922,5 +923,9 @@ export class ADTClient {
 
   public bindingDetails(binding: ServiceBinding, index = 0) {
     return bindingDetails(this.h, binding, index)
+  }
+
+  public feeds() {
+    return feeds(this.h)
   }
 }

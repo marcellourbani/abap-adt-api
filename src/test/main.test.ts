@@ -144,7 +144,7 @@ test(
     )
     expect(fragment).toBeDefined()
     expect(fragment.line).toBe(105)
-    expect(resp.nodes.length).toBe(63)
+    expect(resp.nodes.length).toBeGreaterThanOrEqual(60)
   })
 )
 // will fail in older systems
@@ -1459,3 +1459,9 @@ test("type validation for service binding options", () => {
   }
   expect(isBindingOptions(testdata)).toBe(true)
 })
+
+test("feed list", runTest(async (c: ADTClient) => {
+  const feeds = await c.feeds()
+  const dumps = feeds.find(f => f.href === "/sap/bc/adt/runtime/dumps")
+  expect(dumps).toBeDefined()
+}))
