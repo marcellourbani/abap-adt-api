@@ -131,7 +131,8 @@ import {
   setTransportsConfig,
   TransportConfiguration,
   createTransportsConfig,
-  feeds
+  feeds,
+  dumps
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -927,5 +928,9 @@ export class ADTClient {
 
   public feeds() {
     return feeds(this.h)
+  }
+
+  public dumps(query?: string) {
+    return dumps(this.h, query)
   }
 }

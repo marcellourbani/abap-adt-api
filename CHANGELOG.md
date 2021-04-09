@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 2.8.0 [2021-09-07]
+
+### Added
+
+- feeds
+- dumps
+
 ## 2.7.0 [2021-04-07]
 
 ### Added

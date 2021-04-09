@@ -109,6 +109,7 @@ export const parseSapDate = (d: string) => {
 }
 
 export const toSapDate = (d: Date) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate()
+export const parseJsonDate = (d: string) => new Date(Date.parse(d))
 
 export const [decodeEntity, encodeEntity] = (() => {
   let entities: AllHtmlEntities | undefined

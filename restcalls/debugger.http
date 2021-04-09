@@ -49,7 +49,7 @@ X-sap-adt-profiling: server-time
 DELETE {{baseUrl}}/sap/bc/adt/debugger/breakpoints/KIND%3D0.SOURCETYPE%3DABAP.MAIN_PROGRAM%3DZROMAN.INCLUDE%3DZROMAN.LINE_NR%3D24?scope=external&debuggingMode=user&requestUser=DEVELOPER&terminalId=71999B60AA6349CF91D0A23773B3C728&ideId=77F4D41CA92911607C04C77AF896FAE3
 Accept: application/xml
 
-### Set brakpoint
+### Set breakpoint
 # response: <?xml version="1.0" encoding="utf-8"?><dbg:breakpoints xmlns:dbg="http://www.sap.com/adt/debugger"><breakpoint kind="line" clientId="390:/NPL_001_developer_en/.adt/programs/programs/zroman/zroman.asprog" id="KIND=0.SOURCETYPE=ABAP.MAIN_PROGRAM=ZROMAN.INCLUDE=ZROMAN.LINE_NR=23" nonAbapFlavour="" adtcore:uri="/sap/bc/adt/programs/programs/zroman/source/main#start=23" adtcore:type="PROG/P" adtcore:name="ZROMAN                                  ZROMAN" xmlns:adtcore="http://www.sap.com/adt/core"/></dbg:breakpoints>
 POST {{baseUrl}}/sap/bc/adt/debugger/breakpoints
 Content-Type: application/xml

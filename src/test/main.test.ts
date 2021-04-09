@@ -11,7 +11,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions } from "../api"
-import { fullParse, isArray, isString, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { decodeEntity, fullParse, isArray, isString, parseJsonDate, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -1464,4 +1464,18 @@ test("feed list", runTest(async (c: ADTClient) => {
   const feeds = await c.feeds()
   const dumps = feeds.find(f => f.href === "/sap/bc/adt/runtime/dumps")
   expect(dumps).toBeDefined()
+  expect(dumps?.accept).toBe("application/atom+xml")
+}))
+
+test("dumps", runTest(async (c: ADTClient) => {
+  const feeds = await c.feeds()
+  const dumps = feeds.find(f => f.href === "/sap/bc/adt/runtime/dumps")
+  expect(dumps).toBeDefined()
+  const query = dumps?.queryVariants.find(v => v.isDefault)
+  const dumpsFeed = await c.dumps(query?.queryString)
+  expect(dumpsFeed.dumps).toBeDefined()
+  if (dumpsFeed.dumps.length) {
+    const last = dumpsFeed.dumps[0]
+    expect(last.text).toBeDefined()
+  }
 }))
