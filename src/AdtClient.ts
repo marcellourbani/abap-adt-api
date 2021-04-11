@@ -144,7 +144,9 @@ import {
   debuggerSaveSettings,
   debuggerStack,
   debuggerAttach,
-  DebugAttach
+  DebugAttach,
+  debuggerVariables,
+  debuggerChildVariables
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -995,5 +997,13 @@ export class ADTClient {
 
   public debuggerStackTrace(semanticURIs = true) {
     return debuggerStack(this.h, semanticURIs)
+  }
+
+  public debuggerVariables(parents: string[]) {
+    return debuggerVariables(this.h, parents)
+  }
+
+  public debuggerChildVariables(parent: string = "@ROOT") {
+    return debuggerChildVariables(this.h, parent)
   }
 }
