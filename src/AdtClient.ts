@@ -139,7 +139,12 @@ import {
   debuggerListen,
   debuggerDeleteListener,
   debuggerListBreakpoints,
-  DebugBreakpoint
+  DebugBreakpoint,
+  DebugSettings,
+  debuggerSaveSettings,
+  debuggerStack,
+  debuggerAttach,
+  DebugAttach
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -955,7 +960,7 @@ export class ADTClient {
    * 
    * @returns either an error, if another client is listening, or the details of the object being debugged. Can take hours to return
    */
-  public debuggerListen(debuggingMode: "user", terminalId: string, ideId: string, user: string): Promise<DebugListenerError | Debuggee>
+  public debuggerListen(debuggingMode: "user", terminalId: string, ideId: string, user: string): Promise<DebugListenerError | Debuggee | undefined>
   public debuggerListen(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string) {
     return debuggerListen(this.h, debuggingMode, terminalId, ideId, user)
   }
@@ -977,5 +982,18 @@ export class ADTClient {
   public debuggerListBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
   public debuggerListBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, systemDebugging = false, deactivated = false) {
     return debuggerListBreakpoints(this.h, debuggingMode, terminalId, ideId, user, systemDebugging, deactivated)
+  }
+
+  public debuggerAttach(debuggingMode: "user", debuggeeId: string, user: string, dynproDebugging?: boolean): Promise<DebugAttach>
+  public debuggerAttach(debuggingMode: DebuggingMode, debuggeeId: string, user?: string, dynproDebugging = false) {
+    return debuggerAttach(this.h, debuggingMode, debuggeeId, user, dynproDebugging)
+  }
+
+  public debuggerSaveSettings(settings: Partial<DebugSettings>) {
+    return debuggerSaveSettings(this.h, settings)
+  }
+
+  public debuggerStackTrace(semanticURIs = true) {
+    return debuggerStack(this.h, semanticURIs)
   }
 }

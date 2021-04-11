@@ -56,4 +56,3 @@ Accept: application/xml
 Authorization: Basic {{user}}:{{password}}
 
 <?xml version="1.0" encoding="UTF-8"?><dbg:breakpoints scope="external" debuggingMode="user" requestUser="DEVELOPER" terminalId="71999B60AA6349CF91D0A23773B3C728" ideId="796B6D15B9A1BEC388DA0C50010D2F62" systemDebugging="false" deactivated="false" xmlns:dbg="http://www.sap.com/adt/debugger"><syncScope mode="full"></syncScope><breakpoint kind="line" id="KIND=0.SOURCETYPE=ABAP.MAIN_PROGRAM=ZROMAN.INCLUDE=ZROMAN.LINE_NR=23" clientId="390:/NPL_001_developer_en/.adt/programs/programs/zroman/zroman.asprog" skipCount="0" adtcore:uri="/sap/bc/adt/programs/programs/zroman/source/main#start=23" xmlns:adtcore="http://www.sap.com/adt/core"></breakpoint></dbg:breakpoints>
-
