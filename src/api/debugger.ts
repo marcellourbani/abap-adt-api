@@ -1,5 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { fullParse, isString, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { parseUri, UriParts } from "./urlparser"
 
 export type DebuggingMode = "user" | "terminal"
@@ -210,10 +210,13 @@ export interface DebugVariable {
     INHERITANCE_LEVEL: number;
     INHERITANCE_CLASS: string;
 }
-
+interface DebugError extends Error {
+    extra?: DebugListenerError
+}
 export type DebugStepType = "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "stepRunToLine" | "stepJumpToLine"
 const parseStep = (body: string): DebugStep => {
     const raw = fullParse(body, { ignoreNameSpace: true })
+    checkException(raw)
     const attrs = xmlNodeAttr(raw.step)
     const settings = xmlNodeAttr(raw?.step?.settings)
     const actions = xmlArray(raw, "step", "actions", "action").map(xmlNodeAttr)
@@ -266,11 +269,7 @@ const parseBreakpoints = (body: string): DebugBreakpoint[] => {
         .map(x => ({ ...x, uri: parseUri(x.uri) }))
 }
 
-const parseDebugListeners = (
-    body: string
-): DebugListenerError | Debuggee | undefined => {
-    if (!body) return
-    const raw = fullParse(body, { ignoreNameSpace: true })
+const parseDebugError = (raw: any): DebugListenerError | undefined => {
     if (raw.exception) {
         const {
             namespace: { "@_id": namespace },
@@ -290,6 +289,24 @@ const parseDebugListeners = (
             localizedMessage: parseMessage(localizedMessage)
         }
     }
+}
+
+const checkException = (raw: any) => {
+    const e = parseDebugError(raw)
+    if (e) {
+        const err: DebugError = new Error(e.message.text);
+        err.extra = e
+        throw err
+    }
+}
+
+const parseDebugListeners = (
+    body: string
+): DebugListenerError | Debuggee | undefined => {
+    if (!body) return
+    const raw = fullParse(body, { ignoreNameSpace: true })
+    const err = parseDebugError(raw)
+    if (err) return err
     const debug = xmlNode(raw, "abap", "values", "DATA", "STPDA_DEBUGGEE")
     return { ...debug, URI: parseUri(debug.URI) }
 }
@@ -335,11 +352,19 @@ export async function debuggerDeleteListener(
     await h.request("/sap/bc/adt/debugger/listeners", { method: "DELETE", qs })
 }
 
-export async function debuggerListBreakpoints(
+const formatBreakpoint = (clientId: string) => (b: DebugBreakpoint | string) => {
+    if (isString(b))
+        return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="line" clientId="${clientId}" skipCount="0" adtcore:uri="${b}"/>`
+    return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="${b.kind}" clientId="${b.clientId}" skipCount="0" adtcore:uri="${b.uri.uri}#start=${b.uri.range.start.line}"/>`
+}
+
+export async function debuggerSetBreakpoints(
     h: AdtHTTP,
     debuggingMode: DebuggingMode,
     terminalId: string,
     ideId: string,
+    clientId: string,
+    breakpoints: (DebugBreakpoint | string)[],
     requestUser?: string,
     systemDebugging = false,
     deactivated = false
@@ -349,6 +374,7 @@ export async function debuggerListBreakpoints(
         terminalId="${terminalId}" ideId="${ideId}" systemDebugging="${systemDebugging}" deactivated="${deactivated}"
         xmlns:dbg="http://www.sap.com/adt/debugger">
         <syncScope mode="full"></syncScope>
+        ${breakpoints.map(formatBreakpoint(clientId))}
     </dbg:breakpoints>`
     const headers = {
         "Content-Type": "application/xml",
@@ -361,6 +387,25 @@ export async function debuggerListBreakpoints(
     })
     return parseBreakpoints(response.body)
 }
+
+export async function debuggerDeleteBreakpoints(
+    h: AdtHTTP,
+    breakpoint: DebugBreakpoint,
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    requestUser?: string
+) {
+    const headers = { Accept: "application/xml" }
+    const qs = { "scope": "external", debuggingMode, requestUser, terminalId, ideId }
+    await h.request(`/sap/bc/adt/debugger/breakpoints/${breakpoint.id}`, {
+        method: "DELETE",
+        headers,
+        qs
+    })
+}
+
+
 
 export async function debuggerAttach(
     h: AdtHTTP,

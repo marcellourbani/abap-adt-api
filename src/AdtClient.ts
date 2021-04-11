@@ -138,7 +138,7 @@ import {
   Debuggee,
   debuggerListen,
   debuggerDeleteListener,
-  debuggerListBreakpoints,
+  debuggerSetBreakpoints,
   DebugBreakpoint,
   DebugSettings,
   debuggerSaveSettings,
@@ -149,7 +149,8 @@ import {
   debuggerChildVariables,
   debuggerStep,
   DebugStepType,
-  DebugStep
+  DebugStep,
+  debuggerDeleteBreakpoints
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -984,9 +985,14 @@ export class ADTClient {
     return debuggerDeleteListener(this.h, debuggingMode, terminalId, ideId, user)
   }
 
-  public debuggerListBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
-  public debuggerListBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, systemDebugging = false, deactivated = false) {
-    return debuggerListBreakpoints(this.h, debuggingMode, terminalId, ideId, user, systemDebugging, deactivated)
+  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
+  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging = false, deactivated = false) {
+    return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, systemDebugging, deactivated)
+  }
+
+  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "user", terminalId: string, ideId: string, requestUser: string): Promise<void>
+  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string) {
+    return debuggerDeleteBreakpoints(this.h, breakpoint, debuggingMode, terminalId, ideId, requestUser)
   }
 
   public debuggerAttach(debuggingMode: "user", debuggeeId: string, user: string, dynproDebugging?: boolean): Promise<DebugAttach>
