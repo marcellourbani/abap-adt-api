@@ -146,7 +146,10 @@ import {
   debuggerAttach,
   DebugAttach,
   debuggerVariables,
-  debuggerChildVariables
+  debuggerChildVariables,
+  debuggerStep,
+  DebugStepType,
+  DebugStep
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -1005,5 +1008,11 @@ export class ADTClient {
 
   public debuggerChildVariables(parent: string = "@ROOT") {
     return debuggerChildVariables(this.h, parent)
+  }
+
+  public debuggerStep(steptype: "stepRunToLine" | "stepJumpToLine", url: string): Promise<DebugStep>
+  public debuggerStep(steptype: "stepInto" | "stepOver" | "stepReturn" | "stepContinue"): Promise<DebugStep>
+  public debuggerStep(steptype: DebugStepType, url?: string) {
+    return debuggerStep(this.h, steptype, url)
   }
 }
