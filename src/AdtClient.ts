@@ -132,7 +132,11 @@ import {
   TransportConfiguration,
   createTransportsConfig,
   feeds,
-  dumps
+  dumps,
+  listenDebugger,
+  DebuggingMode,
+  DebugListenerError,
+  Debuggee
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -932,5 +936,24 @@ export class ADTClient {
 
   public dumps(query?: string) {
     return dumps(this.h, query)
+  }
+
+  /** 
+   * Listens for debugging events
+   * **WARNING** this usually only returns when a breakpoint is hit, a timeout is reached or another client terminated it
+   * On timeout/termination it will return undefined, and the client will decide whether to launch it again after prompting the user
+   * 
+   * @param {string} debuggingMode - break on any user activity or just on the current terminal
+   * @param {string} terminalId - the terminal ID - a GUID generated the first time any debugger is ran on the current machine
+   *        in Windows is stored in registry key Software\SAP\ABAP Debugging
+   *        in other systems in file ~/.SAP/ABAPDebugging/terminalId
+   * @param {string} ideId - the IDE ID - UI5 hash of the IDE's workspace root
+   * @param {string} user - the user to break for. Mandatory in user mode
+   * 
+   */
+  public listenDebugger(debuggingMode: "user", terminalId: string, ideId: string, user: string): Promise<DebugListenerError | Debuggee | undefined>
+  public listenDebugger(debuggingMode: "terminal", terminalId: string, ideId: string, user?: string): Promise<DebugListenerError | Debuggee | undefined>
+  public listenDebugger(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string) {
+    return listenDebugger(this.h, debuggingMode, terminalId, ideId, user)
   }
 }
