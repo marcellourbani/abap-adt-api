@@ -160,6 +160,8 @@ export {
   isNonGroupType,
   isPackageOptions,
   isPackageType,
+  isDebugListenerError,
+  isDebuggee,
   objectPath,
   parentTypeId,
   parseServiceBinding,

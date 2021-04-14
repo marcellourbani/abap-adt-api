@@ -150,7 +150,8 @@ import {
   debuggerStep,
   DebugStepType,
   DebugStep,
-  debuggerDeleteBreakpoints
+  debuggerDeleteBreakpoints,
+  debuggerListeners
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -952,6 +953,12 @@ export class ADTClient {
     return dumps(this.h, query)
   }
 
+  public debuggerListeners(debuggingMode: "user", terminalId: string, ideId: string, user: string, checkConflict?: boolean): Promise<DebugListenerError | undefined>
+  public debuggerListeners(debuggingMode: "terminal", terminalId: string, ideId: string, user?: string, checkConflict?: boolean): Promise<DebugListenerError | undefined>
+  public debuggerListeners(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, checkConflict = true) {
+    return debuggerListeners(this.h, debuggingMode, terminalId, ideId, user, checkConflict)
+  }
+
   /** 
    * Listens for debugging events
    * **WARNING** this usually only returns when a breakpoint is hit, a timeout is reached or another client terminated it
@@ -966,9 +973,10 @@ export class ADTClient {
    * 
    * @returns either an error, if another client is listening, or the details of the object being debugged. Can take hours to return
    */
-  public debuggerListen(debuggingMode: "user", terminalId: string, ideId: string, user: string): Promise<DebugListenerError | Debuggee | undefined>
-  public debuggerListen(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string) {
-    return debuggerListen(this.h, debuggingMode, terminalId, ideId, user)
+  public debuggerListen(debuggingMode: "user", terminalId: string, ideId: string, user: string, checkConflict?: boolean, isNotifiedOnConflict?: boolean): Promise<DebugListenerError | Debuggee | undefined>
+  public debuggerListen(debuggingMode: "terminal", terminalId: string, ideId: string, user?: string, checkConflict?: boolean, isNotifiedOnConflict?: boolean): Promise<DebugListenerError | Debuggee | undefined>
+  public debuggerListen(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, checkConflict = true, isNotifiedOnConflict = true) {
+    return debuggerListen(this.h, debuggingMode, terminalId, ideId, user, checkConflict, isNotifiedOnConflict)
   }
 
   /**
@@ -981,21 +989,25 @@ export class ADTClient {
    * @param {string} user - the user to break for. Mandatory in user mode
    */
   public debuggerDeleteListener(debuggingMode: "user", terminalId: string, ideId: string, user: string): Promise<void>
+  public debuggerDeleteListener(debuggingMode: "terminal", terminalId: string, ideId: string, user?: string): Promise<void>
   public debuggerDeleteListener(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string) {
     return debuggerDeleteListener(this.h, debuggingMode, terminalId, ideId, user)
   }
 
   public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
+  public debuggerSetBreakpoints(debuggingMode: "terminal", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
   public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging = false, deactivated = false) {
     return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, systemDebugging, deactivated)
   }
 
   public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "user", terminalId: string, ideId: string, requestUser: string): Promise<void>
+  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "terminal", terminalId: string, ideId: string, requestUser?: string): Promise<void>
   public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string) {
     return debuggerDeleteBreakpoints(this.h, breakpoint, debuggingMode, terminalId, ideId, requestUser)
   }
 
   public debuggerAttach(debuggingMode: "user", debuggeeId: string, user: string, dynproDebugging?: boolean): Promise<DebugAttach>
+  public debuggerAttach(debuggingMode: "terminal", debuggeeId: string, user?: string, dynproDebugging?: boolean): Promise<DebugAttach>
   public debuggerAttach(debuggingMode: DebuggingMode, debuggeeId: string, user?: string, dynproDebugging = false) {
     return debuggerAttach(this.h, debuggingMode, debuggeeId, user, dynproDebugging)
   }
@@ -1012,12 +1024,12 @@ export class ADTClient {
     return debuggerVariables(this.h, parents)
   }
 
-  public debuggerChildVariables(parent: string = "@ROOT") {
+  public debuggerChildVariables(parent: string[] = ["@DATAAGING", "@ROOT"]) {
     return debuggerChildVariables(this.h, parent)
   }
 
   public debuggerStep(steptype: "stepRunToLine" | "stepJumpToLine", url: string): Promise<DebugStep>
-  public debuggerStep(steptype: "stepInto" | "stepOver" | "stepReturn" | "stepContinue"): Promise<DebugStep>
+  public debuggerStep(steptype: "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "terminateDebuggee"): Promise<DebugStep>
   public debuggerStep(steptype: DebugStepType, url?: string) {
     return debuggerStep(this.h, steptype, url)
   }

@@ -213,7 +213,7 @@ export interface DebugVariable {
 interface DebugError extends Error {
     extra?: DebugListenerError
 }
-export type DebugStepType = "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "stepRunToLine" | "stepJumpToLine"
+export type DebugStepType = "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "stepRunToLine" | "stepJumpToLine" | "terminateDebuggee"
 const parseStep = (body: string): DebugStep => {
     const raw = fullParse(body, { ignoreNameSpace: true })
     checkException(raw)
@@ -224,7 +224,7 @@ const parseStep = (body: string): DebugStep => {
 }
 const parseVariables = (body: string): DebugVariable[] => {
     const raw = fullParse(body, { ignoreNameSpace: true })
-    const variables = xmlArray(raw, "abap", "values", "DATA", "VARIABLES", "STPDA_ADT_VARIABLE")
+    const variables = xmlArray(raw, "abap", "values", "DATA", "STPDA_ADT_VARIABLE")
     return variables as DebugVariable[]
 }
 
@@ -300,6 +300,12 @@ const checkException = (raw: any) => {
     }
 }
 
+export const isDebugListenerError = (e: any): e is DebugListenerError =>
+    !!e && "conflictText" in e && "com.sap.adt.communicationFramework.subType" in e
+
+export const isDebuggee = (d: any): d is Debuggee =>
+    !!d && !["CLIENT", "DEBUGGEE_ID", "TERMINAL_ID", "IDE_ID", "DEBUGGEE_USER"].find(f => !(f in d))
+
 const parseDebugListeners = (
     body: string
 ): DebugListenerError | Debuggee | undefined => {
@@ -311,20 +317,42 @@ const parseDebugListeners = (
     return { ...debug, URI: parseUri(debug.URI) }
 }
 
-export async function debuggerListen(
+export async function debuggerListeners(
     h: AdtHTTP,
     debuggingMode: DebuggingMode,
     terminalId: string,
     ideId: string,
-    requestUser?: string
+    requestUser?: string,
+    checkConflict = true
 ) {
     const qs = {
         debuggingMode,
         requestUser,
         terminalId,
         ideId,
-        checkConflict: true,
-        isNotifiedOnConflict: true
+        checkConflict
+    }
+    const response = await h.request("/sap/bc/adt/debugger/listeners", { qs })
+    if (!response.body) return
+    const raw = fullParse(response.body, { ignoreNameSpace: true })
+    return parseDebugError(raw)
+}
+export async function debuggerListen(
+    h: AdtHTTP,
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    requestUser?: string,
+    checkConflict = true,
+    isNotifiedOnConflict = true
+) {
+    const qs = {
+        debuggingMode,
+        requestUser,
+        terminalId,
+        ideId,
+        checkConflict,
+        isNotifiedOnConflict
     }
     const response = await h.request("/sap/bc/adt/debugger/listeners", {
         method: "POST",
@@ -467,25 +495,26 @@ export async function debuggerSaveSettings(
 export async function debuggerStack(h: AdtHTTP, semanticURIs = true) {
     const headers = { Accept: "application/xml" }
     const qs = { method: "getStack", emode: "_", semanticURIs }
-    const response = await h.request("/sap/bc/adt/debugger", {
+    const response = await h.request("/sap/bc/adt/debugger/stack", {
         headers,
         qs
     })
     return parseStack(response.body)
 }
 
-export async function debuggerChildVariables(h: AdtHTTP, parent = "@ROOT") {
+export async function debuggerChildVariables(h: AdtHTTP, parents = ["@ROOT", "@DATAAGING"]) {
     const headers = {
         Accept:
             "application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.debugger.ChildVariables",
         "Content-Type":
             "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.debugger.ChildVariables"
     }
+    const hierarchies = parents.map(p => `<STPDA_ADT_VARIABLE_HIERARCHY><PARENT_ID>${p}</PARENT_ID></STPDA_ADT_VARIABLE_HIERARCHY>`)
     const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA>
-    <HIERARCHIES><STPDA_ADT_VARIABLE_HIERARCHY><PARENT_ID>${parent}</PARENT_ID></STPDA_ADT_VARIABLE_HIERARCHY></HIERARCHIES>
+    <HIERARCHIES>${hierarchies.join("")}</HIERARCHIES>
     </DATA></asx:values></asx:abap>`
     const qs = { method: "getChildVariables" }
-    const response = await h.request("/sap/bc/adt/debugger", { headers, qs, body })
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs, body })
     return parseChildVariables(response.body)
 }
 
@@ -497,16 +526,16 @@ export async function debuggerVariables(h: AdtHTTP, parents: string[]) {
         "Content-Type":
             "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.debugger.Variables"
     }
-    const body = `<asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values><DATA>
-    ${parents.map(p => `<STPDA_ADT_VARIABLE><ID>${p}</ID> </STPDA_ADT_VARIABLE>`)}
+    const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values><DATA>
+    ${parents.map(p => `<STPDA_ADT_VARIABLE><ID>${p}</ID></STPDA_ADT_VARIABLE>`).join("")}
     </DATA></asx:values></asx:abap>`
     const qs = { method: "getVariables" }
-    const response = await h.request("/sap/bc/adt/debugger", { headers, qs, body })
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs, body })
     return parseVariables(response.body)
 }
 
 export async function debuggerStep(h: AdtHTTP, method: DebugStepType, url?: string) {
     const headers = { Accept: "application/xml" }
-    const response = await h.request("/sap/bc/adt/debugger", { headers, qs: { method } })
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs: { method } })
     return parseStep(response.body)
 }
