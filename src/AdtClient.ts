@@ -151,7 +151,11 @@ import {
   DebugStepType,
   DebugStep,
   debuggerDeleteBreakpoints,
-  debuggerListeners
+  debuggerListeners,
+  DebugBreakpointError,
+  debuggerGoToStack,
+  simpleDebuggerStack,
+  debuggerGoToStackOld
 } from "./api"
 import { followUrl, isString } from "./utilities"
 
@@ -994,8 +998,8 @@ export class ADTClient {
     return debuggerDeleteListener(this.h, debuggingMode, terminalId, ideId, user)
   }
 
-  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
-  public debuggerSetBreakpoints(debuggingMode: "terminal", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging?: boolean, deactivated?: boolean): Promise<DebugBreakpoint[]>
+  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(debuggingMode: "terminal", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
   public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging = false, deactivated = false) {
     return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, systemDebugging, deactivated)
   }
@@ -1016,8 +1020,10 @@ export class ADTClient {
     return debuggerSaveSettings(this.h, settings)
   }
 
-  public debuggerStackTrace(semanticURIs = true) {
-    return debuggerStack(this.h, semanticURIs)
+  public async debuggerStackTrace(semanticURIs = true) {
+    const stack = await this.collectionFeatureDetails("/sap/bc/adt/debugger/stack")
+    if (stack) return debuggerStack(this.h, semanticURIs)
+    else return simpleDebuggerStack(this.h, semanticURIs)
   }
 
   public debuggerVariables(parents: string[]) {
@@ -1032,5 +1038,16 @@ export class ADTClient {
   public debuggerStep(steptype: "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "terminateDebuggee"): Promise<DebugStep>
   public debuggerStep(steptype: DebugStepType, url?: string) {
     return debuggerStep(this.h, steptype, url)
+  }
+
+  /**
+   * Go to stack entry
+   * 
+   * @param urlOrPosition The stack entry stackUri in newer systems, the stack id in older ones that return a DebugStackSimple 
+   */
+  public debuggerGoToStack(urlOrPosition: number | string) {
+    if (isString(urlOrPosition))
+      return debuggerGoToStack(this.h, urlOrPosition)
+    else return debuggerGoToStackOld(this.h, urlOrPosition)
   }
 }

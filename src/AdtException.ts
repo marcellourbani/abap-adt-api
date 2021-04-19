@@ -1,6 +1,6 @@
 import { Response } from "request"
 import { AdtHTTP, session_types } from "./AdtHTTP"
-import { fullParse } from "./utilities"
+import { fullParse, xmlArray } from "./utilities"
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -14,6 +14,14 @@ export enum SAPRC {
   CriticalError = "A",
   Exception = "X"
 }
+export interface ExceptionProperties {
+  conflictText: string;
+  ideUser: string;
+  "com.sap.adt.communicationFramework.subType": string;
+  "T100KEY-ID": string;
+  "T100KEY-NO": string;
+}
+
 
 const isResponse = (r: any): r is Response => !!r.statusCode
 
@@ -22,9 +30,10 @@ class AdtErrorException extends Error {
     return ADTEXTYPEID
   }
 
-  public static create(resp: Response): AdtErrorException
+  public static create(resp: Response, properties: ExceptionProperties | Record<string, string>): AdtErrorException
   public static create(
     err: number,
+    properties: ExceptionProperties | Record<string, string>,
     type: string,
     message: string,
     parent?: Error,
@@ -34,6 +43,7 @@ class AdtErrorException extends Error {
   ): AdtErrorException
   public static create(
     errOrResponse: number | Response,
+    properties: ExceptionProperties | Record<string, string>,
     type?: string,
     message?: string,
     parent?: Error,
@@ -44,6 +54,7 @@ class AdtErrorException extends Error {
     if (isResponse(errOrResponse)) {
       return this.create(
         errOrResponse.statusCode,
+        properties,
         "",
         errOrResponse.statusMessage || "Unknown error in adt client",
         undefined,
@@ -54,6 +65,7 @@ class AdtErrorException extends Error {
     } else {
       return new AdtErrorException(
         errOrResponse,
+        properties,
         type!,
         message!,
         parent,
@@ -66,6 +78,7 @@ class AdtErrorException extends Error {
 
   constructor(
     public readonly err: number,
+    public readonly properties: ExceptionProperties | Record<string, string>,
     public readonly type: string,
     public readonly message: string,
     public readonly parent?: Error,
@@ -142,8 +155,13 @@ export function fromException(errOrResp: Error | Response): AdtException {
       const raw = fullParse(response.body)
       const root = raw["exc:exception"]
       const getf = (base: any, idx: string) => (base ? base[idx] : "")
+      const properties: Record<string, string> = {}
+      xmlArray(root, "properties", "entry").forEach((p: any) => {
+        properties[p["@_key"]] = `${p["#text"]}`.replace(/^\s+/, "").replace(/\s+$/, "")
+      })
       return new AdtErrorException(
         response.statusCode,
+        properties,
         root.type["@_id"],
         root.message["#text"],
         undefined,
@@ -153,24 +171,24 @@ export function fromException(errOrResp: Error | Response): AdtException {
     } else return new AdtHttpException(errOrResp)
   } catch (e) {
     return isResponse(errOrResp)
-      ? AdtErrorException.create(errOrResp)
+      ? AdtErrorException.create(errOrResp, {})
       : new AdtHttpException(errOrResp)
   }
 }
 
 export function adtException(message: string) {
-  return new AdtErrorException(0, "", message)
+  return new AdtErrorException(0, {}, "", message)
 }
 
 export function ValidateObjectUrl(url: string) {
   if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-zA-Z%\$]?[\w%]+/)) return // valid
-  throw new AdtErrorException(0, "BADOBJECTURL", "Invalid Object URL:" + url)
+  throw new AdtErrorException(0, {}, "BADOBJECTURL", "Invalid Object URL:" + url)
 }
 
 export function ValidateStateful(h: AdtHTTP) {
   if (h.isStateful) return
   throw new AdtErrorException(
-    0,
+    0, {},
     "STATELESS",
     "This operation can only be performed in stateful mode"
   )

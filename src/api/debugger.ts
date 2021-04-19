@@ -1,3 +1,4 @@
+import { adtException } from ".."
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, isString, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { parseUri, UriParts } from "./urlparser"
@@ -73,6 +74,13 @@ export interface DebugBreakpoint {
     type: string
     name: string
 }
+export interface DebugBreakpointError {
+    kind: string;
+    clientId: string;
+    errorMessage: string;
+    nonAbapFlavour: string;
+}
+
 
 export interface DebugState {
     isRfc: boolean
@@ -89,7 +97,7 @@ export interface DebugState {
     isNonExclusiveToggled: boolean
     guiEditorGuid: string
     sessionTitle: string
-    isSteppingPossible: boolean
+    isSteppingPossible?: boolean
     isTerminationPossible: boolean
     actions: DebugAction[]
 }
@@ -145,6 +153,16 @@ export interface DebugStackAbap {
     isVit: false
     uri: UriParts
 }
+export interface DebugStackSimple {
+    programName: string;
+    includeName: string;
+    line: number;
+    eventType: string;
+    eventName: string;
+    stackPosition: number;
+    systemProgram: boolean;
+    uri: UriParts;
+}
 
 export interface DebugStackVit {
     stackPosition: number
@@ -168,10 +186,10 @@ export interface DebugStackVit {
     name: string
 }
 
-export type DebugStack = DebugStackAbap | DebugStackVit
+export type DebugStack = DebugStackAbap | DebugStackVit | DebugStackSimple
 export interface DebugStackInfo {
     isRfc: boolean
-    debugCursorStackIndex: number
+    debugCursorStackIndex?: number
     isSameSystem: boolean
     serverName: string
     stack: DebugStack[]
@@ -188,6 +206,10 @@ export interface DebugChildVariablesHierarchy {
     CHILD_NAME: string;
 }
 
+export type DebugMetaTypeSimple = "simple" | "string" | "boxedcomp" | "anonymcomp" | "unknown"
+export type DebugMetaTypeComplex = "structure" | "table" | "dataref" | "objectref" | "class" | "object" | "boxref"
+
+export type DebugMetaType = DebugMetaTypeSimple | DebugMetaTypeComplex
 export interface DebugVariable {
     ID: string;
     NAME: string;
@@ -196,7 +218,7 @@ export interface DebugVariable {
     KIND: string;
     INSTANTIATION_KIND: string;
     ACCESS_KIND: string;
-    META_TYPE: string;
+    META_TYPE: DebugMetaType;
     PARAMETER_KIND: string;
     VALUE: string;
     HEX_VALUE: string;
@@ -214,6 +236,10 @@ interface DebugError extends Error {
     extra?: DebugListenerError
 }
 export type DebugStepType = "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "stepRunToLine" | "stepJumpToLine" | "terminateDebuggee"
+
+export const debugMetaIsComplex = (m: DebugMetaType): m is DebugMetaTypeComplex =>
+    !["simple", "string", "boxedcomp", "anonymcomp", "unknown"].find(e => e === m)
+
 const parseStep = (body: string): DebugStep => {
     const raw = fullParse(body, { ignoreNameSpace: true })
     checkException(raw)
@@ -223,13 +249,13 @@ const parseStep = (body: string): DebugStep => {
     return { ...attrs, actions, settings }
 }
 const parseVariables = (body: string): DebugVariable[] => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { ignoreNameSpace: true, parseTrueNumberOnly: true })
     const variables = xmlArray(raw, "abap", "values", "DATA", "STPDA_ADT_VARIABLE")
     return variables as DebugVariable[]
 }
 
 const parseChildVariables = (body: string): DebugChildVariablesInfo => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { ignoreNameSpace: true, parseTrueNumberOnly: true })
     const hierarchies = xmlArray(raw, "abap", "values", "DATA", "HIERARCHIES", "STPDA_ADT_VARIABLE_HIERARCHY")
     const variables = xmlArray(raw, "abap", "values", "DATA", "VARIABLES", "STPDA_ADT_VARIABLE")
     return { hierarchies, variables } as DebugChildVariablesInfo
@@ -262,11 +288,14 @@ const parseAttach = (body: string): DebugAttach => {
     return { ...attrs, actions, reachedBreakpoints }
 }
 
-const parseBreakpoints = (body: string): DebugBreakpoint[] => {
+const parseBreakpoints = (body: string): (DebugBreakpoint | DebugBreakpointError)[] => {
     const raw = fullParse(body, { ignoreNameSpace: true })
     return xmlArray(raw, "breakpoints", "breakpoint")
         .map(xmlNodeAttr)
-        .map(x => ({ ...x, uri: parseUri(x.uri) }))
+        .map(x => {
+            if (x.uri) return { ...x, uri: parseUri(x.uri) }
+            return x
+        })
 }
 
 const parseDebugError = (raw: any): DebugListenerError | undefined => {
@@ -374,8 +403,8 @@ export async function debuggerDeleteListener(
         requestUser,
         terminalId,
         ideId,
-        checkConflict: true,
-        isNotifiedOnConflict: true
+        checkConflict: false,
+        notifyConflict: true
     }
     await h.request("/sap/bc/adt/debugger/listeners", { method: "DELETE", qs })
 }
@@ -385,6 +414,8 @@ const formatBreakpoint = (clientId: string) => (b: DebugBreakpoint | string) => 
         return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="line" clientId="${clientId}" skipCount="0" adtcore:uri="${b}"/>`
     return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="${b.kind}" clientId="${b.clientId}" skipCount="0" adtcore:uri="${b.uri.uri}#start=${b.uri.range.start.line}"/>`
 }
+
+export const isDebuggerBreakpoint = (x: DebugBreakpointError | DebugBreakpoint): x is DebugBreakpoint => "uri" in x
 
 export async function debuggerSetBreakpoints(
     h: AdtHTTP,
@@ -402,7 +433,7 @@ export async function debuggerSetBreakpoints(
         terminalId="${terminalId}" ideId="${ideId}" systemDebugging="${systemDebugging}" deactivated="${deactivated}"
         xmlns:dbg="http://www.sap.com/adt/debugger">
         <syncScope mode="full"></syncScope>
-        ${breakpoints.map(formatBreakpoint(clientId))}
+        ${breakpoints.map(formatBreakpoint(clientId)).join("")}
     </dbg:breakpoints>`
     const headers = {
         "Content-Type": "application/xml",
@@ -502,6 +533,13 @@ export async function debuggerStack(h: AdtHTTP, semanticURIs = true) {
     return parseStack(response.body)
 }
 
+export async function simpleDebuggerStack(h: AdtHTTP, semanticURIs = true) {
+    const headers = { Accept: "application/xml" }
+    const qs = { method: "getStack", emode: "_", semanticURIs }
+    const response = await h.request("/sap/bc/adt/debugger", { headers, method: "POST", qs })
+    return parseStack(response.body)
+}
+
 export async function debuggerChildVariables(h: AdtHTTP, parents = ["@ROOT", "@DATAAGING"]) {
     const headers = {
         Accept:
@@ -538,4 +576,15 @@ export async function debuggerStep(h: AdtHTTP, method: DebugStepType, url?: stri
     const headers = { Accept: "application/xml" }
     const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs: { method } })
     return parseStep(response.body)
+}
+
+export async function debuggerGoToStack(h: AdtHTTP, stackUri: string) {
+    if (!stackUri.match(/^\/sap\/bc\/adt\/debugger\/stack\/type\/[\w]+\/position\/\d+$/))
+        throw adtException(`Invalid stack URL: ${stackUri}`)
+    await h.request(stackUri, { method: "PUT" })
+}
+
+export async function debuggerGoToStackOld(h: AdtHTTP, position: number) {
+    const qs = { method: "setStackPosition", position }
+    await h.request(`/sap/bc/adt/debugger?method=setStackPosition&position=10`, { method: "POST", qs })
 }
