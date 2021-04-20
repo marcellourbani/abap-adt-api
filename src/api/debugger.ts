@@ -1,6 +1,6 @@
 import { adtException } from ".."
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, isString, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { decodeEntity, encodeEntity, fullParse, isString, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { parseUri, UriParts } from "./urlparser"
 
 export type DebuggingMode = "user" | "terminal"
@@ -248,16 +248,28 @@ const parseStep = (body: string): DebugStep => {
     const actions = xmlArray(raw, "step", "actions", "action").map(xmlNodeAttr)
     return { ...attrs, actions, settings }
 }
+
+const convertVariable = (v: any) => ({
+    ...v, TABLE_LINES: toInt(v.TABLE_LINES),
+    LENGTH: toInt(v.LENGTH),
+    INHERITANCE_LEVEL: toInt(v.INHERITANCE_LEVEL),
+    VALUE: decodeEntity(v.VALUE),
+    ID: decodeEntity(v.ID),
+    NAME: decodeEntity(v.NAME)
+})
+
 const parseVariables = (body: string): DebugVariable[] => {
-    const raw = fullParse(body, { ignoreNameSpace: true, parseTrueNumberOnly: true })
+    const raw = fullParse(body, { ignoreNameSpace: true, parseNodeValue: false, parseTrueNumberOnly: true })
     const variables = xmlArray(raw, "abap", "values", "DATA", "STPDA_ADT_VARIABLE")
+        .map(convertVariable)
     return variables as DebugVariable[]
 }
 
 const parseChildVariables = (body: string): DebugChildVariablesInfo => {
-    const raw = fullParse(body, { ignoreNameSpace: true, parseTrueNumberOnly: true })
+    const raw = fullParse(body, { ignoreNameSpace: true, parseNodeValue: false, parseTrueNumberOnly: true })
     const hierarchies = xmlArray(raw, "abap", "values", "DATA", "HIERARCHIES", "STPDA_ADT_VARIABLE_HIERARCHY")
     const variables = xmlArray(raw, "abap", "values", "DATA", "VARIABLES", "STPDA_ADT_VARIABLE")
+        .map(convertVariable)
     return { hierarchies, variables } as DebugChildVariablesInfo
 }
 
@@ -547,7 +559,7 @@ export async function debuggerChildVariables(h: AdtHTTP, parents = ["@ROOT", "@D
         "Content-Type":
             "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.debugger.ChildVariables"
     }
-    const hierarchies = parents.map(p => `<STPDA_ADT_VARIABLE_HIERARCHY><PARENT_ID>${p}</PARENT_ID></STPDA_ADT_VARIABLE_HIERARCHY>`)
+    const hierarchies = parents.map(p => `<STPDA_ADT_VARIABLE_HIERARCHY><PARENT_ID>${encodeEntity(p)}</PARENT_ID></STPDA_ADT_VARIABLE_HIERARCHY>`)
     const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA>
     <HIERARCHIES>${hierarchies.join("")}</HIERARCHIES>
     </DATA></asx:values></asx:abap>`
@@ -564,9 +576,9 @@ export async function debuggerVariables(h: AdtHTTP, parents: string[]) {
         "Content-Type":
             "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.debugger.Variables"
     }
-    const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values><DATA>
-    ${parents.map(p => `<STPDA_ADT_VARIABLE><ID>${p}</ID></STPDA_ADT_VARIABLE>`).join("")}
-    </DATA></asx:values></asx:abap>`
+    const mainBody = parents.map(p => `<STPDA_ADT_VARIABLE><ID>${encodeEntity(p)}</ID></STPDA_ADT_VARIABLE>`).join("")
+    const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values>
+    <DATA>${mainBody}</DATA></asx:values></asx:abap>`
     const qs = { method: "getVariables" }
     const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs, body })
     return parseVariables(response.body)
