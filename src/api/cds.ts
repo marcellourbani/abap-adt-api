@@ -9,14 +9,14 @@ import {
   xmlNode,
   xmlNodeAttr
 } from "../utilities"
-import { parseCheckResults } from "./syntax"
+import { parseCheckResults, SyntaxCheckResult } from "./syntax"
 
 export async function syntaxCheckCDS(
   h: AdtHTTP,
   url: string,
   mainUrl?: string,
   content?: string
-) {
+): Promise<SyntaxCheckResult[]> {
   const artifacts =
     mainUrl && content
       ? `<chkrun:artifacts>

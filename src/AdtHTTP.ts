@@ -5,6 +5,7 @@ import request, {
   RequiredUriUrl,
   Response
 } from "request"
+import { Cookie } from "tough-cookie";
 import request_debug, { LogCallback } from "request-debug"
 import { fromException, isCsrfError } from "./AdtException"
 const FETCH_CSRF_TOKEN = "fetch"
@@ -125,7 +126,7 @@ export class AdtHTTP {
     }
   }
 
-  public cookies() {
+  public cookies(): Cookie[] | undefined {
     const jar = this.options.jar
     if (jar && jar !== true && this.options.baseUrl)
       return jar.getCookies(this.options.baseUrl)
