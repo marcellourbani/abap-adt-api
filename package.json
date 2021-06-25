@@ -11,7 +11,7 @@
     "prepublishOnly": "tsc",
     "test": "jest"
   },
-  "keywords": [],
+  "keywords": ["ABAP", "ADT"],
   "author": "Marcello Urbani",
   "license": "MIT",
   "repository": {
