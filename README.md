@@ -19,8 +19,5 @@ const client = new ADTClient(
   "mypassword"
 )
 
-const nodes = await client.getNodeContents({
-  parent_name: "$TMP",
-  parent_type: "DEVC/K"
-})
+const nodes = await client.nodeContents("DEVC/K", "$TMP")
 ```
