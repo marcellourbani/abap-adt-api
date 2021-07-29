@@ -50,6 +50,7 @@ import {
   debuggerListen,
   debuggerListeners,
   debuggerSaveSettings,
+  DebuggerScope,
   debuggerSetBreakpoints,
   debuggerStack,
   debuggerStep,
@@ -282,7 +283,7 @@ export class ADTClient {
     return this.fetcher
   }
 
-  public get statelessClone() {
+  public get statelessClone(): ADTClient {
     if (this.pIsClone) return this
     if (!this.pClone) {
       const pw = this.fetcher || this.password
@@ -1008,16 +1009,16 @@ export class ADTClient {
     return debuggerDeleteListener(this.h, debuggingMode, terminalId, ideId, user)
   }
 
-  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
-  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
-  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, systemDebugging = false, deactivated = false) {
-    return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, systemDebugging, deactivated)
+  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope: DebuggerScope = "external", systemDebugging = false, deactivated = false) {
+    return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, scope, systemDebugging, deactivated)
   }
 
-  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "user", terminalId: string, ideId: string, requestUser: string): Promise<void>
-  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string): Promise<void>
-  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string) {
-    return debuggerDeleteBreakpoints(this.h, breakpoint, debuggingMode, terminalId, ideId, requestUser)
+  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "user", terminalId: string, ideId: string, requestUser: string, scope?: DebuggerScope): Promise<void>
+  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string,): Promise<void>
+  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string, scope: DebuggerScope = "external") {
+    return debuggerDeleteBreakpoints(this.h, breakpoint, debuggingMode, terminalId, ideId, requestUser, scope)
   }
 
   public debuggerAttach(debuggingMode: "user", debuggeeId: string, user: string, dynproDebugging?: boolean): Promise<DebugAttach>

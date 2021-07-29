@@ -37,6 +37,7 @@ export {
   DebugChildVariablesInfo,
   DebugChildVariablesHierarchy,
   Debuggee,
+  DebuggerScope,
   DebuggingMode,
   DebugListenerError,
   DebugMessage,

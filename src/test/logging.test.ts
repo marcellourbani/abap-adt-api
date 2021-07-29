@@ -7,6 +7,7 @@ interface Call {
   response?: ResponseData
 }
 test("login", async () => {
+  if (!process.env.ADT_URL) return
   const requests = new Map<number, Call>()
   const options = createSSLConfig(!process.env.ADT_URL!.match(/^http:/i))
   options.debugCallback = (

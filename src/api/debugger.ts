@@ -208,6 +208,7 @@ export interface DebugChildVariablesHierarchy {
 
 export type DebugMetaTypeSimple = "simple" | "string" | "boxedcomp" | "anonymcomp" | "unknown"
 export type DebugMetaTypeComplex = "structure" | "table" | "dataref" | "objectref" | "class" | "object" | "boxref"
+export type DebuggerScope = "external" | "debugger"
 
 export type DebugMetaType = DebugMetaTypeSimple | DebugMetaTypeComplex
 export interface DebugVariable {
@@ -437,11 +438,12 @@ export async function debuggerSetBreakpoints(
     clientId: string,
     breakpoints: (DebugBreakpoint | string)[],
     requestUser?: string,
+    scope: DebuggerScope = "external",
     systemDebugging = false,
     deactivated = false
 ) {
     const body = `<?xml version="1.0" encoding="UTF-8"?>
-    <dbg:breakpoints scope="external" debuggingMode="${debuggingMode}" requestUser="${requestUser}" 
+    <dbg:breakpoints scope="${scope}" debuggingMode="${debuggingMode}" requestUser="${requestUser}" 
         terminalId="${terminalId}" ideId="${ideId}" systemDebugging="${systemDebugging}" deactivated="${deactivated}"
         xmlns:dbg="http://www.sap.com/adt/debugger">
         <syncScope mode="full"></syncScope>
@@ -465,11 +467,12 @@ export async function debuggerDeleteBreakpoints(
     debuggingMode: DebuggingMode,
     terminalId: string,
     ideId: string,
-    requestUser?: string
+    requestUser?: string,
+    scope: DebuggerScope = "external"
 ) {
     const headers = { Accept: "application/xml" }
-    const qs = { "scope": "external", debuggingMode, requestUser, terminalId, ideId }
-    await h.request(`/sap/bc/adt/debugger/breakpoints/${breakpoint.id}`, {
+    const qs = { scope, debuggingMode, requestUser, terminalId, ideId }
+    await h.request(`/sap/bc/adt/debugger/breakpoints/${encodeURIComponent(breakpoint.id)}`, {
         method: "DELETE",
         headers,
         qs

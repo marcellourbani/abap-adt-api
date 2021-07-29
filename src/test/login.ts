@@ -1,6 +1,7 @@
 import { ADTClient, createSSLConfig } from "../"
 import { AdtHTTP } from "../AdtHTTP"
 export function create() {
+  if (!process.env.ADT_URL) return
   return new ADTClient(
     process.env.ADT_URL!,
     process.env.ADT_USER!,
@@ -11,6 +12,7 @@ export function create() {
   )
 }
 export function createHttp(language: string = "") {
+  if (!process.env.ADT_URL) return
   return new AdtHTTP(
     process.env.ADT_URL!,
     process.env.ADT_USER!,
@@ -27,6 +29,7 @@ export async function hasAbapGit(c: ADTClient) {
 export const runTest = (f: (c: ADTClient) => Promise<void>) => {
   const c = create()
   return async () => {
+    if (!c) return
     try {
       await f(c)
     } finally {

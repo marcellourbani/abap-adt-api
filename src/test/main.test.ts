@@ -26,6 +26,7 @@ const eatResourceNotFound = (e: any) => {
 
 test("login", async () => {
   const c = createHttp()
+  if (!c) return
   try {
     expect(c).toBeDefined()
     await c.login()
@@ -37,6 +38,7 @@ test("login", async () => {
 
 test("logout http", async () => {
   const c = createHttp()
+  if (!c) return
   expect(c).toBeDefined()
   await c.login()
   expect(c.csrfToken).not.toEqual("fetch")
@@ -54,6 +56,7 @@ test("logout http", async () => {
 
 test("badToken", async () => {
   const c = createHttp("DE")
+  if (!c) return
   try {
     await c.login()
     expect(c.csrfToken).not.toEqual("fetch")

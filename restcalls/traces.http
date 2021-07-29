@@ -1,0 +1,48 @@
+### list traces
+# @name readtraces
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces?user=MURBANI
+Authorization: Basic {{user}}:{{password}}
+x-csrf-token: fetch
+
+### hit lists
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000002.DAT/hitlist?withSystemEvents=false
+Authorization: Basic {{user}}:{{password}}
+
+### database accesses
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000002.DAT/dbAccesses?withSystemEvents=false
+Accept: application/vnd.sap.adt.runtime.traces.abaptraces.dbaccesses+xml, application/xml
+Authorization: Basic {{user}}:{{password}}
+
+### statements (call tree) - change id for drilldown
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000003.DAT/statements?id=1&withDetails=false&autoDrillDownThreshold=80&withSystemEvents=false HTTP/1.1
+Accept: application/vnd.sap.adt.runtime.traces.abaptraces.aggcalltree+xml, application/xml
+Authorization: Basic {{user}}:{{password}}
+
+### statements for flamegraph
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000003.DAT/statements?withSystemEvents=false
+Accept: application/vnd.sap.adt.runtime.traces.abaptraces.aggcalltree+xml, application/xml
+Authorization: Basic {{user}}:{{password}}
+
+### Create trace configuration
+POST {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/parameters
+Authorization: Basic {{user}}:{{password}}
+Content-Type: application/xml
+x-csrf-token: {{readtraces.response.headers.x-csrf-token}}
+
+<?xml version="1.0" encoding="UTF-8"?>
+<trc:parameters xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces">
+    <trc:allMiscAbapStatements value="false"></trc:allMiscAbapStatements>
+    <trc:allProceduralUnits value="true"></trc:allProceduralUnits>
+    <trc:allInternalTableEvents value="false"></trc:allInternalTableEvents>
+    <trc:allDynproEvents value="false"></trc:allDynproEvents>
+    <trc:description value="ZABAPGIT3"></trc:description>
+    <trc:aggregate value="false"></trc:aggregate>
+    <trc:explicitOnOff value="false"></trc:explicitOnOff>
+    <trc:withRfcTracing value="false"></trc:withRfcTracing>
+    <trc:allSystemKernelEvents value="false"></trc:allSystemKernelEvents>
+    <trc:sqlTrace value="false"></trc:sqlTrace>
+    <trc:allDbEvents value="true"></trc:allDbEvents>
+    <trc:maxSizeForTraceFile value="30720"></trc:maxSizeForTraceFile>
+    <trc:maxTimeForTracing value="1800"></trc:maxTimeForTracing>
+</trc:parameters>
+
