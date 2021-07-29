@@ -1,6 +1,6 @@
 {
   "name": "abap-adt-api",
-  "version": "2.10.1",
+  "version": "3.0.0",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "build",
   "main": "build/index.js",
@@ -11,7 +11,10 @@
     "prepublishOnly": "tsc",
     "test": "jest"
   },
-  "keywords": ["ABAP", "ADT"],
+  "keywords": [
+    "ABAP",
+    "ADT"
+  ],
   "author": "Marcello Urbani",
   "license": "MIT",
   "repository": {
