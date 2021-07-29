@@ -1,3 +1,5 @@
+[![npm](https://img.shields.io/npm/v/abap-adt-api?label=abap-adt-api)](https://www.npmjs.com/package/abap-adt-api)
+
 # ADT - Abap Developer Tools client
 
 This library simplifies access to the ADT REST interface.
@@ -17,8 +19,5 @@ const client = new ADTClient(
   "mypassword"
 )
 
-const nodes = await client.getNodeContents({
-  parent_name: "$TMP",
-  parent_type: "DEVC/K"
-})
+const nodes = await client.nodeContents("DEVC/K", "$TMP")
 ```
