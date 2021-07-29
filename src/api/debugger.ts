@@ -73,6 +73,7 @@ export interface DebugBreakpoint {
     uri: UriParts
     type: string
     name: string
+    condition?: string
 }
 export interface DebugBreakpointError {
     kind: string;
@@ -425,7 +426,9 @@ export async function debuggerDeleteListener(
 const formatBreakpoint = (clientId: string) => (b: DebugBreakpoint | string) => {
     if (isString(b))
         return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="line" clientId="${clientId}" skipCount="0" adtcore:uri="${b}"/>`
-    return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="${b.kind}" clientId="${b.clientId}" skipCount="0" adtcore:uri="${b.uri.uri}#start=${b.uri.range.start.line}"/>`
+    const uri = `adtcore:uri="${b.uri.uri}#start=${b.uri.range.start.line}"`
+    const condition = b.condition ? `condition="${b.condition}"` : ``
+    return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="${b.kind}" clientId="${b.clientId}" skipCount="0" ${uri} ${condition}/>`
 }
 
 export const isDebuggerBreakpoint = (x: DebugBreakpointError | DebugBreakpoint): x is DebugBreakpoint => "uri" in x
@@ -587,9 +590,9 @@ export async function debuggerVariables(h: AdtHTTP, parents: string[]) {
     return parseVariables(response.body)
 }
 
-export async function debuggerStep(h: AdtHTTP, method: DebugStepType, url?: string) {
+export async function debuggerStep(h: AdtHTTP, method: DebugStepType, uri?: string) {
     const headers = { Accept: "application/xml" }
-    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs: { method } })
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs: { method, uri } })
     return parseStep(response.body)
 }
 
@@ -602,4 +605,10 @@ export async function debuggerGoToStack(h: AdtHTTP, stackUri: string) {
 export async function debuggerGoToStackOld(h: AdtHTTP, position: number) {
     const qs = { method: "setStackPosition", position }
     await h.request(`/sap/bc/adt/debugger?method=setStackPosition&position=10`, { method: "POST", qs })
+}
+
+export async function debuggerSetVariableValue(h: AdtHTTP, variableName: string, value: string) {
+    const qs = { variableName }
+    const resp = await h.request(`/sap/bc/adt/debugger?method=setVariableValue`, { method: "POST", qs, body: value })
+    return resp.body
 }

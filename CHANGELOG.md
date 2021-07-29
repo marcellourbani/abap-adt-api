@@ -4,6 +4,18 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 3.0.0 [2021-07-29]
+
+### Added
+
+- conditional breakpoints
+- change variables in debugger
+
+### Changed
+
+- Debugger set breakpoint API (breaking)
+- Debugger delete breakpoint API (breaking)
+
 ## 2.10.0 [2021-04-20]
 
 ### Added

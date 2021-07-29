@@ -52,6 +52,7 @@ import {
   debuggerSaveSettings,
   DebuggerScope,
   debuggerSetBreakpoints,
+  debuggerSetVariableValue,
   debuggerStack,
   debuggerStep,
   debuggerVariables,
@@ -1060,5 +1061,9 @@ export class ADTClient {
     if (isString(urlOrPosition))
       return debuggerGoToStack(this.h, urlOrPosition)
     else return debuggerGoToStackOld(this.h, urlOrPosition)
+  }
+
+  public debuggerSetVariableValue(variableName: string, value: string): Promise<string> {
+    return debuggerSetVariableValue(this.h, variableName, value)
   }
 }
