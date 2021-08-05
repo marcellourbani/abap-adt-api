@@ -21,6 +21,18 @@ export interface FixProposal {
   userContent: string
 }
 
+export interface RenameRefactoring {
+  "rename:oldName": string
+  "rename:newName": string
+  "generic:ignoreSyntaxErrorsAllowed": string
+  "generic:ignoreSyntaxErrors": string
+  "generic:affectedObject": []
+  uri: string
+  line: string
+  column: string
+  userContent: string
+}
+
 export async function fixProposals(
   h: AdtHTTP,
   uri: string,
@@ -103,4 +115,49 @@ export async function fixEdits(
     parseDelta
   )
   return deltas
+}
+
+export async function renameEvaluate(
+  h: AdtHTTP,
+  uri: string,
+  body: string,
+  line: number,
+  startColumn: number,
+  endColumn: number
+) {
+  const qs = {
+    uri: `step=evaluate& 
+          rel=http://www.sap.com/adt/relations/refactoring/rename&
+          uri=${uri}#start=${line},${startColumn};end=${endColumn}`
+  }
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+
+  const response = await h.request("/sap/bc/adt/refactorings", {
+    method: "POST",
+    qs,
+    headers,
+    body
+  })
+
+  const raw = fullParse(response.body)
+  const rawResults = xmlArray(raw, "rename:renameRefactoring")
+  return rawResults.map(x => {
+    const attrs = xmlNodeAttr(xmlNode(x, "adtcore:objectReference"))
+    const userContent = decodeEntity(xmlNode(x, "userContent") || "")
+
+    return {
+      ...attrs,
+      "rename:oldName": decodeEntity(attrs["rename:oldName"]),
+      "rename:newName": decodeEntity(attrs["rename:newName"]),
+      "generic:ignoreSyntaxErrorsAllowed": decodeEntity(
+        attrs["generic:ignoreSyntaxErrors"]
+      ),
+      "generic:ignoreSyntaxErrors": decodeEntity(
+        attrs["generic:ignoreSyntaxErrors"]
+      ),
+      "generic:affectedObject": decodeEntity(attrs["generic:affectedObjects"]),
+
+      userContent: userContent
+    }
+  }) as RenameRefactoring[]
 }

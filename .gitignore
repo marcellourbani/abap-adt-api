@@ -4,3 +4,5 @@ tmp
 .vscode
 setenv.js
 package-lock.json
+.pnpm-lock.yaml
+pnpm-lock.yaml
