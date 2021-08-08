@@ -8,6 +8,7 @@ public section.
 
   data LASTX type STRING .
 
+protected section.
 private section.
   methods dosomethingprivate.
 ENDCLASS.
@@ -18,6 +19,10 @@ CLASS ZAPIADT_TESTCASE_CLASS1 IMPLEMENTATION.
 
 
 method dosomethingprivate.
+
+  data: lv_test type string.
+
+  data(lv_test2) = lv_test.
 
 endmethod.
 
