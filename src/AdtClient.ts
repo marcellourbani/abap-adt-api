@@ -120,6 +120,10 @@ import {
   QueryResult,
   RegistrationInfo,
   remoteRepoInfo,
+  renameEvaluate,
+  renamePreview,
+  renameExecute,
+  RenameRefactoring,
   Revision,
   revisions,
   runQuery,
@@ -723,6 +727,19 @@ export class ADTClient {
   }
   public runUnitTest(url: string) {
     return runUnitTest(this.h, url)
+  }
+
+  public renameEvaluate(uri: string, line: number,startColumn: number,endColumn: number) {
+    return renameEvaluate(this.h, uri, line, startColumn, endColumn)
+  }
+
+  
+  public renamePreview(renameRefactoring: RenameRefactoring[]  ) {
+    return renamePreview(this.h, renameRefactoring)
+  }
+
+  public renameExecute(body: string) {
+    return renameExecute(this.h, body)
   }
 
   public classComponents(url: string) {

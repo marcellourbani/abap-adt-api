@@ -10,7 +10,7 @@ import {
   UnitTestAlertKind
 } from "../"
 import { session_types } from "../AdtHTTP"
-import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions } from "../api"
+import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions, RenameRefactoring } from "../api"
 import { decodeEntity, fullParse, isArray, isString, parseJsonDate, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
@@ -751,6 +751,71 @@ const findBy = <T, K extends keyof T>(
       return isString(cur) && cur.toUpperCase() === value.toUpperCase()
     })
 }
+
+
+test(
+  "rename",
+  runTest(async (c: ADTClient) => {
+      jest.setTimeout(8000) // this usually takes longer than the default 5000
+      const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+      const renameEvaluate = await c.renameEvaluate(uri, 23, 8, 15)
+      expect(renameEvaluate).toBeDefined()
+      expect(renameEvaluate.length).toBeGreaterThan(0)
+      expect(renameEvaluate[0]["rename:oldName"]).toBe("lv_test")
+      renameEvaluate[0]["rename:newName"] = "lv_test3"
+      let renamePreview: RenameRefactoring = Object.assign(
+          {},
+          renameEvaluate[0]
+      )
+      renamePreview["generic:affectedObjects"].forEach(obj =>
+          obj["generic:textReplaceDeltas"].forEach(replaceRelta => {
+              replaceRelta["generic:contentNew"] = "lv_test3"
+              replaceRelta["generic:contentOld"] = "lv_test"
+
+              return replaceRelta
+          })
+      )
+      let renameArrPreview: RenameRefactoring[] = []
+      renameArrPreview.push(renamePreview)
+      const preview = await c.renamePreview(renameArrPreview)
+      expect(preview).toBeDefined()
+
+      const execute = await c.renameExecute(preview)
+      expect(execute).toBeDefined()
+  })
+)
+
+test(
+  "rename reverse",
+  runTest(async (c: ADTClient) => {
+      jest.setTimeout(8000) // this usually takes longer than the default 5000
+      const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+      const renameEvaluate = await c.renameEvaluate(uri, 23, 8, 15)
+      expect(renameEvaluate).toBeDefined()
+      expect(renameEvaluate.length).toBeGreaterThan(0)
+      expect(renameEvaluate[0]["rename:oldName"]).toBe("lv_test3")
+      renameEvaluate[0]["rename:newName"] = "lv_test"
+      let renamePreview: RenameRefactoring = Object.assign(
+          {},
+          renameEvaluate[0]
+      )
+      renamePreview["generic:affectedObjects"].forEach(obj =>
+          obj["generic:textReplaceDeltas"].forEach(replaceRelta => {
+              replaceRelta["generic:contentNew"] = "lv_test3"
+              replaceRelta["generic:contentOld"] = "lv_test"
+
+              return replaceRelta
+          })
+      )
+      let renameArrPreview: RenameRefactoring[] = []
+      renameArrPreview.push(renamePreview)
+      const preview = await c.renamePreview(renameArrPreview)
+      expect(preview).toBeDefined()
+
+      const execute = await c.renameExecute(preview)
+      expect(execute).toBeDefined()
+  })
+)
 
 test(
   "unit test",
