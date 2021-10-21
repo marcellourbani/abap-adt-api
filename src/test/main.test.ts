@@ -200,7 +200,7 @@ test(
                     isAdtError(e) &&
                     e.type === "ExceptionSecurityTicketFailure" &&
                     e.message ===
-                        "This system rejects all logons using SSO tickets"
+                    "This system rejects all logons using SSO tickets"
                 )
             )
                 throw e
@@ -747,7 +747,7 @@ test(
     "rename",
     runTest(async (c: ADTClient) => {
         jest.setTimeout(8000) // this usually takes longer than the default 5000
-        const uri = "/sap/bc/adt/oo/classes/zcl_temp_class/source/main"
+        const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
         const renameEvaluate = await c.renameEvaluate(uri, 23, 8, 15)
         expect(renameEvaluate).toBeDefined()
         expect(renameEvaluate.length).toBeGreaterThan(0)
@@ -848,9 +848,9 @@ const findBy = <T, K extends keyof T>(
     return cs
         ? array.find(e => e[fname] === value)
         : array.find(e => {
-              const cur = e[fname]
-              return isString(cur) && cur.toUpperCase() === value.toUpperCase()
-          })
+            const cur = e[fname]
+            return isString(cur) && cur.toUpperCase() === value.toUpperCase()
+        })
 }
 
 test(
