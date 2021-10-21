@@ -60,6 +60,7 @@ export async function fixProposals(
 ) {
   const qs = { uri: `${uri}#start=${line},${column}` }
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
+
   const response = await h.request("/sap/bc/adt/quickfixes/evaluation", {
     method: "POST",
     qs,
@@ -71,6 +72,7 @@ export async function fixProposals(
   return rawResults.map(x => {
     const attrs = xmlNodeAttr(xmlNode(x, "adtcore:objectReference"))
     const userContent = decodeEntity(xmlNode(x, "userContent") || "")
+
     return {
       ...attrs,
       "adtcore:name": decodeEntity(attrs["adtcore:name"]),
@@ -101,8 +103,9 @@ export async function fixEdits(
      xmlns:adtcore="http://www.sap.com/adt/core">
     <input>
       <content>${encodeEntity(source)}</content>
-      <adtcore:objectReference adtcore:uri="${proposal.uri}#start=${proposal.line
-    },${proposal.column}"/>
+      <adtcore:objectReference adtcore:uri="${proposal.uri}#start=${
+        proposal.line
+      },${proposal.column}"/>
     </input>
     <userContent>${encodeEntity(proposal.userContent)}</userContent>
   </quickfixes:proposalRequest>`
@@ -117,6 +120,7 @@ export async function fixEdits(
     const attr = xmlNodeAttr(xmlNode(d, "adtcore:objectReference"))
     const content = decodeEntity(d.content)
     const { uri, range } = parseUri(attr["adtcore:uri"])
+
     return {
       uri,
       range,
