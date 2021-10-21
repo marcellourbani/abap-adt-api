@@ -1,7 +1,6 @@
 build
 /node_modules
 tmp
-.vscode
 setenv.js
 package-lock.json
 .pnpm-lock.yaml
