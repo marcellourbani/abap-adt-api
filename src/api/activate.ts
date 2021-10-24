@@ -102,17 +102,17 @@ export async function activate(
         `<adtcore:objectReference adtcore:uri="${i["adtcore:uri"]}" adtcore:type="${i["adtcore:type"]}" adtcore:parentUri="${i["adtcore:parentUri"]}" adtcore:name="${i["adtcore:name"]}"/>`
     )
   }
-  const qs = { method: "activate", preauditRequested }
+  const params = { method: "activate", preauditRequested }
 
-  const body =
+  const data =
     `<?xml version="1.0" encoding="UTF-8"?>` +
     `<adtcore:objectReferences xmlns:adtcore="http://www.sap.com/adt/core">` +
     objects.join(`\n`) +
     `</adtcore:objectReferences>`
   const response = await h.request("/sap/bc/adt/activation", {
-    body,
+    data,
     method: "POST",
-    qs
+    params
   })
   let messages: ActivationResultMessage[] = []
   let success = true

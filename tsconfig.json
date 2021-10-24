@@ -4,7 +4,8 @@
     "target": "es6",
     "module": "commonjs",
     "lib": [
-      "es6"
+      "es6",
+      "dom"
     ],
     "declaration": true /* Generates corresponding '.d.ts' file. */,
     "declarationMap": true /* Generates a sourcemap for each corresponding '.d.ts' file. */,

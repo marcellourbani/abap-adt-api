@@ -63,10 +63,10 @@ test("badToken", async () => {
     c.csrfToken = "bad" // will trigger a bad login
     const response = await c.request("/sap/bc/adt/repository/nodestructure", {
       method: "POST",
-      qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
+      params: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
     })
     expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
-    expect(response.body).toBeDefined()
+    expect(response.data).toBeDefined()
   } finally {
     c.logout()
   }

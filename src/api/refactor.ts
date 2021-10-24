@@ -28,14 +28,14 @@ export async function fixProposals(
   line: number,
   column: number
 ) {
-  const qs = { uri: `${uri}#start=${line},${column}` }
+  const params = { uri: `${uri}#start=${line},${column}` }
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
-
+  const data = body
   const response = await h.request("/sap/bc/adt/quickfixes/evaluation", {
     method: "POST",
-    qs,
+    params,
     headers,
-    body
+    data
   })
   const raw = fullParse(response.body)
   const rawResults = xmlArray(raw, "qf:evaluationResults", "evaluationResult")
@@ -68,7 +68,7 @@ export async function fixEdits(
 ) {
   if (!proposal["adtcore:uri"].match(/\/sap\/bc\/adt\/quickfixes/))
     throw adtException("Invalid fix proposal")
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const data = `<?xml version="1.0" encoding="UTF-8"?>
   <quickfixes:proposalRequest xmlns:quickfixes="http://www.sap.com/adt/quickfixes"
      xmlns:adtcore="http://www.sap.com/adt/core">
     <input>
@@ -83,7 +83,7 @@ export async function fixEdits(
   const response = await h.request(proposal["adtcore:uri"], {
     method: "POST",
     headers,
-    body
+    data
   })
   const raw = fullParse(response.body)
   const parseDelta = (d: any): Delta => {

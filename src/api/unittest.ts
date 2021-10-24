@@ -56,7 +56,7 @@ export interface UnitTestClass {
 
 export async function runUnitTest(h: AdtHTTP, url: string) {
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const data = `<?xml version="1.0" encoding="UTF-8"?>
   <aunit:runConfiguration xmlns:aunit="http://www.sap.com/adt/aunit">
   <external>
     <coverage active="false"/>
@@ -76,7 +76,7 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   const response = await h.request("/sap/bc/adt/abapunit/testruns", {
     method: "POST",
     headers,
-    body
+    data
   })
   const raw = fullParse(response.body)
   const parseDetail = (alert: any) =>

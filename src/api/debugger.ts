@@ -368,14 +368,14 @@ export async function debuggerListeners(
     requestUser?: string,
     checkConflict = true
 ) {
-    const qs = {
+    const params = {
         debuggingMode,
         requestUser,
         terminalId,
         ideId,
         checkConflict
     }
-    const response = await h.request("/sap/bc/adt/debugger/listeners", { qs })
+    const response = await h.request("/sap/bc/adt/debugger/listeners", { params })
     if (!response.body) return
     const raw = fullParse(response.body, { ignoreNameSpace: true })
     return parseDebugError(raw)
@@ -389,7 +389,7 @@ export async function debuggerListen(
     checkConflict = true,
     isNotifiedOnConflict = true
 ) {
-    const qs = {
+    const params = {
         debuggingMode,
         requestUser,
         terminalId,
@@ -400,7 +400,7 @@ export async function debuggerListen(
     const response = await h.request("/sap/bc/adt/debugger/listeners", {
         method: "POST",
         timeout: 360000000, // 100 hours
-        qs
+        params
     })
     return parseDebugListeners(response.body)
 }
@@ -412,7 +412,7 @@ export async function debuggerDeleteListener(
     ideId: string,
     requestUser?: string
 ) {
-    const qs = {
+    const params = {
         debuggingMode,
         requestUser,
         terminalId,
@@ -420,7 +420,7 @@ export async function debuggerDeleteListener(
         checkConflict: false,
         notifyConflict: true
     }
-    await h.request("/sap/bc/adt/debugger/listeners", { method: "DELETE", qs })
+    await h.request("/sap/bc/adt/debugger/listeners", { method: "DELETE", params })
 }
 
 const formatBreakpoint = (clientId: string) => (b: DebugBreakpoint | string) => {
@@ -445,7 +445,7 @@ export async function debuggerSetBreakpoints(
     systemDebugging = false,
     deactivated = false
 ) {
-    const body = `<?xml version="1.0" encoding="UTF-8"?>
+    const data = `<?xml version="1.0" encoding="UTF-8"?>
     <dbg:breakpoints scope="${scope}" debuggingMode="${debuggingMode}" requestUser="${requestUser}" 
         terminalId="${terminalId}" ideId="${ideId}" systemDebugging="${systemDebugging}" deactivated="${deactivated}"
         xmlns:dbg="http://www.sap.com/adt/debugger">
@@ -459,7 +459,7 @@ export async function debuggerSetBreakpoints(
     const response = await h.request("/sap/bc/adt/debugger/breakpoints", {
         method: "POST",
         headers,
-        body
+        data
     })
     return parseBreakpoints(response.body)
 }
@@ -474,11 +474,11 @@ export async function debuggerDeleteBreakpoints(
     scope: DebuggerScope = "external"
 ) {
     const headers = { Accept: "application/xml" }
-    const qs = { scope, debuggingMode, requestUser, terminalId, ideId }
+    const params = { scope, debuggingMode, requestUser, terminalId, ideId }
     await h.request(`/sap/bc/adt/debugger/breakpoints/${encodeURIComponent(breakpoint.id)}`, {
         method: "DELETE",
         headers,
-        qs
+        params
     })
 }
 
@@ -494,7 +494,7 @@ export async function debuggerAttach(
     const headers = {
         Accept: "application/xml"
     }
-    const qs = {
+    const params = {
         method: "attach",
         debuggeeId,
         dynproDebugging,
@@ -504,7 +504,7 @@ export async function debuggerAttach(
     const response = await h.request("/sap/bc/adt/debugger", {
         method: "POST",
         headers,
-        qs
+        params
     })
     return parseAttach(response.body)
 }
@@ -525,36 +525,36 @@ export async function debuggerSaveSettings(
         showDataAging = true,
         updateDebugging = false
     } = settings
-    const body = `<?xml version="1.0" encoding="UTF-8"?>
+    const data = `<?xml version="1.0" encoding="UTF-8"?>
     <dbg:settings xmlns:dbg="http://www.sap.com/adt/debugger" 
     systemDebugging="${systemDebugging}" createExceptionObject="${createExceptionObject}" 
     backgroundRFC="${backgroundRFC}" sharedObjectDebugging="${sharedObjectDebugging}" 
     showDataAging="${showDataAging}" updateDebugging="${updateDebugging}">
     </dbg:settings>`
-    const qs = { method: "setDebuggerSettings" }
+    const params = { method: "setDebuggerSettings" }
     const response = await h.request("/sap/bc/adt/debugger", {
         method: "POST",
         headers,
-        body,
-        qs
+        data,
+        params
     })
     return parseDebugSettings(response.body)
 }
 
 export async function debuggerStack(h: AdtHTTP, semanticURIs = true) {
     const headers = { Accept: "application/xml" }
-    const qs = { method: "getStack", emode: "_", semanticURIs }
+    const params = { method: "getStack", emode: "_", semanticURIs }
     const response = await h.request("/sap/bc/adt/debugger/stack", {
         headers,
-        qs
+        params
     })
     return parseStack(response.body)
 }
 
 export async function simpleDebuggerStack(h: AdtHTTP, semanticURIs = true) {
     const headers = { Accept: "application/xml" }
-    const qs = { method: "getStack", emode: "_", semanticURIs }
-    const response = await h.request("/sap/bc/adt/debugger", { headers, method: "POST", qs })
+    const params = { method: "getStack", emode: "_", semanticURIs }
+    const response = await h.request("/sap/bc/adt/debugger", { headers, method: "POST", params })
     return parseStack(response.body)
 }
 
@@ -566,11 +566,11 @@ export async function debuggerChildVariables(h: AdtHTTP, parents = ["@ROOT", "@D
             "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.debugger.ChildVariables"
     }
     const hierarchies = parents.map(p => `<STPDA_ADT_VARIABLE_HIERARCHY><PARENT_ID>${encodeEntity(p)}</PARENT_ID></STPDA_ADT_VARIABLE_HIERARCHY>`)
-    const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA>
+    const data = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA>
     <HIERARCHIES>${hierarchies.join("")}</HIERARCHIES>
     </DATA></asx:values></asx:abap>`
-    const qs = { method: "getChildVariables" }
-    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs, body })
+    const params = { method: "getChildVariables" }
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, params, data })
     return parseChildVariables(response.body)
 }
 
@@ -583,16 +583,16 @@ export async function debuggerVariables(h: AdtHTTP, parents: string[]) {
             "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.debugger.Variables"
     }
     const mainBody = parents.map(p => `<STPDA_ADT_VARIABLE><ID>${encodeEntity(p)}</ID></STPDA_ADT_VARIABLE>`).join("")
-    const body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values>
+    const data = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values>
     <DATA>${mainBody}</DATA></asx:values></asx:abap>`
-    const qs = { method: "getVariables" }
-    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs, body })
+    const params = { method: "getVariables" }
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, params, data })
     return parseVariables(response.body)
 }
 
 export async function debuggerStep(h: AdtHTTP, method: DebugStepType, uri?: string) {
     const headers = { Accept: "application/xml" }
-    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, qs: { method, uri } })
+    const response = await h.request("/sap/bc/adt/debugger", { method: "POST", headers, params: { method, uri } })
     return parseStep(response.body)
 }
 
@@ -603,12 +603,12 @@ export async function debuggerGoToStack(h: AdtHTTP, stackUri: string) {
 }
 
 export async function debuggerGoToStackOld(h: AdtHTTP, position: number) {
-    const qs = { method: "setStackPosition", position }
-    await h.request(`/sap/bc/adt/debugger?method=setStackPosition&position=10`, { method: "POST", qs })
+    const params = { method: "setStackPosition", position }
+    await h.request(`/sap/bc/adt/debugger?method=setStackPosition&position=10`, { method: "POST", params })
 }
 
 export async function debuggerSetVariableValue(h: AdtHTTP, variableName: string, value: string) {
-    const qs = { variableName }
-    const resp = await h.request(`/sap/bc/adt/debugger?method=setVariableValue`, { method: "POST", qs, body: value })
+    const params = { variableName }
+    const resp = await h.request(`/sap/bc/adt/debugger?method=setVariableValue`, { method: "POST", params, data: value })
     return resp.body
 }
