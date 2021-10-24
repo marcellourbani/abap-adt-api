@@ -1,36 +1,36 @@
-class ZAPIADT_TESTCASE_CLASS1 definition
-  public
-  create public .
+class zapiadt_testcase_class1 definition public create public .
 
-public section.
-
-  interfaces ZAPIADT_TESTCASE_INTF1 .
-
-  data LASTX type STRING .
-
-protected section.
-private section.
-  methods dosomethingprivate.
-ENDCLASS.
+  public section.
 
 
 
-CLASS ZAPIADT_TESTCASE_CLASS1 IMPLEMENTATION.
+    interfaces zapiadt_testcase_intf1 .
+
+    data lastx type string .
+
+  private section.
+    methods dosomethingprivate.
+endclass.
 
 
-method dosomethingprivate.
 
-  data: lv_test type string.
-
-  data(lv_test2) = lv_test.
-
-endmethod.
+class zapiadt_testcase_class1 implementation.
 
 
-  METHOD zapiadt_testcase_intf1~dosomething.
-    data:fb type ref to ZAPIDUMMYFOOBAR.
+  method dosomethingprivate.
+
+    data: lv_test type string.
+
+    data(lv_test2) = lv_test.
+
+  endmethod.
+
+
+  method zapiadt_testcase_intf1~dosomething.
+    data:fb type ref to zapidummyfoobar.
     y = x.
-    TRANSLATE y TO UPPER CASE.
+    translate y to upper case.
     lastx = x.
-  ENDMETHOD.
-ENDCLASS.
+  endmethod.
+
+endclass.

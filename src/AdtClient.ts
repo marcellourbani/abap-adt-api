@@ -120,11 +120,12 @@ import {
   QueryResult,
   RegistrationInfo,
   remoteRepoInfo,
+  Revision,
   renameEvaluate,
   renamePreview,
   renameExecute,
   RenameRefactoring,
-  Revision,
+  RenameRefactoringProposal,
   revisions,
   runQuery,
   runUnitTest,
@@ -729,19 +730,6 @@ export class ADTClient {
     return runUnitTest(this.h, url)
   }
 
-  public renameEvaluate(uri: string, line: number,startColumn: number,endColumn: number) {
-    return renameEvaluate(this.h, uri, line, startColumn, endColumn)
-  }
-
-  
-  public renamePreview(renameRefactoring: RenameRefactoring[]  ) {
-    return renamePreview(this.h, renameRefactoring)
-  }
-
-  public renameExecute(body: string) {
-    return renameExecute(this.h, body)
-  }
-
   public classComponents(url: string) {
     return classComponents(this.h, url)
   }
@@ -1083,4 +1071,27 @@ export class ADTClient {
   public debuggerSetVariableValue(variableName: string, value: string): Promise<string> {
     return debuggerSetVariableValue(this.h, variableName, value)
   }
+
+  public renameEvaluate(
+    uri: string,
+    line: number,
+    startColumn: number,
+    endColumn: number
+  ): Promise<RenameRefactoringProposal> {
+    return renameEvaluate(this.h, uri, line, startColumn, endColumn)
+  }
+
+
+  public renamePreview(
+    renameRefactoring: RenameRefactoringProposal, transport: string = ""
+  ): Promise<RenameRefactoring> {
+    return renamePreview(this.h, renameRefactoring, transport)
+  }
+
+  public renameExecute(
+    refactoring: RenameRefactoring
+  ): Promise<RenameRefactoring> {
+    return renameExecute(this.h, refactoring)
+  }
 }
+

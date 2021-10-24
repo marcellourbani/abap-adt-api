@@ -1,6 +1,7 @@
 import { Response } from "request"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import { fullParse, xmlArray } from "./utilities"
+import { types } from "util";
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -137,7 +138,9 @@ export function isAdtException(e: any): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
-export function fromException(errOrResp: Error | Response): AdtException {
+export function fromException(errOrResp: unknown): AdtException {
+  if (!isResponse(errOrResp) && !types.isNativeError(errOrResp))
+    return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   if (isAdtException(errOrResp)) return errOrResp
   try {
     if (isResponse(errOrResp)) {
