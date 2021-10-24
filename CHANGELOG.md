@@ -4,6 +4,12 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 3.1.0 [2021-10-24]
+
+### Added
+
+- rename API (thanks to Jakob Kjaer)
+
 ## 3.0.0 [2021-07-29]
 
 ### Added

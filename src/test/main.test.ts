@@ -10,8 +10,8 @@ import {
   UnitTestAlertKind
 } from "../"
 import { session_types } from "../AdtHTTP"
-import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions } from "../api"
-import { decodeEntity, fullParse, isArray, isString, parseJsonDate, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions, parseUri } from "../api"
+import { fullParse, isArray, isString } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -341,7 +341,7 @@ test(
     const inactive = await c.inactiveObjects()
     expect(inactive).toBeDefined()
     expect(Array.isArray(inactive)).toBe(true)
-    if (inactive.length > 0) {
+    if (inactive.length > 0 && inactive[0].object) {
       expect(inactive[0].object?.["adtcore:name"]).toBe("3")
     }
   })
@@ -1114,6 +1114,7 @@ test(
 test(
   "revisions of func by URL",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(8000) // this occasionally takes longer than the default 5000
     const obj =
       "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc"
     const revisions = await c.revisions(obj)
@@ -1482,3 +1483,12 @@ test("dumps", runTest(async (c: ADTClient) => {
     expect(last.text).toBeDefined()
   }
 }))
+
+test("parse uri range", () => {
+  const { uri, range } = parseUri("#start=4,13;end=4,16")
+  expect(uri).toBe("")
+  expect(range.start.line).toBe(4)
+  expect(range.end.line).toBe(4)
+  expect(range.start.column).toBe(13)
+  expect(range.end.column).toBe(16)
+})

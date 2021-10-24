@@ -10,8 +10,8 @@ import {
   hasPackageOptions,
   isGroupType,
   NewPackageOptions,
-  TransportsOfUser,
-  unlinkRepo
+  RenameRefactoringProposal,
+  TransportsOfUser
 } from "../api"
 import { ObjectValidateOptions } from "./../api"
 import { hasAbapGit, runTest } from "./login"
@@ -51,11 +51,11 @@ async function createObj(
   } as ObjectValidateOptions // typescript is not smart enough to rule out grouptypes, so I have to cast
   const validateOptions = hasPackageOptions(options)
     ? {
-        ...baseValidateOptions,
-        swcomp: options.swcomp,
-        transportLayer: options.transportLayer,
-        packagetype: options.description
-      }
+      ...baseValidateOptions,
+      swcomp: options.swcomp,
+      transportLayer: options.transportLayer,
+      packagetype: options.description
+    }
     : baseValidateOptions
 
   const vresult = await c.validateNewObject(validateOptions)
@@ -525,3 +525,34 @@ test("create and pull AbapGit Repo", async () => {
     }
   })
 })
+
+test(
+  "rename",
+  runTest(async (c: ADTClient) => {
+    if (!enableWrite(new Date())) return
+    jest.setTimeout(8000) // this usually takes longer than the default 5000
+    const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+    const renameEvaluate = await c.renameEvaluate(uri, 22, 11, 11)
+    expect(renameEvaluate).toBeDefined()
+    expect(renameEvaluate["oldName"]).toBe("lv_test")
+    renameEvaluate["newName"] = "lv_test3"
+    const renamePreview: RenameRefactoringProposal = Object.assign(
+      {},
+      renameEvaluate
+    )
+    renamePreview["affectedObjects"].forEach(obj =>
+      obj["textReplaceDeltas"].forEach(replaceRelta => {
+        replaceRelta["contentNew"] = "lv_test3"
+        replaceRelta["contentOld"] = "lv_test"
+
+        return replaceRelta
+      })
+    )
+    const info = await c.transportInfo(renameEvaluate.affectedObjects[0].parentUri, "ZAPIDUMMY")
+    const preview = await c.renamePreview(renamePreview, info.LOCKS?.HEADER.TRKORR)
+    expect(preview).toBeDefined()
+
+    const execute = await c.renameExecute(preview)
+    expect(execute).toBeDefined()
+  })
+)

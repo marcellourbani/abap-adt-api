@@ -13,6 +13,9 @@ export interface UriParts {
   hashparms?: any
 }
 
+export const rangeToString = (range: Range) =>
+  `#start=${range.start.line},${range.start.column};end=${range.end.line},${range.end.column}`
+
 export function parseUri(sourceuri: string): UriParts {
   const [uri, qs, hash] = parts(sourceuri, /([^\?#]*)(?:\?([^#]*))?(?:#(.*))?/)
   //
