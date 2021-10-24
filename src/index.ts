@@ -121,6 +121,8 @@ export {
   QueryResultColumn,
   Range,
   ReferenceUri,
+  RenameRefactoring,
+  RenameRefactoringProposal,
   Revision,
   SearchResult,
   ServiceBinding,
@@ -173,5 +175,5 @@ export {
   objectPath,
   parentTypeId,
   parseServiceBinding,
-  servicePreviewUrl,
+  servicePreviewUrl
 } from "./api"

@@ -1,7 +1,7 @@
 import { isArray, isString } from "util"
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
+import { fullParse, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 
 export interface InactiveObject {
   "adtcore:uri": string
@@ -50,8 +50,8 @@ function toElement(source: any) {
 function parseInactive(raw: any): InactiveObjectRecord[] {
   return xmlArray(raw, "ioc:inactiveObjects", "ioc:entry").map((obj: any) => {
     return {
-      object: toElement(obj["ioc:object"]),
-      transport: toElement(obj["ioc:transport"])
+      object: toElement(xmlNode(obj, "ioc:object")),
+      transport: toElement(xmlNode(obj, "ioc:transport"))
     }
   })
 }
