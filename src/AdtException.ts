@@ -2,6 +2,7 @@ import { Response } from "request"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import { fullParse, xmlArray } from "./utilities"
 import { types } from "util";
+import axios from "axios";
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -143,8 +144,8 @@ export function fromException(errOrResp: unknown): AdtException {
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   if (isAdtException(errOrResp)) return errOrResp
   try {
-    if (isResponse(errOrResp)) {
-      const response: Response = errOrResp
+    if (!axios.isAxiosError(errOrResp)) {
+      const response: Response = errOrResp as Response
       if (!(response && response.body))
         return adtException(
           `Error ${response.statusCode}:${response.statusMessage}`
@@ -171,7 +172,11 @@ export function fromException(errOrResp: unknown): AdtException {
         getf(root.namespace, "@_id"),
         getf(root.localizedMessage, "#text")
       )
-    } else return new AdtHttpException(errOrResp)
+    } else {
+      const error = new AdtHttpException({ name: errOrResp.name, message: `${errOrResp.message} : ${(errOrResp.response) ? errOrResp.response.data : ''}`, stack: errOrResp.stack })
+
+      return error
+    }
   } catch (e) {
     return isResponse(errOrResp)
       ? AdtErrorException.create(errOrResp, {})
