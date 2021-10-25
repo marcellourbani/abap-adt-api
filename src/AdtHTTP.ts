@@ -259,6 +259,7 @@ export class AdtHTTP {
     if (options.headers) headers = { ...headers, ...options.headers }
     const axiosUo: AxiosRequestConfig = { ... this.options, ...options, headers, }
     axiosUo.url = url
+    axiosUo.data = (options.data) ? options.data.replace(/\r?\n|\r/g, "") : undefined;
     // const uo: OptionsWithUrl = { ...this.options, ...options, headers, url }
     return new Promise<HttpResponse>(async (resolve, reject) => {
       try {
