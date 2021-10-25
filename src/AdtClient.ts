@@ -179,7 +179,7 @@ import { followUrl, isString } from "./utilities"
 import https from 'https'
 import { createCookieAgent } from 'http-cookie-agent';
 import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent'
-import { Cookie, CookieJar } from "tough-cookie";
+import { CookieJar } from "tough-cookie";
 
 
 export function createSSLConfig(
@@ -189,12 +189,12 @@ export function createSSLConfig(
   const jar = new CookieJar();
 
   const agent = new HttpsCookieAgent({
-    jar, 
+    jar,
     keepAlive: true,
     rejectUnauthorized: false, // disable CA checks
   });
 
-  return { httpsAgent : agent }
+  return { httpsAgent: agent }
 }
 interface HttpOptions {
   baseUrl: string
@@ -402,7 +402,7 @@ export class ADTClient {
     const response = await this.h.request(
       "/sap/bc/adt/security/reentranceticket"
     )
-    return "" +response.data || ""
+    return "" + response.data || ""
   }
 
   public transportInfo(
@@ -677,7 +677,7 @@ export class ADTClient {
         method: "POST"
       }
     )
-    return "" +response.data
+    return "" + response.data
   }
 
   /**

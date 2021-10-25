@@ -8,9 +8,9 @@ import request, {
 import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios"
 import { wrapper } from 'axios-cookiejar-support';
 import { Cookie, CookieJar } from "tough-cookie";
-
 import request_debug, { LogCallback } from "request-debug"
 import { fromException, isCsrfError } from "./AdtException"
+import { HttpsCookieAgent } from "http-cookie-agent";
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
@@ -93,7 +93,6 @@ export class AdtHTTP {
       ...config.headers,
       Accept: "*/*",
       "Cache-Control": "no-cache",
-      withCredentials: true,
       "x-csrf-token": FETCH_CSRF_TOKEN,
     }
     headers[SESSION_HEADER] = session_types.stateless
@@ -101,8 +100,9 @@ export class AdtHTTP {
     this.options = {
       ...config,
       baseURL,
-      headers
+      headers,
     }
+
     if (typeof password === "string") {
       // if (config.debugCallback) request_debug(request, config.debugCallback)
       if (!(baseURL && username && password))
@@ -115,10 +115,10 @@ export class AdtHTTP {
       this.userName = username
     }
 
-    this.axios = wrapper( axios.create( this.options ))
+    this.axios = axios.create(this.options)
+    wrapper(this.axios)
 
-    
-this._initializeRequestInterceptor()
+    this._initializeRequestInterceptor()
     this._initializeResponseInterceptor();
 
   }
@@ -137,14 +137,21 @@ this._initializeRequestInterceptor()
     );
   };
 
-  
+
   private _handleRequest = async (config: AxiosRequestConfig) => {
-    let token = await this.getToken
-    if (token){
+    let token = this.getToken
+    if (token) {
       config.headers!['Authorization'] = token.toString()
     }
+    if (config.headers && !config.headers!['Cookie'])
+      config.headers!['Cookie'] = config.httpsAgent.jar.getCookieStringSync(config.baseURL)
+    // console.log(config.headers!['Cookie'])
+    // console.log(token?.toString)
+    // const cookieString = this.asCookieString()
+    // if (cookieString)
+    //   config.jar?.setCookieSync(cookieString, config.baseURL!)
     // console.log(config)
-    
+
 
     return config;
   };
@@ -152,7 +159,7 @@ this._initializeRequestInterceptor()
   private _handleResponse = (response: AxiosResponse) => {
     // console.log(response.data)
     // console.log(response.status)
-    console.log(response)
+    // console.log(response)
     return response;
   }
 
@@ -164,7 +171,7 @@ this._initializeRequestInterceptor()
     if (this.loginPromise) return this.loginPromise
     // oauth
     if (this.getToken && !this.options.auth) {
-    //todo figure out how to use bearer token
+      //todo figure out how to use bearer token
       // await this.getToken().then(bearer => (this.options.auth = { bearer }))
     }
     const params: any = {}
@@ -173,12 +180,18 @@ this._initializeRequestInterceptor()
     this.csrfToken = FETCH_CSRF_TOKEN
     try {
       this.loginPromise = this._request("/sap/bc/adt/compatibility/graph", {
-        params 
+        params
       })
       await this.loginPromise
     } finally {
       this.loginPromise = undefined
     }
+  }
+
+  public asCookieString(): string | undefined {
+    const jar = this.options.jar
+    if (jar && this.options.baseURL)
+      return jar.getCookieStringSync(this.options.baseURL)
   }
 
   public ascookies(): Cookie[] | undefined {
@@ -244,28 +257,31 @@ this._initializeRequestInterceptor()
   private _request(url: string, options: AxiosRequestConfig) {
     let headers = this.options.headers || {}
     if (options.headers) headers = { ...headers, ...options.headers }
-    const axiosUo : AxiosRequestConfig = { ... this.options, ...options, headers,}
+    const axiosUo: AxiosRequestConfig = { ... this.options, ...options, headers, }
     axiosUo.url = url
     // const uo: OptionsWithUrl = { ...this.options, ...options, headers, url }
     return new Promise<HttpResponse>(async (resolve, reject) => {
       try {
-    const response = await this.axios.request(axiosUo);
-    if (response.status < 400) {
-      if (this.csrfToken === FETCH_CSRF_TOKEN) {
-        const newtoken = response.headers[CSRF_TOKEN_HEADER]
-        if (typeof newtoken === "string") this.csrfToken = newtoken
-        this.options.headers!["x-csrf-token"] = this.csrfToken
-      }
-      const httpResponse : HttpResponse = { ... response, body: "" +response.data}
-      resolve(httpResponse)
-    } 
-    else {
-      reject(response as AxiosError)
-    }
+        const response = await this.axios.request(axiosUo);
+        if (response.status < 400) {
+          if (this.options.httpsAgent && response.config.httpsAgent.jar.getCookieStringSync(this.options.baseURL))
+            this.options.httpsAgent.jar.setCookieSync(response.config.httpsAgent.jar.getCookieStringSync(this.options.baseURL), this.options.baseURL)
+          if (this.csrfToken === FETCH_CSRF_TOKEN) {
+            const newtoken = response.headers[CSRF_TOKEN_HEADER]
+            if (typeof newtoken === "string") this.csrfToken = newtoken
+            this.options.headers!["x-csrf-token"] = this.csrfToken
+
+          }
+          const httpResponse: HttpResponse = { ...response, body: "" + response.data }
+          resolve(httpResponse)
+        }
+        else {
+          reject(response as AxiosError)
+        }
       } catch (error) {
         reject(error as AxiosError)
       }
-      
+
       // request(uo, async (error, response) => {
       //   if (error) reject(error)
       //   else if (response.statusCode < 400) {
