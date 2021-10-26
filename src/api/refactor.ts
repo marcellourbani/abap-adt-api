@@ -205,8 +205,9 @@ const srializeRefactoring = (renameRefactoring: RenameRefactoringProposal, wrapp
   const genns = wrapped ? "" : ` xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" xmlns:adtcore="http://www.sap.com/adt/core"`
 
   const addAffectedObjects = (affectedObject: AffectedObjects[]) =>
-    affectedObject.map(z =>
-      `<generic:affectedObject adtcore:name="${z.name}" adtcore:parentUri="${z.parentUri}" adtcore:type="${z.type}" adtcore:uri="${z.uri}">
+    affectedObject.map(z => {
+      const pu = z.parentUri ? `adtcore:parentUri="${z.parentUri}"` : ""
+      return `<generic:affectedObject adtcore:name="${z.name}" ${pu} adtcore:type="${z.type}" adtcore:uri="${z.uri}">
         <generic:textReplaceDeltas>
           ${z.textReplaceDeltas.map(y => {
         return `<generic:textReplaceDelta>
@@ -218,7 +219,7 @@ const srializeRefactoring = (renameRefactoring: RenameRefactoringProposal, wrapp
           </generic:textReplaceDeltas>
         <generic:userContent>${z.userContent}</generic:userContent>
       </generic:affectedObject>`
-    )
+    })
   const bodyXml = `<?xml version="1.0" encoding="ASCII"?>
   ${start}
     <generic:genericRefactoring ${genns}>

@@ -529,7 +529,6 @@ test("create and pull AbapGit Repo", async () => {
 test(
   "rename",
   runTest(async (c: ADTClient) => {
-    if (!enableWrite(new Date())) return
     jest.setTimeout(8000) // this usually takes longer than the default 5000
     const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
     const renameEvaluate = await c.renameEvaluate(uri, 22, 11, 11)
@@ -552,6 +551,7 @@ test(
     const preview = await c.renamePreview(renamePreview, info.LOCKS?.HEADER.TRKORR)
     expect(preview).toBeDefined()
 
+    if (!enableWrite(new Date())) return
     const execute = await c.renameExecute(preview)
     expect(execute).toBeDefined()
   })
