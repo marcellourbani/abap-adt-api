@@ -58,8 +58,9 @@ export async function fixProposals(
   body: string,
   line: number,
   column: number
-) {
+): Promise<FixProposal[]> {
   const params = { uri: `${uri}#start=${line},${column}` }
+ 
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const data = body
   const response = await h.request("/sap/bc/adt/quickfixes/evaluation", {
@@ -180,6 +181,7 @@ export async function renameEvaluate(
   endColumn: number
 ): Promise<RenameRefactoringProposal> {
   const params = {
+
     step: `evaluate`,
     rel: `http://www.sap.com/adt/relations/refactoring/rename`,
     uri: `${uri}#start=${line},${startColumn};end=${line},${endColumn}`
@@ -242,6 +244,7 @@ export async function renamePreview(
   transport: string
 ): Promise<RenameRefactoring> {
   const params = {
+
     step: `preview`,
     rel: `http://www.sap.com/adt/relations/refactoring/rename`,
   }
@@ -263,6 +266,7 @@ export async function renameExecute(
   rename: RenameRefactoring
 ): Promise<RenameRefactoring> {
   const params = {
+
     step: `execute`
   }
 
@@ -273,6 +277,7 @@ export async function renameExecute(
     method: "POST",
     params: params,
     data,
+
     headers: headers,
   })
 
