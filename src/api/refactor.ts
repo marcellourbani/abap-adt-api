@@ -138,8 +138,8 @@ export async function fixEdits(
 function parseRenameRefactoring(body: string): RenameRefactoringProposal {
   const raw = fullParse(body, { ignoreNameSpace: true })
   const root = xmlNode(raw, "renameRefactoring")
-  const generic = xmlNode(root || raw, "genericRefactoring"); // depending on the caller the generic refactoring might be wrapped or not
-  const affectedObjects = xmlArray(generic, "affectedObjects");
+  const generic = xmlNode(root || raw, "genericRefactoring") // depending on the caller the generic refactoring might be wrapped or not
+  const affectedObjects = xmlArray(generic, "affectedObjects", "affectedObject")
   const userContent = decodeEntity(xmlNode(generic, "userContent") || "")
   const adtObjectUri = parseUri(decodeEntity(xmlNode(generic, "adtObjectUri") || ""))
 
@@ -151,8 +151,8 @@ function parseRenameRefactoring(body: string): RenameRefactoringProposal {
     ignoreSyntaxErrors: generic["ignoreSyntaxErrors"],
     transport: "",
     affectedObjects: affectedObjects.map(y => {
-      const replacedelta = xmlArray(y, "affectedObject", "textReplaceDeltas", "textReplaceDelta")
-      const affectedObject = xmlNodeAttr(xmlNode(y, "affectedObject"))
+      const replacedelta = xmlArray(y, "textReplaceDeltas", "textReplaceDelta")
+      const affectedObject = xmlNodeAttr(y)
       return {
         uri: decodeEntity(xmlNode(affectedObject, "uri")),
         type: decodeEntity(xmlNode(affectedObject, "type")),
