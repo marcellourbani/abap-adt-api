@@ -264,6 +264,7 @@ export async function renameExecute(
   rename: RenameRefactoring
 ): Promise<RenameRefactoring> {
   const params = {
+
     step: `execute`
   }
 
