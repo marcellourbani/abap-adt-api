@@ -1,19 +1,13 @@
-import request, {
-  CoreOptions,
-  OptionsWithUrl,
-  Request,
-  RequiredUriUrl,
-  Response
-} from "request"
 import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios"
 import { wrapper } from 'axios-cookiejar-support';
 import { Cookie, CookieJar } from "tough-cookie";
-import request_debug, { LogCallback } from "request-debug"
 import { fromException, isCsrfError } from "./AdtException"
 import { HttpsCookieAgent } from "http-cookie-agent";
+
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
+
 export enum session_types {
   stateful = "stateful",
   stateless = "stateless",
@@ -24,6 +18,8 @@ export interface HttpResponse extends AxiosResponse {
   body: string
 }
 export interface ClientOptions extends AxiosRequestConfig {
+  //   debugCallback?: LogCallback<Request, CoreOptions, RequiredUriUrl>
+
 }
 // export interface ClientOptions extends CoreOptions {
 //   debugCallback?: LogCallback<Request, CoreOptions, RequiredUriUrl>
@@ -117,6 +113,10 @@ export class AdtHTTP {
 
     this.axios = axios.create(this.options)
     wrapper(this.axios)
+    // if (config.debugCallback)
+    // curlirize(this.axios);
+
+
 
     this._initializeRequestInterceptor()
     this._initializeResponseInterceptor();
