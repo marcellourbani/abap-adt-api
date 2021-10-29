@@ -1,10 +1,9 @@
-import { CoreOptions, Request, RequestAPI, RequiredUriUrl } from "request"
-import { LogData, LogPhase, RequestData, ResponseData } from "request-debug"
+import { Axios, AxiosRequestConfig, AxiosResponse } from "axios"
 import { ADTClient, createSSLConfig } from ".."
 
 interface Call {
-  request: RequestData
-  response?: ResponseData
+  request: AxiosRequestConfig
+  response?: AxiosResponse
 }
 test("login", async () => {
   if (!process.env.ADT_URL) return

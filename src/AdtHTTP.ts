@@ -142,16 +142,7 @@ export class AdtHTTP {
     if (config.headers && !config.headers!['Cookie']) {
       let localCookie: string | undefined = this.cookie as string;
       config.headers!['Cookie'] = localCookie || ""
-
-      console.log(config.headers)
     }
-    // console.log(config.headers!['Cookie'])
-    // console.log(token?.toString)
-    // const cookieString = this.asCookieString()
-    // if (cookieString)
-    //   config.jar?.setCookieSync(cookieString, config.baseURL!)
-    // console.log(config)
-
 
     return config;
   };
@@ -160,12 +151,8 @@ export class AdtHTTP {
     const cookies = response.headers["set-cookie"]
     if (cookies && !this.cookie) {
       var arr = cookies.map(cookie => cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0])
-
       this.cookie = arr.join(";")
     }
-    // console.log(response.data)
-    // console.log(response.status)
-    // console.log(response)
     return response;
   }
 
