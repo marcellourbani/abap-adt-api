@@ -177,19 +177,13 @@ import {
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from 'https'
-import { createCookieAgent } from 'http-cookie-agent';
-import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent'
-import { CookieJar } from "tough-cookie";
-
 
 export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
 ): ClientOptions {
-  const jar = new CookieJar();
 
-  const agent = new HttpsCookieAgent({
-    jar,
+  const agent = new https.Agent({
     keepAlive: true,
     rejectUnauthorized: false, // disable CA checks
   });
@@ -377,9 +371,9 @@ export class ADTClient {
   }
 
   public get sessionID() {
-    const cookies = this.h.ascookies() || []
-    const sc = cookies.find(c => !!c.key.match(/SAP_SESSIONID/))
-    return sc ? sc.value : ""
+    const cookies = this.h.ascookies() || ""
+    const sc = cookies.split(";").find(c => !!c.match(/SAP_SESSIONID/))
+    return sc ? sc.split("=") : ""
   }
 
   public nodeContents(

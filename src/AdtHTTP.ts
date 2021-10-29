@@ -1,9 +1,5 @@
 import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios"
-import { wrapper } from 'axios-cookiejar-support';
-import { Cookie, CookieJar } from "tough-cookie";
 import { fromException, isCsrfError } from "./AdtException"
-import { HttpsCookieAgent } from "http-cookie-agent";
-
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
@@ -31,6 +27,7 @@ export class AdtHTTP {
   private getToken?: BearerFetcher
   private userName?: string
   axios: any;
+  cookie: String | undefined
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -112,7 +109,6 @@ export class AdtHTTP {
     }
 
     this.axios = axios.create(this.options)
-    wrapper(this.axios)
     // if (config.debugCallback)
     // curlirize(this.axios);
 
@@ -143,8 +139,12 @@ export class AdtHTTP {
     if (token) {
       config.headers!['Authorization'] = token.toString()
     }
-    if (config.headers && !config.headers!['Cookie'])
-      config.headers!['Cookie'] = config.httpsAgent.jar.getCookieStringSync(config.baseURL)
+    if (config.headers && !config.headers!['Cookie']) {
+      let localCookie: string | undefined = this.cookie as string;
+      config.headers!['Cookie'] = localCookie || ""
+
+      console.log(config.headers)
+    }
     // console.log(config.headers!['Cookie'])
     // console.log(token?.toString)
     // const cookieString = this.asCookieString()
@@ -157,6 +157,12 @@ export class AdtHTTP {
   };
 
   private _handleResponse = (response: AxiosResponse) => {
+    const cookies = response.headers["set-cookie"]
+    if (cookies && !this.cookie) {
+      var arr = cookies.map(cookie => cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0])
+
+      this.cookie = arr.join(";")
+    }
     // console.log(response.data)
     // console.log(response.status)
     // console.log(response)
@@ -188,16 +194,8 @@ export class AdtHTTP {
     }
   }
 
-  public asCookieString(): string | undefined {
-    const jar = this.options.jar
-    if (jar && this.options.baseURL)
-      return jar.getCookieStringSync(this.options.baseURL)
-  }
-
-  public ascookies(): Cookie[] | undefined {
-    const jar = this.options.jar
-    if (jar && this.options.baseURL)
-      return jar.getCookiesSync(this.options.baseURL)
+  public ascookies(): String | undefined {
+    return this.cookie
   }
 
   public async logout() {
@@ -206,7 +204,7 @@ export class AdtHTTP {
     // prevent autologin
     this.options.auth = undefined
     // new cookie jar
-    this.options.jar = new CookieJar
+    this.cookie = undefined
     // clear token
     this.csrfToken = FETCH_CSRF_TOKEN
   }
@@ -265,8 +263,6 @@ export class AdtHTTP {
       try {
         const response = await this.axios.request(axiosUo);
         if (response.status < 400) {
-          if (this.options.httpsAgent && response.config.httpsAgent.jar.getCookieStringSync(this.options.baseURL))
-            this.options.httpsAgent.jar.setCookieSync(response.config.httpsAgent.jar.getCookieStringSync(this.options.baseURL), this.options.baseURL)
           if (this.csrfToken === FETCH_CSRF_TOKEN) {
             const newtoken = response.headers[CSRF_TOKEN_HEADER]
             if (typeof newtoken === "string") this.csrfToken = newtoken
