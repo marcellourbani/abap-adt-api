@@ -175,12 +175,19 @@ import {
   ValidationResult
 } from "./api"
 import { followUrl, isString } from "./utilities"
+import https from 'https'
 
 export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
 ): ClientOptions {
-  return { ca, rejectUnauthorized: !allowUnauthorized }
+
+  const agent = new https.Agent({
+    keepAlive: true,
+    rejectUnauthorized: false, // disable CA checks
+  });
+
+  return { httpsAgent: agent }
 }
 interface HttpOptions {
   baseUrl: string
@@ -326,7 +333,7 @@ export class ADTClient {
     return this.h.csrfToken
   }
   public get baseUrl() {
-    return this.h.baseUrl
+    return this.h.baseURL
   }
   public get client() {
     return this.h.client
@@ -363,9 +370,9 @@ export class ADTClient {
   }
 
   public get sessionID() {
-    const cookies = this.h.cookies() || []
-    const sc = cookies.find(c => !!c.key.match(/SAP_SESSIONID/))
-    return sc ? sc.value : ""
+    const cookies = this.h.ascookies() || ""
+    const sc = cookies.split(";").find(c => !!c.match(/SAP_SESSIONID/))
+    return sc ? sc.split("=") : ""
   }
 
   public nodeContents(
@@ -388,7 +395,7 @@ export class ADTClient {
     const response = await this.h.request(
       "/sap/bc/adt/security/reentranceticket"
     )
-    return response.body
+    return "" + response.body || ""
   }
 
   public transportInfo(
@@ -663,7 +670,7 @@ export class ADTClient {
         method: "POST"
       }
     )
-    return response.body
+    return "" + response.body
   }
 
   /**

@@ -1,7 +1,7 @@
-import { Response } from "request"
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import { fullParse, xmlArray } from "./utilities"
 import { types } from "util";
+import axios, { AxiosResponse } from "axios";
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -24,14 +24,14 @@ export interface ExceptionProperties {
 }
 
 
-const isResponse = (r: any): r is Response => !!r.statusCode
+const isResponse = (r: any): r is AxiosResponse => !!r.status
 
 class AdtErrorException extends Error {
   get typeID(): symbol {
     return ADTEXTYPEID
   }
 
-  public static create(resp: Response, properties: ExceptionProperties | Record<string, string>): AdtErrorException
+  public static create(resp: AxiosResponse, properties: ExceptionProperties | Record<string, string>): AdtErrorException
   public static create(
     err: number,
     properties: ExceptionProperties | Record<string, string>,
@@ -40,24 +40,24 @@ class AdtErrorException extends Error {
     parent?: Error,
     namespace?: string,
     localizedMessage?: string,
-    response?: Response
+    response?: AxiosResponse
   ): AdtErrorException
   public static create(
-    errOrResponse: number | Response,
+    errOrResponse: number | AxiosResponse,
     properties: ExceptionProperties | Record<string, string>,
     type?: string,
     message?: string,
     parent?: Error,
     namespace?: string,
     localizedMessage?: string,
-    response?: Response
+    response?: AxiosResponse
   ): AdtErrorException {
     if (isResponse(errOrResponse)) {
       return this.create(
-        errOrResponse.statusCode,
+        errOrResponse.status,
         properties,
         "",
-        errOrResponse.statusMessage || "Unknown error in adt client",
+        errOrResponse.statusText || "Unknown error in adt client",
         undefined,
         undefined,
         undefined,
@@ -85,7 +85,7 @@ class AdtErrorException extends Error {
     public readonly parent?: Error,
     public readonly namespace?: string,
     public readonly localizedMessage?: string,
-    public readonly response?: Response
+    public readonly response?: AxiosResponse
   ) {
     super()
   }
@@ -138,24 +138,25 @@ export function isAdtException(e: any): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
+//TODO: handle axios errors
 export function fromException(errOrResp: unknown): AdtException {
   if (!isResponse(errOrResp) && !types.isNativeError(errOrResp))
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   if (isAdtException(errOrResp)) return errOrResp
   try {
-    if (isResponse(errOrResp)) {
-      const response: Response = errOrResp
-      if (!(response && response.body))
+    if (!axios.isAxiosError(errOrResp)) {
+      const response: AxiosResponse = errOrResp as AxiosResponse
+      if (!(response && response.data))
         return adtException(
-          `Error ${response.statusCode}:${response.statusMessage}`
+          `Error ${response.status}:${response.statusText}`
         )
       if (
-        response.statusCode === 403 &&
+        response.status === 403 &&
         response.headers["x-csrf-token"] === "Required"
       )
-        return new AdtCsrfException(response.body)
+        return new AdtCsrfException(response.data as string)
 
-      const raw = fullParse(response.body)
+      const raw = fullParse(response.data as string)
       const root = raw["exc:exception"]
       const getf = (base: any, idx: string) => (base ? base[idx] : "")
       const properties: Record<string, string> = {}
@@ -163,7 +164,7 @@ export function fromException(errOrResp: unknown): AdtException {
         properties[p["@_key"]] = `${p["#text"]}`.replace(/^\s+/, "").replace(/\s+$/, "")
       })
       return new AdtErrorException(
-        response.statusCode,
+        response.status,
         properties,
         root.type["@_id"],
         root.message["#text"],
@@ -171,7 +172,11 @@ export function fromException(errOrResp: unknown): AdtException {
         getf(root.namespace, "@_id"),
         getf(root.localizedMessage, "#text")
       )
-    } else return new AdtHttpException(errOrResp)
+    } else {
+      const error = new AdtHttpException({ name: errOrResp.name, message: `${errOrResp.message} : ${(errOrResp.response) ? errOrResp.response.data : ''}`, stack: errOrResp.stack })
+
+      return error
+    }
   } catch (e) {
     return isResponse(errOrResp)
       ? AdtErrorException.create(errOrResp, {})

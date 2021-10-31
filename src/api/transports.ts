@@ -193,8 +193,8 @@ export async function createTransport(
     },
     method: "POST"
   })
-  const transport = response.body.split("/").pop()
-  return transport
+  const transport = response.body?.split("/").pop()
+  return transport || ""
 }
 
 export interface TransportObject {
