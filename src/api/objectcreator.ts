@@ -264,7 +264,7 @@ export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   if (!ot.validationPath) throw adtException(`Validation not supported for object ${ot} ${options.objname}`)
   const response = await h.request("/sap/bc/adt/" + ot.validationPath, {
     method: "POST",
-    qs: options
+    params: options
   })
   const raw = fullParse(response.body)
   const results = xmlArray(raw, "asx:abap", "asx:values", "DATA") as any[]
@@ -291,16 +291,16 @@ export async function createObject(
     "/sap/bc/adt/" +
     sprintf(ot.creationPath, encodeURIComponent(options.parentName))
   options.responsible = (options.responsible || h.username).toUpperCase()
-  const body = createBody(options, ot)
-  const qs: any = {}
-  if (options.transport) qs.corrNr = options.transport
+  const data = createBody(options, ot)
+  const params: any = {}
+  if (options.transport) params.corrNr = options.transport
 
   // will raise exceptions on failure
   await h.request(url, {
-    body,
+    data,
     headers: { "Content-Type": "application/*" },
     method: "POST",
-    qs
+    params
   })
 }
 
@@ -310,16 +310,16 @@ export async function createTestInclude(
   lockHandle: string,
   corrNr: string
 ) {
-  const body = `<?xml version="1.0" encoding="UTF-8"?><class:abapClassInclude
+  const data = `<?xml version="1.0" encoding="UTF-8"?><class:abapClassInclude
   xmlns:class="http://www.sap.com/adt/oo/classes" xmlns:adtcore="http://www.sap.com/adt/core"
   adtcore:name="dummy" class:includeType="testclasses"/>`
   await h.request(
     `/sap/bc/adt/oo/classes/${encodeURIComponent(clas)}/includes`,
     {
-      body,
+      data,
       headers: { "Content-Type": "application/*" },
       method: "POST",
-      qs: { lockHandle, corrNr }
+      params: { lockHandle, corrNr }
     }
   )
 }

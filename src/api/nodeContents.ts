@@ -83,16 +83,16 @@ export async function nodeContents(
   user_name?: string,
   parent_tech_name?: string
 ): Promise<NodeStructure> {
-  const qs: NodeRequestOptions = {
+  const params: NodeRequestOptions = {
     parent_type,
     withShortDescriptions: true
   }
-  if (parent_name) qs.parent_name = parent_name
-  if (parent_tech_name) qs.parent_tech_name = parent_tech_name
-  if (user_name) qs.user_name = user_name
+  if (parent_name) params.parent_name = parent_name
+  if (parent_tech_name) params.parent_tech_name = parent_tech_name
+  if (user_name) params.user_name = user_name
   const response = await h.request("/sap/bc/adt/repository/nodestructure", {
     method: "POST",
-    qs
+    params
   })
   return parsePackageResponse(response.body)
 }

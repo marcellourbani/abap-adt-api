@@ -132,7 +132,7 @@ export async function transportInfo(
   OPERATION: string = "I"
 ): Promise<TransportInfo> {
   ValidateObjectUrl(URI)
-  const body = JSON2AbapXML({
+  const data = JSON2AbapXML({
     DEVCLASS,
     OPERATION,
     URI
@@ -145,7 +145,7 @@ export async function transportInfo(
       "application/vnd.sap.as+xml; charset=UTF-8; dataname=com.sap.adt.transport.service.checkData"
   }
   const response = await h.request("/sap/bc/adt/cts/transportchecks", {
-    body,
+    data,
     method: "POST",
     headers
   })
@@ -181,11 +181,11 @@ export async function createTransport(
   transportLayer = ""
 ): Promise<string> {
   ValidateObjectUrl(REF)
-  const body = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF, OPERATION })
-  const qs = transportLayer ? { transportLayer } : {}
+  const data = JSON2AbapXML({ DEVCLASS, REQUEST_TEXT, REF, OPERATION })
+  const params = transportLayer ? { transportLayer } : {}
   const response = await h.request("/sap/bc/adt/cts/transports", {
-    body,
-    qs,
+    data,
+    params,
     headers: {
       Accept: "text/plain",
       "Content-Type":
@@ -193,7 +193,7 @@ export async function createTransport(
     },
     method: "POST"
   })
-  const transport = response.body.split("/").pop()
+  const transport = "" +response.body.split("/").pop()
   return transport
 }
 
@@ -253,7 +253,7 @@ const parseTargets = (s: any) => ({
 
 export async function userTransports(h: AdtHTTP, user: string, targets = true) {
   const response = await h.request("/sap/bc/adt/cts/transportrequests", {
-    qs: { user, targets }
+    params: { user, targets }
   })
 
   const raw = fullParse(response.body)
@@ -274,7 +274,7 @@ export async function userTransports(h: AdtHTTP, user: string, targets = true) {
 
 export async function transportsByConfig(h: AdtHTTP, configUri: string, targets = true) {
   const response = await h.request("/sap/bc/adt/cts/transportrequests", {
-    qs: { configUri, targets }
+    params: { configUri, targets }
   })
 
   const raw = fullParse(response.body)
@@ -324,14 +324,14 @@ export async function createTransportsConfig(h: AdtHTTP) {
 
 export async function setTransportsConfig(h: AdtHTTP, uri: string, etag: string, config: TransportConfiguration) {
 
-  const body = serializeTransportConfig(config)
+  const data = serializeTransportConfig(config)
   const headers = {
     "Accept": "application/vnd.sap.adt.configuration.v1+xml",
     "Content-Type": "application/vnd.sap.adt.configuration.v1+xml",
     "If-Match": etag
   }
 
-  const response = await h.request(uri, { method: "PUT", headers, body })
+  const response = await h.request(uri, { method: "PUT", headers, data })
 
   return parseTransportConfig(response.body)
 }
@@ -416,7 +416,7 @@ export async function transportSetOwner(
     {
       method: "PUT",
       headers: { Accept: "application/*" },
-      qs: { targetuser }
+      params: { targetuser }
     }
   )
   const raw = fullParse(response.body)
@@ -436,7 +436,7 @@ export async function transportAddUser(
 ) {
   validateTransport(transportNumber)
 
-  const body = `<?xml version="1.0" encoding="ASCII"?>
+  const data = `<?xml version="1.0" encoding="ASCII"?>
   <tm:root xmlns:tm="http://www.sap.com/cts/adt/tm" tm:number="${transportNumber}"
   tm:targetuser="${user}" tm:useraction="newtask"/>`
 
@@ -444,7 +444,7 @@ export async function transportAddUser(
     "/sap/bc/adt/cts/transportrequests/" + transportNumber + "/tasks",
     {
       method: "POST",
-      body,
+      data,
       headers: { Accept: "application/*", "Content-Type": "text/plain" }
     }
   )
@@ -478,7 +478,7 @@ export async function transportReference(
     "/sap/bc/adt/cts/transportrequests/reference",
     {
       headers: { Accept: "application/*" },
-      qs: { obj_name, obj_wbtype, pgmid }
+      params: { obj_name, obj_wbtype, pgmid }
     }
   )
   const raw = fullParse(response.body)

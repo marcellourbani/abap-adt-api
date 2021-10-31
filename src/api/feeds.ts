@@ -126,9 +126,9 @@ export async function feeds(h: AdtHTTP) {
 
 export async function dumps(h: AdtHTTP, query: string = "") {
     const headers = { Accept: "application/atom+xml;type=feed" }
-    const qs: any = {}
-    if (query) qs["$query"] = query
-    const response = await h.request("/sap/bc/adt/runtime/dumps", { method: "GET", qs, headers })
+    const params: any = {}
+    if (query) params["$query"] = query
+    const response = await h.request("/sap/bc/adt/runtime/dumps", { method: "GET", params, headers })
 
     return parseDumps(response.body)
 }

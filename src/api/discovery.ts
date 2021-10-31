@@ -95,10 +95,10 @@ export interface ObjectTypeDescriptor {
   usedBy: string[]
 }
 export async function objectTypes(h: AdtHTTP): Promise<ObjectTypeDescriptor[]> {
-  const qs = { maxItemCount: 999, name: "*", data: "usedByProvider" }
+  const params = { maxItemCount: 999, name: "*", data: "usedByProvider" }
   const response = await h.request(
     "/sap/bc/adt/repository/informationsystem/objecttypes",
-    { qs }
+    { params }
   )
   const ret = parse(response.body)
   const types: ObjectTypeDescriptor[] = xmlArray(

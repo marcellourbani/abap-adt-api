@@ -58,15 +58,15 @@ export async function fixProposals(
   body: string,
   line: number,
   column: number
-): Promise<FixProposal[]> {
-  const qs = { uri: `${uri}#start=${line},${column}` }
+) {
+  const params = { uri: `${uri}#start=${line},${column}` }
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
-
+  const data = body
   const response = await h.request("/sap/bc/adt/quickfixes/evaluation", {
     method: "POST",
-    qs,
+    params,
     headers,
-    body
+    data
   })
   const raw = fullParse(response.body)
   const rawResults = xmlArray(raw, "qf:evaluationResults", "evaluationResult")
@@ -99,7 +99,7 @@ export async function fixEdits(
 ) {
   if (!proposal["adtcore:uri"].match(/\/sap\/bc\/adt\/quickfixes/))
     throw adtException("Invalid fix proposal")
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const data = `<?xml version="1.0" encoding="UTF-8"?>
   <quickfixes:proposalRequest xmlns:quickfixes="http://www.sap.com/adt/quickfixes"
      xmlns:adtcore="http://www.sap.com/adt/core">
     <input>
@@ -113,7 +113,7 @@ export async function fixEdits(
   const response = await h.request(proposal["adtcore:uri"], {
     method: "POST",
     headers,
-    body
+    data
   })
   const raw = fullParse(response.body)
   const parseDelta = (d: any): Delta => {
@@ -179,7 +179,7 @@ export async function renameEvaluate(
   startColumn: number,
   endColumn: number
 ): Promise<RenameRefactoringProposal> {
-  const qs = {
+  const params = {
     step: `evaluate`,
     rel: `http://www.sap.com/adt/relations/refactoring/rename`,
     uri: `${uri}#start=${line},${startColumn};end=${line},${endColumn}`
@@ -188,7 +188,7 @@ export async function renameEvaluate(
 
   const response = await h.request("/sap/bc/adt/refactorings", {
     method: "POST",
-    qs: qs,
+    params: params,
     headers: headers,
   })
 
@@ -242,7 +242,7 @@ export async function renamePreview(
   renameRefactoring: RenameRefactoringProposal,
   transport: string
 ): Promise<RenameRefactoring> {
-  const qs = {
+  const params = {
     step: `preview`,
     rel: `http://www.sap.com/adt/relations/refactoring/rename`,
   }
@@ -251,8 +251,8 @@ export async function renamePreview(
 
   const response = await h.request("/sap/bc/adt/refactorings", {
     method: "POST",
-    qs: qs,
-    body: bodyXml,
+    params: params,
+    data: bodyXml,
     headers: headers,
   })
   const parsed = parseRenameRefactoring(response.body)
@@ -263,17 +263,18 @@ export async function renameExecute(
   h: AdtHTTP,
   rename: RenameRefactoring
 ): Promise<RenameRefactoring> {
-  const qs = {
+  const params = {
+
     step: `execute`
   }
 
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
-  const body = srializeRefactoring(rename, false)
+  const data = srializeRefactoring(rename, false)
 
   const response = await h.request("/sap/bc/adt/refactorings", {
     method: "POST",
-    qs: qs,
-    body,
+    params: params,
+    data,
     headers: headers,
   })
 

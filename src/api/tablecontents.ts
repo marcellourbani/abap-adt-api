@@ -264,10 +264,10 @@ export async function tableContents(
     decode = true,
     sqlQuery = ""
 ) {
-    const qs = { rowNumber, ddicEntityName }
+    const params = { rowNumber, ddicEntityName }
     const response = await h.request(
         `/sap/bc/adt/datapreview/ddic`,
-        { qs, headers: { Accept: "application/*" }, method: "POST", body: sqlQuery }
+        { params, headers: { Accept: "application/*" }, method: "POST", data: sqlQuery }
     )
     const queryResult = parseQueryResponse(response.body)
     if (decode) return decodeQueryResult(queryResult)
@@ -280,10 +280,10 @@ export async function runQuery(
     rowNumber: number = 100,
     decode = true
 ) {
-    const qs = { rowNumber }
+    const params = { rowNumber }
     const response = await h.request(
         `/sap/bc/adt/datapreview/freestyle`,
-        { qs, headers: { Accept: "application/*" }, method: "POST", body: sqlQuery }
+        { params, headers: { Accept: "application/*" }, method: "POST", data: sqlQuery }
     )
     const queryResult = parseQueryResponse(response.body)
     if (decode) return decodeQueryResult(queryResult)
@@ -296,11 +296,11 @@ export async function bindingDetails(
     index = 0
 ) {
     const queries = extractBindingLinks(binding)
-    const { query: qs, url } = queries[index]
-    if (!qs || !url) throw adtException("Binding not found")
+    const { query: params, url } = queries[index]
+    if (!params || !url) throw adtException("Binding not found")
     const response = await h.request(
         url,
-        { qs, headers: { Accept: "application/*" }, method: "GET" }
+        { params, headers: { Accept: "application/*" }, method: "GET" }
     )
     return parseBindingDetails(response.body)
 }

@@ -63,10 +63,10 @@ test("badToken", async () => {
     c.csrfToken = "bad" // will trigger a bad login
     const response = await c.request("/sap/bc/adt/repository/nodestructure", {
       method: "POST",
-      qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
+      params: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" }
     })
     expect(c.csrfToken).not.toEqual("bad") // will be reset by the new login
-    expect(response.body).toBeDefined()
+    expect(response.data).toBeDefined()
   } finally {
     c.logout()
   }
@@ -1296,6 +1296,7 @@ test(
 test(
   "syntax ckeck CDS",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(10000) // this usually takes longer than the default 5000
     const messages = await c.syntaxCheck(
       `/sap/bc/adt/ddic/ddl/sources/zapidummy_datadef`
     )
@@ -1311,6 +1312,7 @@ test(
 test(
   "syntax ckeck CDS with source",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(10000) // this usually takes longer than the default 5000
     const messages = await c.syntaxCheck(
       `/sap/bc/adt/ddic/ddl/sources/zapidummy_datadef`,
       "/sap/bc/adt/ddic/ddl/sources/zapidummy_datadef/source/main",
@@ -1337,6 +1339,7 @@ test(
 test(
   "syntax ckeck CDS access",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(10000) // this usually takes longer than the default 5000
     let messages = await c.syntaxCheck(
       `/sap/bc/adt/acm/dcl/sources/zapidummy_datadef_ac`
     )
@@ -1362,6 +1365,7 @@ test(
 test(
   "syntax ckeck CDS metadata",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(10000) // this usually takes longer than the default 5000
     let messages = await c.syntaxCheck(
       `/sap/bc/adt/ddic/ddlx/sources/zapidummy_metadata`
     )
@@ -1386,6 +1390,7 @@ test(
 test(
   "CDS annotations definitions",
   runTest(async (c: ADTClient) => {
+    jest.setTimeout(10000) // this usually takes longer than the default 5000
     const definitions = await c.annotationDefinitions()
     expect(definitions).toBeDefined()
     const scopeFound = definitions.includes("@Scope")

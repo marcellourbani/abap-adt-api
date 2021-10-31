@@ -164,7 +164,7 @@ export async function externalRepoInfo(
     "Content-Type": "application/abapgit.adt.repo.info.ext.request.v2+xml",
     Accept: "application/abapgit.adt.repo.info.ext.response.v2+xml",
   }
-  const body = `<?xml version="1.0" ?>
+  const data = `<?xml version="1.0" ?>
   <abapgitexternalrepo:externalRepoInfoRequest xmlns:abapgitexternalrepo="http://www.sap.com/adt/abapgit/externalRepo">
     <abapgitexternalrepo:url>${repourl}</abapgitexternalrepo:url>
     <abapgitexternalrepo:user>${user}</abapgitexternalrepo:user>
@@ -173,7 +173,7 @@ export async function externalRepoInfo(
 
   const response = await h.request(`/sap/bc/adt/abapgit/externalrepoinfo`, {
     method: "POST", // encodeEntity?
-    body,
+    data,
     headers,
   })
   const raw = fullParse(response.body, { ignoreNameSpace: true })
@@ -227,7 +227,7 @@ export async function createRepo(
   const headers = {
     "Content-Type": "application/abapgit.adt.repo.v3+xml",
   }
-  const body = `<?xml version="1.0" ?>
+  const data = `<?xml version="1.0" ?>
   <abapgitrepo:repository xmlns:abapgitrepo="http://www.sap.com/adt/abapgit/repositories">
     <abapgitrepo:package>${packageName}</abapgitrepo:package>
     <abapgitrepo:url>${repourl}</abapgitrepo:url>
@@ -238,7 +238,7 @@ export async function createRepo(
   </abapgitrepo:repository>`
   const response = await h.request(`/sap/bc/adt/abapgit/repos`, {
     method: "POST",
-    body,
+    data,
     headers, // encodeEntity?
   })
 
@@ -262,11 +262,11 @@ export async function pullRepo(
     : ""
   user = user ? `<abapgitrepo:remoteUser>${user}</abapgitrepo:remoteUser>` : ""
   password = password ? `<abapgitrepo:remotePassword>${password}</abapgitrepo:remotePassword>` : ""
-  const body = `<?xml version="1.0" ?><abapgitrepo:repository xmlns:abapgitrepo="http://www.sap.com/adt/abapgit/repositories">
+  const data = `<?xml version="1.0" ?><abapgitrepo:repository xmlns:abapgitrepo="http://www.sap.com/adt/abapgit/repositories">
     ${branch}${transport}${user}${password}</abapgitrepo:repository>`
   const response = await h.request(`/sap/bc/adt/abapgit/repos/${repoId}/pull`, {
     method: "POST",
-    body,
+    data,
     headers,
   })
 
@@ -410,9 +410,9 @@ export async function pushRepo(
   headers["Content-Type"] = headers.Accept
   if (user) headers.Username = user
   if (password) headers.Password = btoa(password)
-  const body = serializeStaging(staging)
+  const data = serializeStaging(staging)
 
-  await h.request(link.href, { method: "POST", headers, body })
+  await h.request(link.href, { method: "POST", headers, data })
 }
 
 export async function stageRepo(
@@ -446,7 +446,7 @@ export async function remoteRepoInfo(
     "Content-Type": "application/abapgit.adt.repo.info.ext.request.v1+xml",
     Accept: "application/abapgit.adt.repo.info.ext.response.v1+xml",
   }
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  const data = `<?xml version="1.0" encoding="UTF-8"?>
 <repository_ext>
 <url>${repo.url}</url>
 <user>${user}</user>
@@ -455,7 +455,7 @@ export async function remoteRepoInfo(
 
   const resp = await h.request("/sap/bc/adt/abapgit/externalrepoinfo", {
     headers,
-    body,
+    data,
     method: "POST",
   })
   const raw = parse(resp.body)?.repository_external

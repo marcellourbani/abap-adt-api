@@ -36,14 +36,14 @@ export async function setObjectSource(
 ) {
   ValidateObjectUrl(objectSourceUrl)
   ValidateStateful(h)
-  const qs: any = { lockHandle }
+  const params: any = { lockHandle }
   const ctype = source.match(/^<\?xml\s/i) ? "application/*" : "text/plain; charset=utf-8"
-  if (transport) qs.corrNr = transport
+  if (transport) params.corrNr = transport
   await h.request(objectSourceUrl, {
-    body: source,
+    data: source,
     headers: { "content-type": ctype },
     method: "PUT",
-    qs
+    params
   })
 }
 
@@ -54,14 +54,14 @@ export async function lock(
 ) {
   ValidateObjectUrl(objectUrl)
   ValidateStateful(h)
-  const qs = { _action: "LOCK", accessMode }
+  const params = { _action: "LOCK", accessMode }
   const response = await h.request(objectUrl, {
     headers: {
       Accept:
         "application/*,application/vnd.sap.as+xml;charset=UTF-8;dataname=com.sap.adt.lock.result"
     },
     method: "POST",
-    qs
+    params
   })
   const raw = parse(response.body)
   const locks = xmlArray(raw, "asx:abap", "asx:values", "DATA")
@@ -74,13 +74,13 @@ export async function unLock(
   lockHandle: string
 ) {
   ValidateObjectUrl(objectUrl)
-  const qs = {
+  const params = {
     _action: "UNLOCK",
     lockHandle: encodeURIComponent(lockHandle)
   }
   const response = await h.request(objectUrl, {
     method: "POST",
-    qs
+    params
   })
   return response.body
 }
