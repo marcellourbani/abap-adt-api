@@ -1,6 +1,5 @@
 import { AdtHTTP, session_types } from "./AdtHTTP"
-import { fullParse, xmlArray } from "./utilities"
-import { types } from "util";
+import { fullParse, isNativeError, xmlArray } from "./utilities"
 import axios, { AxiosResponse } from "axios";
 
 const ADTEXTYPEID = Symbol()
@@ -140,7 +139,7 @@ export function isAdtException(e: any): e is AdtException {
 
 //TODO: handle axios errors
 export function fromException(errOrResp: unknown): AdtException {
-  if (!isResponse(errOrResp) && !types.isNativeError(errOrResp))
+  if (!isResponse(errOrResp) && !isNativeError(errOrResp))
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   if (isAdtException(errOrResp)) return errOrResp
   try {

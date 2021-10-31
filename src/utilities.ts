@@ -4,6 +4,9 @@ import { AllHtmlEntities } from "html-entities"
 export const isObject = (x: any): x is object => !!x && typeof x === 'object'
 export const isArray = (x: any): x is any[] => Array.isArray(x)
 export const isString = (x: any): x is string => typeof (x) === "string"
+export const isNumber = (x: any): x is number => typeof x === "number"
+export const isNativeError = (e: unknown): e is Error => !!e && e instanceof Error
+
 export function JSON2AbapXML(original: any, root: string = "DATA") {
   // only flat objects for now, might extend later...
   let inner = ""

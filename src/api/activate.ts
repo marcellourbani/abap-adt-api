@@ -1,7 +1,6 @@
-import { isArray, isString } from "util"
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { fullParse, isArray, isString, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 
 export interface InactiveObject {
   "adtcore:uri": string
