@@ -34,11 +34,11 @@ export async function searchObject(
   objType?: string,
   maxResults: number = 100
 ) {
-  const params: any = { operation: "quickSearch", query, maxResults }
-  if (objType) params.objectType = objType.replace(/\/.*$/, "")
+  const qs: any = { operation: "quickSearch", query, maxResults }
+  if (objType) qs.objectType = objType.replace(/\/.*$/, "")
   const response = await h.request(
     `/sap/bc/adt/repository/informationsystem/search`,
-    { params, headers: { Accept: "application/*" } }
+    { qs, headers: { Accept: "application/*" } }
   )
   const raw = fullParse(response.body)
   return xmlArray(
@@ -59,10 +59,10 @@ export async function searchObject(
 
 export async function findObjectPath(h: AdtHTTP, objectUrl: string) {
   ValidateObjectUrl(objectUrl)
-  const params = { uri: objectUrl }
+  const qs = { uri: objectUrl }
   const response = await h.request(`/sap/bc/adt/repository/nodepath`, {
     method: "POST",
-    params
+    qs
   })
   const raw = fullParse(response.body)
   return xmlArray(
@@ -87,13 +87,12 @@ export async function abapDocumentation(
     Accept: "application/vnd.sap.adt.docu.v1+html,text/html"
   }
   const uri = `${objectUri}#start=${line},${column}`
-  const params = { uri, language, format: "eclipse" }
-  const data = body 
+  const qs = { uri, language, format: "eclipse" }
   const response = await h.request(`/sap/bc/adt/docu/abap/langu`, {
     method: "POST",
-    params,
+    qs,
     headers,
-    data
+    body
   })
   return response.body as string
 }
@@ -104,9 +103,9 @@ export async function packageSearchHelp(
   name = "*"
 ) {
   const headers = { Accept: "application/*" }
-  const params = { name }
+  const qs = { name }
   const uri = `/sap/bc/adt/packages/valuehelps/${type}`
-  const response = await h.request(uri, { params, headers })
+  const response = await h.request(uri, { qs, headers })
   const raw = fullParse(response.body)
   return xmlArray(raw, "nameditem:namedItemList", "nameditem:namedItem").map(
     (item: any) => {

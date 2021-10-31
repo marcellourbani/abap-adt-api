@@ -88,7 +88,7 @@ export async function syntaxCheck(
   const source = mainProgram
     ? `${sourceUrl}?context=${encodeURIComponent(mainProgram)}`
     : sourceUrl
-  const data = `<?xml version="1.0" encoding="UTF-8"?>
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
   <chkrun:checkObjectList xmlns:chkrun="http://www.sap.com/adt/checkrun" xmlns:adtcore="http://www.sap.com/adt/core">
   <chkrun:checkObject adtcore:uri="${source}" chkrun:version="${version}">
     <chkrun:artifacts>
@@ -105,7 +105,7 @@ export async function syntaxCheck(
   }
   const response = await h.request(
     "/sap/bc/adt/checkruns?reporters=abapCheckRun",
-    { method: "POST", headers, data }
+    { method: "POST", headers, body }
   )
   const raw = fullParse(response.body)
   return parseCheckResults(raw)
@@ -157,12 +157,11 @@ export async function codeCompletion(
   offset: number
 ) {
   const uri = `${url}#start=${line},${offset}`
-  const params = { uri, signalCompleteness: true }
+  const qs = { uri, signalCompleteness: true }
   const headers = { "Content-Type": "application/*" }
-  const data = body
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/proposal",
-    { method: "POST", params, headers, data }
+    { method: "POST", qs, headers, body }
   )
   const raw = parse(response.body)
   const proposals = xmlArray(
@@ -189,13 +188,11 @@ export async function codeCompletionFull(
   patternKey: string
 ) {
   const uri = `${url}#start=${line},${offset}`
-  const params = { uri, patternKey }
+  const qs = { uri, patternKey }
   const headers = { "Content-Type": "application/*" }
-  const data = body
-
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/insertion",
-    { method: "POST", params, headers, data }
+    { method: "POST", qs, headers, body }
   )
   return response.body
 }
@@ -213,13 +210,12 @@ export async function codeCompletionElement(
   line: number,
   offset: number
 ): Promise<CompletionElementInfo | string> {
-  const params = { uri: `${url}#start=${line},${offset}` }
+  const qs = { uri: `${url}#start=${line},${offset}` }
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }
-  const data = body
 
   const response = await h.request(
     "/sap/bc/adt/abapsource/codecompletion/elementinfo",
-    { method: "POST", params, headers, data }
+    { method: "POST", qs, headers, body }
   )
   const raw = fullParse(response.body)
   if (!xmlNode(raw, "abapsource:elementInfo")) return response.body
@@ -270,17 +266,16 @@ export async function findDefinition(
   mainProgram?: string
 ) {
   const ctx = mainProgram ? `?context=${encodeURIComponent(mainProgram)}` : ""
-  const params: any = {
+  const qs: any = {
     uri: `${url}${ctx}#start=${line},${firstof};end=${line},${lastof}`,
     filter: implementation ? "implementation" : "definition"
   }
-  const data = body
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }
   const response = await h.request("/sap/bc/adt/navigation/target", {
     method: "POST",
-    params,
+    qs,
     headers,
-    data
+    body
   })
   const raw = fullParse(response.body)
   const rawLink = xmlNode(raw, "adtcore:objectReference", "@_adtcore:uri") || ""
@@ -300,8 +295,8 @@ export async function usageReferences(
 ) {
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const uri = line && column ? `${url}#start=${line},${column}` : url
-  const params = { uri }
-  const data = `<?xml version="1.0" encoding="ASCII"?>
+  const qs = { uri }
+  const body = `<?xml version="1.0" encoding="ASCII"?>
   <usagereferences:usageReferenceRequest xmlns:usagereferences="http://www.sap.com/adt/ris/usageReferences">
     <usagereferences:affectedObjects/>
   </usagereferences:usageReferenceRequest>`
@@ -309,9 +304,9 @@ export async function usageReferences(
     "/sap/bc/adt/repository/informationsystem/usageReferences",
     {
       method: "POST",
-      params,
+      qs,
       headers,
-      data
+      body
     }
   )
   const raw = fullParse(response.body)
@@ -402,7 +397,7 @@ export async function usageReferenceSnippets(
         `${last}<usagereferences:objectIdentifier optional="false">${current.objectIdentifier}</usagereferences:objectIdentifier>`,
       ""
     )
-  const data = `<?xml version="1.0" encoding="UTF-8"?>
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
   <usagereferences:usageSnippetRequest xmlns:usagereferences="http://www.sap.com/adt/ris/usageReferences">
   <usagereferences:objectIdentifiers>
   ${refNodes}
@@ -414,7 +409,7 @@ export async function usageReferenceSnippets(
     {
       method: "POST",
       headers,
-      data
+      body
     }
   )
   const raw = fullParse(response.body)
@@ -468,9 +463,9 @@ const parseElement = (e: any): ClassComponent => {
 export async function classComponents(h: AdtHTTP, url: string) {
   ValidateObjectUrl(url)
   const uri = `${url}/objectstructure`
-  const params = { version: "active", withShortDescriptions: true }
+  const qs = { version: "active", withShortDescriptions: true }
   const headers = { "Content-Type": "application/*" }
-  const response = await h.request(uri, { params, headers })
+  const response = await h.request(uri, { qs, headers })
   const raw = fullParse(response.body)
   const header = parseElement(xmlNode(raw, "abapsource:objectStructureElement"))
   return header as ClassComponent
@@ -489,10 +484,10 @@ export async function fragmentMappings(
   name: string
 ) {
   ValidateObjectUrl(url)
-  const params = { uri: `${url}#type=${type};name=${name}` }
+  const qs = { uri: `${url}#type=${type};name=${name}` }
   const headers = { "Content-Type": "application/*" }
   const response = await h.request("/sap/bc/adt/urifragmentmappings", {
-    params,
+    qs,
     headers
   })
   const [sourceUrl, line, column] = parts(
@@ -535,25 +530,25 @@ export async function setPrettyPrinterSetting(
   style: PrettyPrinterStyle
 ) {
   const headers = { "Content-Type": "application/*" }
-  const data = `<?xml version="1.0" encoding="UTF-8"?><prettyprintersettings:PrettyPrinterSettings
+  const body = `<?xml version="1.0" encoding="UTF-8"?><prettyprintersettings:PrettyPrinterSettings
 xmlns:prettyprintersettings="http://www.sap.com/adt/prettyprintersettings"
 prettyprintersettings:indentation="${indent}" prettyprintersettings:style="${style}"/>`
   const response = await h.request(
     "/sap/bc/adt/abapsource/prettyprinter/settings",
-    { method: "PUT", headers, data }
+    { method: "PUT", headers, body }
   )
   return response.body || ""
 }
 
-export async function prettyPrinter(h: AdtHTTP, data: string) {
+export async function prettyPrinter(h: AdtHTTP, body: string) {
   const headers = { "Content-Type": "text/plain", Accept: "text/plain" }
   const response = await h.request("/sap/bc/adt/abapsource/prettyprinter", {
     method: "POST",
     headers,
-    data
+    body
   })
 
-  return (response.body || data).toString()
+  return (response.body || body).toString()
 }
 
 export interface HierarchyNode {
@@ -575,18 +570,16 @@ export async function typeHierarchy(
   offset: number,
   superTypes = false
 ) {
-  const params = {
+  const qs = {
     uri: `${url}#start=${line},${offset}`,
     type: superTypes ? "superTypes" : "subTypes"
   }
-  const data = body
-
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }
   const response = await h.request("/sap/bc/adt/abapsource/typehierarchy", {
     method: "POST",
-    params,
+    qs,
     headers,
-    data
+    body
   })
 
   const raw = fullParse(response.body)

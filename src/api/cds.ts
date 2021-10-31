@@ -33,7 +33,7 @@ export async function syntaxCheckCDS(
         "Content-Type": "application/vnd.sap.adt.checkobjects+xml",
         Accept: "application/vnd.sap.adt.checkmessages+xml"
       },
-      data: `<?xml version="1.0" encoding="UTF-8"?>
+      body: `<?xml version="1.0" encoding="UTF-8"?>
 <chkrun:checkObjectList xmlns:adtcore="http://www.sap.com/adt/core" xmlns:chkrun="http://www.sap.com/adt/checkrun">
   <chkrun:checkObject adtcore:uri="${url}" chkrun:version="active">${artifacts}</chkrun:checkObject>
 </chkrun:checkObjectList>`
@@ -167,13 +167,13 @@ export async function ddicElement(
   getSecondaryObjects = true
 ) {
   const headers = { Accept: "application/vnd.sap.adt.elementinfo+xml" }
-  const params = formatQS({
+  const qs = formatQS({
     getTargetForAssociation,
     getExtensionViews,
     getSecondaryObjects,
     path
   })
-  const uri = `/sap/bc/adt/ddic/ddl/elementinfo?${params}`
+  const uri = `/sap/bc/adt/ddic/ddl/elementinfo?${qs}`
   const response = await h.request(uri, { headers })
   const raw = fullParse(response.body)
   return parseDdicElement(raw["abapsource:elementInfo"])
@@ -190,10 +190,10 @@ export async function ddicRepositoryAccess(
   path: string | string[]
 ) {
   const headers = { Accept: "application/*" }
-  const params = isArray(path)
+  const qs = isArray(path)
     ? formatQS({ requestScope: "all", path })
     : `datasource=${encodeURIComponent(path)}`
-  const url = `/sap/bc/adt/ddic/ddl/ddicrepositoryaccess?${params}`
+  const url = `/sap/bc/adt/ddic/ddl/ddicrepositoryaccess?${qs}`
   const response = await h.request(url, { headers })
   const raw = fullParse(response.body)
   const records = raw["adtcore:objectReferences"]
@@ -212,17 +212,17 @@ export async function ddicRepositoryAccess(
 
 async function publishUnpublishServiceBinding(h: AdtHTTP, base: string, name: string, version: string) {
   const headers = { Accept: "application/*" }
-  const params = `servicename=${encodeURIComponent(name)}&serviceversion=${version}`
-  const url = `/sap/bc/adt/businessservices/odatav2/${base}?${params}`
-  const data = `<adtcore:objectReferences xmlns:adtcore="http://www.sap.com/adt/core">
+  const qs = `servicename=${encodeURIComponent(name)}&serviceversion=${version}`
+  const url = `/sap/bc/adt/businessservices/odatav2/${base}?${qs}`
+  const body = `<adtcore:objectReferences xmlns:adtcore="http://www.sap.com/adt/core">
   <adtcore:objectReference adtcore:name="${name}"/>
   </adtcore:objectReferences>`
-  const response = await h.request(url, { headers, method: "POST", data })
+  const response = await h.request(url, { headers, method: "POST", body })
   const raw = fullParse(response.body)
-  const resData = xmlNode(raw, "asx:abap/asx:values/DATA")
-  const severity: string = xmlNode(resData, "SEVERITY")
-  const shortText: string = xmlNode(resData, "SHORT_TEXT")
-  const longText: string = xmlNode(resData, "LONG_TEXT")
+  const data = xmlNode(raw, "asx:abap/asx:values/DATA")
+  const severity: string = xmlNode(data, "SEVERITY")
+  const shortText: string = xmlNode(data, "SHORT_TEXT")
+  const longText: string = xmlNode(data, "LONG_TEXT")
   return { severity, shortText, longText }
 }
 

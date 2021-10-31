@@ -1,8 +1,12 @@
-import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios"
+import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosBasicCredentials, Method, AxiosInstance } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
+import https from 'https'
+
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
+
+// TODO: add support for request logging, lost on axios migration
 
 export enum session_types {
   stateful = "stateful",
@@ -10,24 +14,51 @@ export enum session_types {
   keep = ""
 }
 
-export interface HttpResponse extends AxiosResponse {
+export interface HttpResponse {
   body: string
 }
-export interface ClientOptions extends AxiosRequestConfig {
-  //   debugCallback?: LogCallback<Request, CoreOptions, RequiredUriUrl>
 
+export interface ClientOptions {
+  headers?: Record<string, string>
+  httpsAgent?: https.Agent
+  baseURL?: string,
+  timeout?: number
+  auth?: AxiosBasicCredentials
 }
-// export interface ClientOptions extends CoreOptions {
-//   debugCallback?: LogCallback<Request, CoreOptions, RequiredUriUrl>
-// }
+
+export interface RequestOptions extends ClientOptions {
+  method?: Method
+  headers?: Record<string, string>
+  httpsAgent?: https.Agent
+  qs?: Record<string, any>
+  baseURL?: string,
+  timeout?: number
+  auth?: AxiosBasicCredentials
+  body?: string
+}
+
+const toAxiosConfig = (options: RequestOptions): AxiosRequestConfig => {
+  const config: AxiosRequestConfig = {
+    method: options.method || "GET",
+    headers: options.headers || {},
+    params: options.qs,
+    httpsAgent: options.httpsAgent,
+    timeout: options.timeout,
+    baseURL: options.baseURL,
+    auth: options.auth,
+    data: options.body
+  }
+  return config
+}
+
 export type BearerFetcher = () => Promise<string>
+
 export class AdtHTTP {
-  private options: ClientOptions
   private loginPromise?: Promise<any>
   private getToken?: BearerFetcher
   private userName?: string
-  axios: any;
-  cookie: String | undefined
+  private axios: AxiosInstance
+  private cookie: String | undefined
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -36,32 +67,29 @@ export class AdtHTTP {
     )
   }
   private currentSession = session_types.stateless
-  public get stateful(): session_types {
-    const sessionType = this.options.headers![SESSION_HEADER]
-    return sessionType as session_types
+  private get commonHeaders(): Record<string, string> {
+    return this.axios.defaults.headers.common
   }
-  public set stateful(stateful: session_types) {
-    this.options.headers![SESSION_HEADER] = stateful
+  public stateful: session_types = session_types.stateless
+  public csrfToken: string = FETCH_CSRF_TOKEN
+
+  private get options() {
+    return this.axios.defaults
   }
-  public get csrfToken() {
-    return this.options.headers![CSRF_TOKEN_HEADER]
-  }
-  public set csrfToken(token: string) {
-    this.options.headers![CSRF_TOKEN_HEADER] = token
-  }
+
   public get loggedin() {
     return this.csrfToken !== FETCH_CSRF_TOKEN
   }
   public get baseURL() {
-    return this.options.baseURL!
+    return this.axios.defaults.baseURL!
   }
   public get username() {
     return (
-      this.userName || (this.options.auth && this.options.auth.username) || ""
+      this.userName || (this.axios.defaults.auth?.username) || ""
     )
   }
   public get password() {
-    return (this.options.auth && this.options.auth.password) || ""
+    return (this.axios.defaults.auth?.password) || ""
   }
 
   /**
@@ -89,31 +117,24 @@ export class AdtHTTP {
       "x-csrf-token": FETCH_CSRF_TOKEN,
     }
     headers[SESSION_HEADER] = session_types.stateless
-
-    this.options = {
+    const options: ClientOptions = {
       ...config,
       baseURL,
       headers,
     }
-
     if (typeof password === "string") {
       // if (config.debugCallback) request_debug(request, config.debugCallback)
       if (!(baseURL && username && password))
         throw new Error(
           "Invalid ADTClient configuration: url, login and password are required"
         )
-      this.options.auth = { username, password }
+      options.auth = { username, password }
     } else {
       this.getToken = password
       this.userName = username
     }
 
-    this.axios = axios.create(this.options)
-    // if (config.debugCallback)
-    // curlirize(this.axios);
-
-
-
+    this.axios = axios.create(toAxiosConfig(options))
     this._initializeRequestInterceptor()
     this._initializeResponseInterceptor();
 
@@ -135,16 +156,18 @@ export class AdtHTTP {
 
 
   private _handleRequest = async (config: AxiosRequestConfig) => {
+    const headers = config.headers || {}
+    headers[CSRF_TOKEN_HEADER] = this.csrfToken
     let token = this.getToken
     if (token) {
-      config.headers!['Authorization'] = token.toString()
+      headers!['Authorization'] = token.toString()
     }
-    if (config.headers && !config.headers!['Cookie']) {
+    if (headers && !headers['Cookie']) {
       let localCookie: string | undefined = this.cookie as string;
-      config.headers!['Cookie'] = localCookie || ""
+      headers['Cookie'] = localCookie || ""
     }
 
-    return config;
+    return { ...config, headers };
   };
 
   private _handleResponse = (response: AxiosResponse) => {
@@ -167,14 +190,12 @@ export class AdtHTTP {
       //todo figure out how to use bearer token
       // await this.getToken().then(bearer => (this.options.auth = { bearer }))
     }
-    const params: any = {}
-    if (this.client) params["sap-client"] = this.client
-    if (this.language) params["sap-language"] = this.language
+    const qs: Record<string, string> = {}
+    if (this.client) qs["sap-client"] = this.client
+    if (this.language) qs["sap-language"] = this.language
     this.csrfToken = FETCH_CSRF_TOKEN
     try {
-      this.loginPromise = this._request("/sap/bc/adt/compatibility/graph", {
-        params
-      })
+      this.loginPromise = this._request("/sap/bc/adt/compatibility/graph", { qs })
       await this.loginPromise
     } finally {
       this.loginPromise = undefined
@@ -210,7 +231,7 @@ export class AdtHTTP {
    * @param url URL suffix
    * @param config request options
    */
-  public async request(url: string, config?: AxiosRequestConfig): Promise<HttpResponse> {
+  public async request(url: string, config?: RequestOptions): Promise<HttpResponse> {
     let autologin = false
     try {
       if (!this.loggedin) {
@@ -239,43 +260,25 @@ export class AdtHTTP {
    * @param url URL suffix
    * @param options request options
    */
-  private _request(url: string, options: AxiosRequestConfig) {
-    let headers = this.options.headers || {}
-    if (options.headers) headers = { ...headers, ...options.headers }
-    const axiosUo: AxiosRequestConfig = { ... this.options, ...options, headers, }
-    axiosUo.url = url
-    axiosUo.data = (options.data) ? options.data.replace(/\r?\n|\r/g, "") : undefined;
-    // const uo: OptionsWithUrl = { ...this.options, ...options, headers, url }
+  private _request(url: string, options: RequestOptions): Promise<HttpResponse> {
     return new Promise<HttpResponse>(async (resolve, reject) => {
       try {
-        const response = await this.axios.request(axiosUo);
+        const response = await this.axios.request({ url, ...toAxiosConfig(options) });
         if (response.status < 400) {
           if (this.csrfToken === FETCH_CSRF_TOKEN) {
             const newtoken = response.headers[CSRF_TOKEN_HEADER]
             if (typeof newtoken === "string") this.csrfToken = newtoken
-            this.options.headers!["x-csrf-token"] = this.csrfToken
-
+            this.commonHeaders!["x-csrf-token"] = this.csrfToken
           }
           const httpResponse: HttpResponse = { ...response, body: "" + response.data }
           resolve(httpResponse)
         }
         else {
-          reject(response as AxiosError)
+          reject(response)
         }
       } catch (error) {
-        reject(error as AxiosError)
+        reject(error)
       }
-
-      // request(uo, async (error, response) => {
-      //   if (error) reject(error)
-      //   else if (response.statusCode < 400) {
-      //     if (this.csrfToken === FETCH_CSRF_TOKEN) {
-      //       const newtoken = response.headers[CSRF_TOKEN_HEADER]
-      //       if (typeof newtoken === "string") this.csrfToken = newtoken
-      //     }
-      //     resolve(response)
-      //   } else reject(fromException(response))
-      // })
     })
   }
 }

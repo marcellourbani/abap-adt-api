@@ -1,4 +1,3 @@
-import { Http2ServerRequest } from "http2"
 import { adtException } from "./AdtException"
 import { AdtHTTP, ClientOptions, session_types, BearerFetcher } from "./AdtHTTP"
 
@@ -396,7 +395,7 @@ export class ADTClient {
     const response = await this.h.request(
       "/sap/bc/adt/security/reentranceticket"
     )
-    return "" + response.data || ""
+    return "" + response.body || ""
   }
 
   public transportInfo(
@@ -671,7 +670,7 @@ export class ADTClient {
         method: "POST"
       }
     )
-    return "" + response.data
+    return "" + response.body
   }
 
   /**

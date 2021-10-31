@@ -5,6 +5,7 @@ interface Call {
   request: AxiosRequestConfig
   response?: AxiosResponse
 }
+// TODO: add support for request logging, lost on axios migration
 test("login", async () => {
   if (!process.env.ADT_URL) return
   const requests = new Map<number, Call>()
