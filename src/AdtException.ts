@@ -138,6 +138,7 @@ export function isAdtException(e: any): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
+//TODO: handle axios errors
 export function fromException(errOrResp: unknown): AdtException {
   if (!isResponse(errOrResp) && !types.isNativeError(errOrResp))
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen

@@ -240,7 +240,8 @@ export class AdtHTTP {
       }
       return await this._request(url, config || {})
     } catch (e) {
-      const adtErr = fromException(e as AxiosError)
+      const adtErr = fromException(e)
+      // TODO: login and retry if enabled
       // if the logon ticket expired try to logon again, unless in stateful mode
       // or already tried a login
       if (isCsrfError(adtErr) && !autologin && !this.isStateful) {
@@ -248,7 +249,7 @@ export class AdtHTTP {
           await this.login()
           return await this._request(url, config || {})
         } catch (e2) {
-          throw fromException(e2 as AxiosError)
+          throw fromException(e2)
         }
       } else throw adtErr
     }
