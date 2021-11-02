@@ -1,6 +1,6 @@
 import { AdtHTTP, session_types } from "./AdtHTTP"
 import { fullParse, isNativeError, xmlArray } from "./utilities"
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosResponse, AxiosError } from "axios";
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -137,14 +137,10 @@ export function isAdtException(e: any): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
-//TODO: handle axios errors
-export function fromException(errOrResp: unknown): AdtException {
-  if (!isResponse(errOrResp) && !isNativeError(errOrResp))
-    return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
-  if (isAdtException(errOrResp)) return errOrResp
+export function fromException_int(errOrResp: AxiosResponse | AxiosError): AdtException {
   try {
-    if (!axios.isAxiosError(errOrResp)) {
-      const response: AxiosResponse = errOrResp as AxiosResponse
+    if (isResponse(errOrResp) || (axios.isAxiosError(errOrResp) && errOrResp.response)) {
+      const response = isResponse(errOrResp) ? errOrResp : errOrResp.response! // not null enforced above
       if (!(response && response.data))
         return adtException(
           `Error ${response.status}:${response.statusText}`
@@ -172,8 +168,7 @@ export function fromException(errOrResp: unknown): AdtException {
         getf(root.localizedMessage, "#text")
       )
     } else {
-      const error = new AdtHttpException({ name: errOrResp.name, message: `${errOrResp.message} : ${(errOrResp.response) ? errOrResp.response.data : ''}`, stack: errOrResp.stack })
-
+      const error = new AdtHttpException({ name: errOrResp.name, message: `${errOrResp.message} : ${(errOrResp?.response) ? errOrResp.response.data : ''}`, stack: errOrResp.stack })
       return error
     }
   } catch (e) {
@@ -181,6 +176,15 @@ export function fromException(errOrResp: unknown): AdtException {
       ? AdtErrorException.create(errOrResp, {})
       : new AdtHttpException(errOrResp)
   }
+}
+
+export function fromException(errOrResp: unknown): AdtException {
+  if (isAdtException(errOrResp)) return errOrResp
+  if (!isResponse(errOrResp)
+    && (!isNativeError(errOrResp)
+      || (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp))))
+    return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
+  return fromException_int(errOrResp)
 }
 
 export function adtException(message: string) {
