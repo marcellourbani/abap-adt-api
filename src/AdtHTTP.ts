@@ -59,6 +59,7 @@ export class AdtHTTP {
   private userName?: string
   private axios: AxiosInstance
   private cookie: String | undefined
+  private bearer?: string
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -122,6 +123,7 @@ export class AdtHTTP {
       baseURL,
       headers,
     }
+    this.userName = username
     if (typeof password === "string") {
       // if (config.debugCallback) request_debug(request, config.debugCallback)
       if (!(baseURL && username && password))
@@ -131,7 +133,6 @@ export class AdtHTTP {
       options.auth = { username, password }
     } else {
       this.getToken = password
-      this.userName = username
     }
 
     this.axios = axios.create(toAxiosConfig(options))
@@ -158,9 +159,11 @@ export class AdtHTTP {
   private _handleRequest = async (config: AxiosRequestConfig) => {
     const headers = config.headers || {}
     headers[CSRF_TOKEN_HEADER] = this.csrfToken
-    let token = this.getToken
-    if (token) {
-      headers!['Authorization'] = token.toString()
+    if (this.getToken && !this.bearer)
+      this.bearer = await this.getToken()
+
+    if (this.bearer) {
+      headers.Authorization = `bearer ${this.bearer}`
     }
     if (headers && !headers['Cookie']) {
       let localCookie: string | undefined = this.cookie as string;
@@ -188,7 +191,7 @@ export class AdtHTTP {
     // oauth
     if (this.getToken && !this.options.auth) {
       //todo figure out how to use bearer token
-      // await this.getToken().then(bearer => (this.options.auth = { bearer }))
+      await this.getToken().then(bearer => (this.bearer = bearer))
     }
     const qs: Record<string, string> = {}
     if (this.client) qs["sap-client"] = this.client

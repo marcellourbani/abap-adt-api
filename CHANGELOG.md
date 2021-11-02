@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 4.0.0 [2021-11-02]
+
+### Changed
+
+- using axios instead of request
+- dropped request logging support
+
 ## 3.1.0 [2021-10-24]
 
 ### Added

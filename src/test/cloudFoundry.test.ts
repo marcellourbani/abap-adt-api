@@ -76,7 +76,6 @@ test("run SQL", async () => {
   expect(data.columns.length).toBe(3)
   expect(data.columns[0].name).toBe("TRAVEL_ID")
   expect(data.values[0].TRAVEL_ID).toBeTruthy()
-
 })
 
 test("service bindings", async () => {
