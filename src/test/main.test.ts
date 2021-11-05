@@ -39,7 +39,6 @@ test("login", async () => {
 test("logout http", async () => {
   const c = createHttp()
   if (!c) return
-  expect(c).toBeDefined()
   await c.login()
   expect(c.csrfToken).not.toEqual("fetch")
   await c.logout()
@@ -52,6 +51,18 @@ test("logout http", async () => {
   } finally {
     c.logout()
   }
+})
+
+test("drop session", async () => {
+  const c = createHttp()
+  if (!c) return
+  await c.login()
+  c.stateful = session_types.stateful
+  await c.request("/sap/bc/adt/repository/nodestructure", { method: "POST", qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" } })
+  await c.dropSession()
+  await c.request("/sap/bc/adt/repository/nodestructure", { method: "POST", qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" } })
+  c.csrfToken = "bad" // force relogin
+  await c.request("/sap/bc/adt/repository/nodestructure", { method: "POST", qs: { parent_name: "$ABAPGIT", parent_type: "DEVC/K" } })
 })
 
 test("badToken", async () => {
@@ -349,9 +360,7 @@ test(
 test(
   "getMainPrograms",
   runTest(async (c: ADTClient) => {
-    const result = await c.mainPrograms(
-      "/sap/bc/adt/programs/includes/zadttestincludeinc"
-    )
+    const result = await c.mainPrograms("/sap/bc/adt/programs/includes/zadttestincludeinc")
     expect(result).toBeDefined()
     expect(result.length).toBe(1)
     expect(result[0]["adtcore:name"]).toBe("ZADTTESTINCLUDE1")
@@ -361,9 +370,7 @@ test(
 test(
   "getObjectSource",
   runTest(async (c: ADTClient) => {
-    const result = await c.getObjectSource(
-      "/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1/source/main"
-    )
+    const result = await c.getObjectSource("/sap/bc/adt/programs/programs/ZADTTESTINCLUDE1/source/main")
     expect(result).toBeDefined()
     expect(result).toMatch(/ZADTTESTINCLUDEINC/gim)
   })

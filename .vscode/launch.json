@@ -12,7 +12,8 @@
       "args": ["--runInBand"],
       "runtimeArgs": [
         // "--harmony",
-        "--inspect-brk"
+        // "--inspect-brk"
+        "--inspect"
       ],
       "smartStep": true,
       "sourceMaps": true,

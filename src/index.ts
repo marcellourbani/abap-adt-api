@@ -1,6 +1,7 @@
 export { session_types, ClientOptions } from "./AdtHTTP"
 export * from "./AdtClient"
 export * from "./AdtException"
+export { LogCallback, LogData } from "./requestLogger"
 export {
   AbapClassStructure,
   AbapObjectStructure,

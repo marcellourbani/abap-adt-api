@@ -92,6 +92,7 @@ test("Create and delete", async () => {
     }
     const newobject = "/sap/bc/adt/functions/groups/y_adtnpm_foobar"
     await deleteObj(newobject, c)
+    await c.login()
     await c.createObject(options)
     // group created, let's create a function module now
     await c.createObject({

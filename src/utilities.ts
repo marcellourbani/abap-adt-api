@@ -1,11 +1,12 @@
 import { parse, X2jOptionsOptional } from "fast-xml-parser"
 import { AllHtmlEntities } from "html-entities"
 
-export const isObject = (x: any): x is object => !!x && typeof x === 'object'
-export const isArray = (x: any): x is any[] => Array.isArray(x)
-export const isString = (x: any): x is string => typeof (x) === "string"
-export const isNumber = (x: any): x is number => typeof x === "number"
+export const isObject = <T extends Object>(x: unknown): x is T => !!x && typeof x === 'object'
+export const isArray = (x: unknown): x is unknown[] => Array.isArray(x)
+export const isString = (x: unknown): x is string => typeof (x) === "string"
+export const isNumber = (x: unknown): x is number => typeof x === "number"
 export const isNativeError = (e: unknown): e is Error => !!e && e instanceof Error
+export const isUndefined = (x: unknown): x is undefined => typeof (x) === "undefined"
 
 export function JSON2AbapXML(original: any, root: string = "DATA") {
   // only flat objects for now, might extend later...
@@ -39,13 +40,13 @@ export function xmlFlatArray<T>(xml: any, ...path: string[]): T[] {
   if (!xml) return []
 
   if (path.length === 0) {
-    if (isArray(xml)) return xml
+    if (isArray(xml)) return xml as any[]
     else return [xml]
   }
 
   if (isArray(xml))
     return xml.reduce(
-      (arr, x: any) => [...arr, ...xmlFlatArray(x, ...path)],
+      (arr: any[], x: any) => [...arr, ...xmlFlatArray(x, ...path)],
       []
     )
 
@@ -61,7 +62,7 @@ export function xmlFlatArray<T>(xml: any, ...path: string[]): T[] {
 export function xmlArray<T>(xml: any, ...path: string[]): T[] {
   const node = xmlNode(xml, ...path)
   if (node) {
-    if (isArray(node)) return node
+    if (isArray(node)) return node as any[]
     else return [node]
   }
 

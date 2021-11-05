@@ -1,5 +1,5 @@
 import { AdtHTTP, session_types } from "./AdtHTTP"
-import { fullParse, isNativeError, xmlArray } from "./utilities"
+import { fullParse, isNativeError, isNumber, isObject, isString, xmlArray } from "./utilities"
 import axios, { AxiosResponse, AxiosError } from "axios";
 
 const ADTEXTYPEID = Symbol()
@@ -23,7 +23,7 @@ export interface ExceptionProperties {
 }
 
 
-const isResponse = (r: any): r is AxiosResponse => !!r.status
+const isResponse = (r: any): r is AxiosResponse => isObject(r) && !!r?.status && isString(r?.statusText)
 
 class AdtErrorException extends Error {
   get typeID(): symbol {
@@ -51,7 +51,7 @@ class AdtErrorException extends Error {
     localizedMessage?: string,
     response?: AxiosResponse
   ): AdtErrorException {
-    if (isResponse(errOrResponse)) {
+    if (!isNumber(errOrResponse)) {
       return this.create(
         errOrResponse.status,
         properties,
@@ -137,14 +137,13 @@ export function isAdtException(e: any): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
+const simpleError = (response: AxiosResponse) => adtException(`Error ${response.status}:${response.statusText}`)
+
 export function fromException_int(errOrResp: AxiosResponse | AxiosError): AdtException {
   try {
     if (isResponse(errOrResp) || (axios.isAxiosError(errOrResp) && errOrResp.response)) {
       const response = isResponse(errOrResp) ? errOrResp : errOrResp.response! // not null enforced above
-      if (!(response && response.data))
-        return adtException(
-          `Error ${response.status}:${response.statusText}`
-        )
+      if (!response.data) return simpleError(response)
       if (
         response.status === 403 &&
         response.headers["x-csrf-token"] === "Required"
@@ -153,6 +152,7 @@ export function fromException_int(errOrResp: AxiosResponse | AxiosError): AdtExc
 
       const raw = fullParse(response.data as string)
       const root = raw["exc:exception"]
+      if (!root) return simpleError(response)
       const getf = (base: any, idx: string) => (base ? base[idx] : "")
       const properties: Record<string, string> = {}
       xmlArray(root, "properties", "entry").forEach((p: any) => {

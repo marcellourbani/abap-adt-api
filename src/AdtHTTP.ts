@@ -1,12 +1,12 @@
 import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosBasicCredentials, Method, AxiosInstance } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
 import https from 'https'
+import { adtException, LogCallback } from "."
+import { logError, logResponse } from "./requestLogger"
 
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
-
-// TODO: add support for request logging, lost on axios migration
 
 export enum session_types {
   stateful = "stateful",
@@ -21,7 +21,8 @@ export interface HttpResponse {
 export interface ClientOptions {
   headers?: Record<string, string>
   httpsAgent?: https.Agent
-  baseURL?: string,
+  baseURL?: string
+  debugCallback?: LogCallback
   timeout?: number
   auth?: AxiosBasicCredentials
 }
@@ -52,14 +53,16 @@ const toAxiosConfig = (options: RequestOptions): AxiosRequestConfig => {
 }
 
 export type BearerFetcher = () => Promise<string>
-
+let adtRequestNumber = 0
 export class AdtHTTP {
   private loginPromise?: Promise<any>
   private getToken?: BearerFetcher
   private userName?: string
   private axios: AxiosInstance
-  private cookie: String | undefined
+  private cookie = new Map<string, string>()
   private bearer?: string
+  readonly password?: string
+  debugCallback?: LogCallback
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -71,7 +74,15 @@ export class AdtHTTP {
   private get commonHeaders(): Record<string, string> {
     return this.axios.defaults.headers.common
   }
-  public stateful: session_types = session_types.stateless
+  public _stateful: session_types = session_types.stateless
+  public get stateful() {
+    return this._stateful
+  }
+  public set stateful(value: session_types) {
+    this._stateful = value
+    if (value !== session_types.keep)
+      this.currentSession = value
+  }
   public csrfToken: string = FETCH_CSRF_TOKEN
 
   private get options() {
@@ -85,12 +96,7 @@ export class AdtHTTP {
     return this.axios.defaults.baseURL!
   }
   public get username() {
-    return (
-      this.userName || (this.axios.defaults.auth?.username) || ""
-    )
-  }
-  public get password() {
-    return (this.axios.defaults.auth?.password) || ""
+    return this.userName || (this.axios.defaults.auth?.username) || ""
   }
 
   /**
@@ -125,17 +131,15 @@ export class AdtHTTP {
     }
     this.userName = username
     if (typeof password === "string") {
-      // if (config.debugCallback) request_debug(request, config.debugCallback)
+      this.password = password
       if (!(baseURL && username && password))
-        throw new Error(
-          "Invalid ADTClient configuration: url, login and password are required"
-        )
-      options.auth = { username, password }
-    } else {
+        throw adtException("Invalid ADTClient configuration: url, login and password are required")
+    } else
       this.getToken = password
-    }
+
 
     this.axios = axios.create(toAxiosConfig(options))
+    this.debugCallback = config.debugCallback
     this._initializeRequestInterceptor()
     this._initializeResponseInterceptor();
 
@@ -150,8 +154,7 @@ export class AdtHTTP {
 
   private _initializeRequestInterceptor = () => {
     this.axios.interceptors.request.use(
-      this._handleRequest,
-      this._handleError,
+      this._handleRequest
     );
   };
 
@@ -159,40 +162,44 @@ export class AdtHTTP {
   private _handleRequest = async (config: AxiosRequestConfig) => {
     const headers = config.headers || {}
     headers[CSRF_TOKEN_HEADER] = this.csrfToken
+    headers[SESSION_HEADER] = this.stateful
     if (this.getToken && !this.bearer)
       this.bearer = await this.getToken()
 
-    if (this.bearer) {
-      headers.Authorization = `bearer ${this.bearer}`
-    }
-    if (headers && !headers['Cookie']) {
-      let localCookie: string | undefined = this.cookie as string;
-      headers['Cookie'] = localCookie || ""
-    }
+    if (this.bearer) headers.Authorization = `bearer ${this.bearer}`
 
-    return { ...config, headers };
+    if (headers && !headers['Cookie'])
+      headers['Cookie'] = this.ascookies()
+
+
+    adtRequestNumber++
+    return { ...config, headers, adtRequestNumber, adtStartTime: new Date() };
   };
 
   private _handleResponse = (response: AxiosResponse) => {
-    const cookies = response.headers["set-cookie"]
-    if (cookies && !this.cookie) {
-      var arr = cookies.map(cookie => cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0])
-      this.cookie = arr.join(";")
-    }
+    logResponse(response, this.debugCallback)
+    const cookies = response.headers["set-cookie"] || []
+    cookies.forEach(cookie => {
+      const cleaned = cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0]
+      const [key] = cookie.split('=', 1)
+      this.cookie.set(key, cleaned)
+    })
     return response;
   }
 
-  protected _handleError = (error: any) => Promise.reject(error);
+  protected _handleError = async (error: any) => {
+    logError(error, this.debugCallback)
+    return error
+  }
   /**
    * Logs on an ADT server. parameters provided on creation
    */
   public async login() {
     if (this.loginPromise) return this.loginPromise
     // oauth
-    if (this.getToken && !this.options.auth) {
-      //todo figure out how to use bearer token
+    if (this.getToken && !this.bearer) {
       await this.getToken().then(bearer => (this.bearer = bearer))
-    }
+    } else this.options.auth = { username: this.userName || "", password: this.password || "" }
     const qs: Record<string, string> = {}
     if (this.client) qs["sap-client"] = this.client
     if (this.language) qs["sap-language"] = this.language
@@ -205,8 +212,8 @@ export class AdtHTTP {
     }
   }
 
-  public ascookies(): String | undefined {
-    return this.cookie
+  public ascookies(): string {
+    return [...this.cookie.values()].join('; ')
   }
 
   public async logout() {
@@ -214,8 +221,9 @@ export class AdtHTTP {
     await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
     this.options.auth = undefined
+    this.bearer = undefined
     // new cookie jar
-    this.cookie = undefined
+    this.cookie.clear()
     // clear token
     this.csrfToken = FETCH_CSRF_TOKEN
   }
@@ -244,7 +252,6 @@ export class AdtHTTP {
       return await this._request(url, config || {})
     } catch (e) {
       const adtErr = fromException(e)
-      // TODO: login and retry if enabled
       // if the logon ticket expired try to logon again, unless in stateful mode
       // or already tried a login
       if (isCsrfError(adtErr) && !autologin && !this.isStateful) {

@@ -266,7 +266,7 @@ export class ADTClient {
     options: ClientOptions = {}
   ) {
     if (!(baseUrl && username && password))
-      throw new Error(
+      throw adtException(
         "Invalid ADTClient configuration: url, login and password are required"
       )
     if (typeof password !== "string") password = this.wrapFetcher(password)
@@ -300,6 +300,7 @@ export class ADTClient {
     if (this.pIsClone) return this
     if (!this.pClone) {
       const pw = this.fetcher || this.password
+      if (!pw) throw adtException("Not logged in")
       this.pClone = new ADTClient(
         this.baseUrl,
         this.username,
@@ -633,7 +634,7 @@ export class ADTClient {
       return syntaxCheckCDS(this.h, url, mainUrl, content)
     else {
       if (!mainUrl || !content)
-        throw new Error("mainUrl and content are required for syntax check")
+        throw adtException("mainUrl and content are required for syntax check")
       return syntaxCheck(this.h, url, mainUrl, content, mainProgram, version)
     }
   }
