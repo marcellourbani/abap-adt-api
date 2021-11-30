@@ -7,6 +7,7 @@ import { logError, logResponse } from "./requestLogger"
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
+const runningInNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null
 
 export enum session_types {
   stateful = "stateful",
@@ -168,7 +169,7 @@ export class AdtHTTP {
 
     if (this.bearer) headers.Authorization = `bearer ${this.bearer}`
 
-    if (headers && !headers['Cookie'])
+    if (headers && !headers['Cookie'] && runningInNode)
       headers['Cookie'] = this.ascookies()
 
 
@@ -178,12 +179,14 @@ export class AdtHTTP {
 
   private _handleResponse = (response: AxiosResponse) => {
     logResponse(response, this.debugCallback)
-    const cookies = response.headers["set-cookie"] || []
-    cookies.forEach(cookie => {
-      const cleaned = cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0]
-      const [key] = cookie.split('=', 1)
-      this.cookie.set(key, cleaned)
-    })
+    if (runningInNode) {
+      const cookies = response.headers["set-cookie"] || []
+      cookies.forEach(cookie => {
+        const cleaned = cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0]
+        const [key] = cookie.split('=', 1)
+        this.cookie.set(key, cleaned)
+      })
+    }
     return response;
   }
 

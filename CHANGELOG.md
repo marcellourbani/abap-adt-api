@@ -4,6 +4,13 @@ All notable changes to the "vscode-abap-remote-fs" extension will be documented 
 
 Format based on [Keep a Changelog](http://keepachangelog.com/)
 
+## 4.1.1 [2021-11-30]
+
+### Added
+
+- export response interface
+- let cookies alone in browser
+
 ## 4.1.0 [2021-11-05]
 
 ### Added
