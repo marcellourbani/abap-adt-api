@@ -147,12 +147,7 @@ export function fromException_int(errOrResp: AxiosResponse | AxiosError): AdtExc
     if (isResponse(errOrResp) || (axios.isAxiosError(errOrResp) && errOrResp.response)) {
       const response = isResponse(errOrResp) ? errOrResp : errOrResp.response! // not null enforced above
       if (!response.data) return simpleError(response)
-      if (
-        response.status === 403 &&
-        response.headers["x-csrf-token"] === "Required"
-      )
-        return new AdtCsrfException(response.data as string)
-
+      if (isCsrfException(response)) return new AdtCsrfException(response.data as string)
       const raw = fullParse(response.data as string)
       const root = raw["exc:exception"]
       if (!root) return simpleError(response)

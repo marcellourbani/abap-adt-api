@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.1.3 [2022-02-16]
+
+### Fixed
+
+- expired session handling
+
 ## 4.1.2 [2022-02-16]
 
 ### Fixed
