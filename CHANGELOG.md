@@ -1,8 +1,10 @@
 # Change Log
 
-All notable changes to the "vscode-abap-remote-fs" extension will be documented in this file.
+## 4.1.2 [2022-02-16]
 
-Format based on [Keep a Changelog](http://keepachangelog.com/)
+### Fixed
+
+- expired session handling
 
 ## 4.1.1 [2021-11-30]
 

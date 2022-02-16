@@ -139,6 +139,9 @@ export function isAdtException(e: any): e is AdtException {
 
 const simpleError = (response: AxiosResponse) => adtException(`Error ${response.status}:${response.statusText}`)
 
+const isCsrfException = (r: AxiosResponse) => (r.status === 403 && r.headers["x-csrf-token"] === "Required")
+  || (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
+
 export function fromException_int(errOrResp: AxiosResponse | AxiosError): AdtException {
   try {
     if (isResponse(errOrResp) || (axios.isAxiosError(errOrResp) && errOrResp.response)) {
