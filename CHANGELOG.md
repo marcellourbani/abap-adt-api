@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.1.4 [2022-02-17]
+
+### Fixed
+
+- improved session handling
+
 ## 4.1.3 [2022-02-16]
 
 ### Fixed

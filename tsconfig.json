@@ -1,12 +1,10 @@
 {
   "compilerOptions": {
     /* Basic Options */
-    "target": "es6",
+    "target": "es2018",
     "module": "commonjs",
-    "lib": [
-      "es6",
-      "dom"
-    ],
+    "lib": ["es2018", "dom"],
+    "skipLibCheck": true,
     "declaration": true /* Generates corresponding '.d.ts' file. */,
     "declarationMap": true /* Generates a sourcemap for each corresponding '.d.ts' file. */,
     // "sourceMap": true /* Generates corresponding '.map' file. */,
@@ -17,8 +15,5 @@
     "strict": true /* Enable all strict type-checking options. */,
     "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
   },
-  "exclude": [
-    "node_modules",
-    "build"
-  ]
+  "exclude": ["node_modules", "build"]
 }

@@ -8,7 +8,7 @@ const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
 const runningInNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null
-
+let lastClientId = 0
 export enum session_types {
   stateful = "stateful",
   stateless = "stateless",
@@ -62,6 +62,7 @@ export class AdtHTTP {
   private axios: AxiosInstance
   private cookie = new Map<string, string>()
   private bearer?: string
+  readonly id = ++lastClientId
   readonly password?: string
   debugCallback?: LogCallback
   public get isStateful() {
@@ -178,7 +179,7 @@ export class AdtHTTP {
   };
 
   private _handleResponse = (response: AxiosResponse) => {
-    logResponse(response, this.debugCallback)
+    logResponse(this.id, response, this.debugCallback)
     if (runningInNode) {
       const cookies = response.headers["set-cookie"] || []
       cookies.forEach(cookie => {
@@ -191,7 +192,7 @@ export class AdtHTTP {
   }
 
   protected _handleError = async (error: any) => {
-    logError(error, this.debugCallback)
+    logError(this.id, error, this.debugCallback)
     return error
   }
   /**
@@ -199,6 +200,7 @@ export class AdtHTTP {
    */
   public async login() {
     if (this.loginPromise) return this.loginPromise
+    this.cookie.clear()
     // oauth
     if (this.getToken && !this.bearer) {
       await this.getToken().then(bearer => (this.bearer = bearer))
@@ -259,6 +261,7 @@ export class AdtHTTP {
       // or already tried a login
       if (isCsrfError(adtErr) && !autologin && !this.isStateful) {
         try {
+          this.csrfToken = FETCH_CSRF_TOKEN
           await this.login()
           return await this._request(url, config || {})
         } catch (e2) {

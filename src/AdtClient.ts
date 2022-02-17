@@ -242,6 +242,9 @@ export class ADTClient {
     }
     return includes
   }
+  get id() {
+    return this.h.id
+  }
 
   private h: AdtHTTP
   private pClone?: ADTClient

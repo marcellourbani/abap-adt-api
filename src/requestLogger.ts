@@ -25,6 +25,7 @@ export type LogData = {
     startTime: Date
     duration: number
     error?: Error
+    clientId: number
 }
 
 export interface LogCallback {
@@ -47,10 +48,10 @@ const getLoggingData = (config: any) => {
     }
 }
 
-const createLogData = (request: RequestData, response: ResponseData, config?: unknown, error?: Error): LogData => {
+const createLogData = (request: RequestData, response: ResponseData, clientId: number, config?: unknown, error?: Error): LogData => {
     const { id, duration, startTime } = getLoggingData(config)
     const stateful = request.headers?.["X-sap-adt-sessiontype"] === session_types.stateful
-    return { id, request, response, startTime, duration, stateful }
+    return { id, request, response, startTime, duration, stateful, clientId }
 }
 
 const convertRequest = (original?: unknown): RequestData => {
@@ -76,23 +77,23 @@ const convertResponse = (original?: AxiosResponse): ResponseData => {
     }
 }
 
-export const logError = (error: unknown, callback: LogCallback | undefined) => {
+export const logError = (clientId: number, error: unknown, callback: LogCallback | undefined) => {
     try {
         if (!callback) return
         if (axios.isAxiosError(error)) {
             const request = convertRequest(error.config)
             const response = convertResponse(error.response!)
-            callback(createLogData(request, response, error.config, error))
+            callback(createLogData(request, response, clientId, error.config, error))
         } else
-            callback(createLogData(convertRequest(undefined), convertResponse(undefined), undefined, error as Error))
+            callback(createLogData(convertRequest(undefined), convertResponse(undefined), clientId, undefined, error as Error))
     } catch (error) { }
 }
 
-export const logResponse = (original: AxiosResponse, callback: LogCallback | undefined) => {
+export const logResponse = (clientId: number, original: AxiosResponse, callback: LogCallback | undefined) => {
     try {
         if (!callback) return
         const request = convertRequest(original.config)
         const response = convertResponse(original)
-        callback(createLogData(request, response, original.config))
+        callback(createLogData(request, response, clientId, original.config))
     } catch (error) { }
 }

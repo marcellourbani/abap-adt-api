@@ -353,7 +353,7 @@ test(
     expect(inactive).toBeDefined()
     expect(Array.isArray(inactive)).toBe(true)
     if (inactive.length > 0 && inactive[0].object) {
-      expect(inactive[0].object?.["adtcore:name"]).toBe("3")
+      expect(inactive[0].object?.["adtcore:name"]).toBeDefined()
     }
   })
 )
