@@ -1,6 +1,6 @@
 import { parse } from "fast-xml-parser"
 import { AdtHTTP } from "../AdtHTTP"
-import { isString, xmlArray } from "../utilities"
+import { decodeEntity, isObject, isString, xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
 
 export function isNodeParent(t: string): t is NodeParents {
@@ -52,6 +52,18 @@ export interface NodeStructure {
   categories: NodeCategory[]
   objectTypes: NodeObjectType[]
 }
+
+const decodeComponents = (keys: string[]) => <T>(x: T): T => {
+  if (isObject(x)) {
+    const o = keys.reduce((acc, key) => {
+      const v = (x as any)[key] || ""
+      return isString(v) ? { ...acc, [key]: decodeEntity(v) } : acc
+    }, {})
+    return { ...x, ...o }
+  }
+  return x
+}
+
 const parsePackageResponse = (data: string): NodeStructure => {
   let nodes: Node[] = []
   let categories: NodeCategory[] = []
@@ -60,13 +72,19 @@ const parsePackageResponse = (data: string): NodeStructure => {
     const xml = parse(data)
     const root = xml["asx:abap"]["asx:values"].DATA
     nodes = xmlArray(root, "TREE_CONTENT", "SEU_ADT_REPOSITORY_OBJ_NODE")
-    for (const node of nodes)
+    for (const node of nodes) {
       if (!isString(node.OBJECT_NAME)) {
         node.OBJECT_NAME = (node.OBJECT_NAME as any || "").toString()
         node.TECH_NAME = (node.TECH_NAME || "").toString()
       }
+      node.DESCRIPTION = decodeEntity(node.DESCRIPTION || "")
+    }
     categories = xmlArray(root, "CATEGORIES", "SEU_ADT_OBJECT_CATEGORY_INFO")
     objectTypes = xmlArray(root, "OBJECT_TYPES", "SEU_ADT_OBJECT_TYPE_INFO")
+      .map(decodeComponents(["OBJECT_TYPE_LABEL"])).map(ot => {
+        const o = ot as NodeObjectType
+        return o.OBJECT_TYPE_LABEL === "<no type text>" && o.OBJECT_TYPE === "FUGR/I" ? { ...o, OBJECT_TYPE_LABEL: "Includes" } : o
+      })
   }
   return {
     categories,

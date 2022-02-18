@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.1.5 [2022-02-18]
+
+### Fixed
+
+- workaround for bad object type label
+
 ## 4.1.4 [2022-02-17]
 
 ### Fixed
