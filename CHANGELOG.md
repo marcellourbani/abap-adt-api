@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.1.6 [2022-02-27]
+
+### Added
+
+- session keepalive
+
 ## 4.1.5 [2022-02-18]
 
 ### Fixed

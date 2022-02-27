@@ -26,6 +26,7 @@ export interface ClientOptions {
   debugCallback?: LogCallback
   timeout?: number
   auth?: AxiosBasicCredentials
+  keepAlive?: boolean
 }
 
 export interface RequestOptions extends ClientOptions {
@@ -65,6 +66,8 @@ export class AdtHTTP {
   readonly id = ++lastClientId
   readonly password?: string
   debugCallback?: LogCallback
+  keepAlive: NodeJS.Timeout | undefined
+  didcall: boolean = false
   public get isStateful() {
     return (
       this.stateful === session_types.stateful ||
@@ -119,6 +122,8 @@ export class AdtHTTP {
     readonly language: string,
     config: ClientOptions = {}
   ) {
+    config = { keepAlive: true, ...config }
+    if (config.keepAlive) this.keepAlive = setInterval(() => this.keep_session(), 120000)
     const headers: any = {
       ...config.headers,
       Accept: "*/*",
@@ -139,12 +144,15 @@ export class AdtHTTP {
     } else
       this.getToken = password
 
-
     this.axios = axios.create(toAxiosConfig(options))
     this.debugCallback = config.debugCallback
     this._initializeRequestInterceptor()
     this._initializeResponseInterceptor();
 
+  }
+  keep_session(): void {
+    if (this.stateful && this.loggedin && !this.didcall)
+      this._request("/sap/bc/adt/compatibility/graph", {}).then(() => this.didcall = false)
   }
 
   private _initializeResponseInterceptor = () => {
@@ -279,6 +287,7 @@ export class AdtHTTP {
    */
   private _request(url: string, options: RequestOptions): Promise<HttpResponse> {
     return new Promise<HttpResponse>(async (resolve, reject) => {
+      this.didcall = true
       try {
         const response = await this.axios.request({ url, ...toAxiosConfig(options) });
         if (response.status < 400) {
