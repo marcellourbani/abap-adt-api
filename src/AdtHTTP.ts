@@ -151,8 +151,9 @@ export class AdtHTTP {
 
   }
   keep_session(): void {
-    if (this.stateful && this.loggedin && !this.didcall)
+    if (this.isStateful && this.loggedin && !this.didcall)
       this._request("/sap/bc/adt/compatibility/graph", {}).then(() => this.didcall = false)
+    else this.didcall = false
   }
 
   private _initializeResponseInterceptor = () => {
