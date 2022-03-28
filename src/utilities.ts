@@ -169,3 +169,5 @@ export const toXmlAttributes = (o: any, prefix: string) => {
       .join(" ")
     : ""
 }
+
+export type Clean<T> = Pick<T, keyof T>

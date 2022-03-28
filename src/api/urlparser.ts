@@ -1,17 +1,27 @@
-import { parts, toInt } from "../utilities"
+import { Clean, parts, toInt } from "../utilities"
 import { Location } from "./syntax"
+import * as t from "io-ts";
+import { validateParseResult } from "..";
 
-export interface Range {
-  start: Location
-  end: Location
-}
+const location = t.type({
+  line: t.number,
+  column: t.number
+})
 
-export interface UriParts {
-  uri: string
-  query: any
-  range: Range
-  hashparms?: any
-}
+const range = t.type({
+  start: location,
+  end: location
+})
+
+export const uriParts = t.type({
+  uri: t.string,
+  query: t.union([t.undefined, t.record(t.string, t.string)]),
+  range: range,
+  hashparms: t.union([t.undefined, t.record(t.string, t.string)]),
+})
+
+export type Range = Clean<t.TypeOf<typeof range>>
+export type UriParts = Clean<t.TypeOf<typeof uriParts>>
 
 export const rangeToString = (range: Range) =>
   `#start=${range.start.line},${range.start.column};end=${range.end.line},${range.end.column}`

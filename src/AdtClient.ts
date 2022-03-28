@@ -172,7 +172,12 @@ import {
   userTransports,
   validateNewObject,
   ValidateOptions,
-  ValidationResult
+  ValidationResult,
+  atcCustomizing,
+  atcCheckVariant,
+  createAtcRun,
+  atcWorklists,
+  AtcWorkList
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from 'https'
@@ -1103,6 +1108,24 @@ export class ADTClient {
     refactoring: RenameRefactoring
   ): Promise<RenameRefactoring> {
     return renameExecute(this.h, refactoring)
+  }
+
+  public atcCustomizing() {
+    return atcCustomizing(this.h)
+  }
+
+  public atcCheckVariant(variant: string) {
+    return atcCheckVariant(this.h, variant)
+  }
+
+  public createAtcRun(variant: string, mainUrl: string, maxResults = 100) {
+    return createAtcRun(this.h, variant, mainUrl, maxResults)
+  }
+
+  public atcWorklists(runResultId: string): Promise<AtcWorkList>;
+  public atcWorklists(runResultId: string, timestamp: number, usedObjectSet: string): Promise<AtcWorkList>
+  public atcWorklists(runResultId: string, timestamp?: number, usedObjectSet?: string): Promise<AtcWorkList> {
+    return atcWorklists(this.h, runResultId, timestamp, usedObjectSet)
   }
 }
 

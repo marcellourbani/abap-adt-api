@@ -1,6 +1,9 @@
-import { AdtHTTP, session_types } from "./AdtHTTP"
+import { AdtHTTP } from "./AdtHTTP"
 import { fullParse, isNativeError, isNumber, isObject, isString, xmlArray } from "./utilities"
 import axios, { AxiosResponse, AxiosError } from "axios";
+import { isLeft } from "fp-ts/lib/These"
+import * as t from "io-ts"
+import reporter from "io-ts-reporters";
 
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
@@ -201,4 +204,11 @@ export function ValidateStateful(h: AdtHTTP) {
     "STATELESS",
     "This operation can only be performed in stateful mode"
   )
+}
+export const validateParseResult = <T>(parseResult: t.Validation<T>): T => {
+  if (isLeft(parseResult)) {
+    const messages = reporter.report(parseResult)
+    throw new AdtErrorException(0, {}, "STATELESS", messages.slice(0, 3).join("\n"))
+  }
+  return parseResult.right
 }
