@@ -208,7 +208,9 @@ export function ValidateStateful(h: AdtHTTP) {
 export const validateParseResult = <T>(parseResult: t.Validation<T>): T => {
   if (isLeft(parseResult)) {
     const messages = reporter.report(parseResult)
-    throw new AdtErrorException(0, {}, "STATELESS", messages.slice(0, 3).join("\n"))
+    throw adtException(messages.slice(0, 3).join("\n"))
   }
   return parseResult.right
 }
+
+export const isErrorMessageType = (x: string | SAPRC | undefined) => !!`${x}`.match(/^[EAX]$/i)

@@ -1,5 +1,6 @@
 import { parse, X2jOptionsOptional } from "fast-xml-parser"
 import { AllHtmlEntities } from "html-entities"
+import * as t from "io-ts"
 
 export const isObject = <T extends Object>(x: unknown): x is T => !!x && typeof x === 'object'
 export const isArray = (x: unknown): x is unknown[] => Array.isArray(x)
@@ -171,3 +172,5 @@ export const toXmlAttributes = (o: any, prefix: string) => {
 }
 
 export type Clean<T> = Pick<T, keyof T>
+
+export const orUndefined = <T extends t.Mixed>(x: T) => t.union([t.undefined, t.null, x])

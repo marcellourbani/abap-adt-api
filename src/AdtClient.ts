@@ -177,7 +177,10 @@ import {
   atcCheckVariant,
   createAtcRun,
   atcWorklists,
-  AtcWorkList
+  AtcWorkList,
+  atcUsers,
+  atcExemptProposal,
+  isProposalMessage
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from 'https'
@@ -1123,9 +1126,17 @@ export class ADTClient {
   }
 
   public atcWorklists(runResultId: string): Promise<AtcWorkList>;
-  public atcWorklists(runResultId: string, timestamp: number, usedObjectSet: string): Promise<AtcWorkList>
-  public atcWorklists(runResultId: string, timestamp?: number, usedObjectSet?: string): Promise<AtcWorkList> {
-    return atcWorklists(this.h, runResultId, timestamp, usedObjectSet)
+  public atcWorklists(runResultId: string, timestamp: number, usedObjectSet: string, includeExempted?: boolean): Promise<AtcWorkList>
+  public atcWorklists(runResultId: string, timestamp?: number, usedObjectSet?: string, includeExempted = false): Promise<AtcWorkList> {
+    return atcWorklists(this.h, runResultId, timestamp, usedObjectSet, includeExempted)
   }
+  public atcUsers() {
+    return atcUsers(this.h)
+  }
+
+  public atcExemptProposal(markerId: string) {
+    return atcExemptProposal(this.h, markerId)
+  }
+  public isProposalMessage = isProposalMessage
 }
 
