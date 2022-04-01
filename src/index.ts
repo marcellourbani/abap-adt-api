@@ -158,6 +158,7 @@ export {
   UnitTestMethod,
   UnitTestSeverity,
   UnitTestStackEntry,
+  UriParts,
   UsageReference,
   UsageReferenceSnippet,
   ValidateOptions,

@@ -31,7 +31,7 @@ export function parseUri(sourceuri: string): UriParts {
   //
   const query = (qs || "").split(/&/).reduce((acc: any, cur) => {
     const [key, val] = cur.split("=")
-    if (key) acc[key] = val
+    if (key) acc[decodeURIComponent(key)] = decodeURIComponent(val)
     return acc
   }, {})
 
@@ -39,7 +39,7 @@ export function parseUri(sourceuri: string): UriParts {
     .split(/;/)
     .reduce((acc: any, cur) => {
       const [key, val] = cur.split("=")
-      if (key) acc[key] = val
+      if (key) acc[decodeURIComponent(key)] = decodeURIComponent(val)
       return acc
     }, {})
 
