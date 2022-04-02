@@ -25,19 +25,19 @@ const proposalFinding = t.type({
 
 const restriction = t.type({
     enabled: t.boolean,
-    text: t.string,
+    singlefinding: t.boolean,
     rangeOfFindings: t.type({
         enabled: t.boolean,
         restrictByObject: t.type({
             object: t.boolean,
             package: t.boolean,
             subobject: t.boolean,
-            text: t.string
+            target: t.union([t.literal("subobject"), t.literal("object"), t.literal("package")])
         }),
         restrictByCheck: t.type({
             check: t.boolean,
             message: t.boolean,
-            text: t.string
+            target: t.union([t.literal("message"), t.literal("check")])
         })
     })
 })
@@ -50,9 +50,9 @@ const atcProposal = t.type({
     subObjectTypeDescr: t.string,
     objectTypeDescr: t.string,
     approver: t.string,
-    reason: t.string,
+    reason: t.union([t.literal("FPOS"), t.literal("OTHR"), t.literal("")]),
     justification: t.string,
-    notify: t.string,
+    notify: t.union([t.literal("never"), t.literal("on_rejection"), t.literal("always")]),
     restriction: restriction
 })
 
@@ -242,19 +242,19 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
         package: pa, subObject, subObjectType, subObjectTypeDescr, objectTypeDescr, approver, reason, justification: decodeEntity(justification), notify,
         restriction: {
             enabled: thisFinding["@_enabled"] === "true",
-            text: decodeEntity(thisFinding["#text"]),
+            singlefinding: thisFinding["#text"] === "true",
             rangeOfFindings: {
                 enabled: rangeOfFindings["@_enabled"] === "true",
                 restrictByObject: {
                     object: restrictByObject["@_object"] === "true",
                     package: restrictByObject["@_package"] === "true",
                     subobject: restrictByObject["@_subobject"] === "true",
-                    text: decodeEntity(restrictByObject["#text"]),
+                    target: decodeEntity(restrictByObject["#text"]),
                 },
                 restrictByCheck: {
                     check: restrictByCheck["@_check"] === "true",
                     message: restrictByCheck["@_message"] === "true",
-                    text: decodeEntity(restrictByCheck["#text"]),
+                    target: decodeEntity(restrictByCheck["#text"]),
                 }
             }
         }
@@ -262,7 +262,7 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
     return validateParseResult(atcProposal.decode(result))
 }
 
-export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Promise<AtcProposal | AtcProposalMessage> {
+export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Promise<AtcProposalMessage> {
     const headers = { "Content-Type": "application/atc.xmptprop.v1+xml", Accept: "application/atc.xmpt.v1+xml, application/atc.xmptprop.v1+xml" }
     const qs = { markerId: proposal.finding.quickfixInfo }
     const { finding, restriction: { rangeOfFindings: { restrictByCheck, restrictByObject } }, restriction } = proposal
@@ -280,11 +280,12 @@ export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Pr
       <atcexmpt:subObjectTypeDescr>${proposal.subObjectTypeDescr}</atcexmpt:subObjectTypeDescr>
       <atcexmpt:objectTypeDescr>${proposal.objectTypeDescr}</atcexmpt:objectTypeDescr>
       <atcexmpt:restriction>
-        <atcexmpt:thisFinding enabled="${restriction.enabled}">${encodeEntity(restriction.text)}</atcexmpt:thisFinding>
+        <atcexmpt:thisFinding enabled="${restriction.enabled}">${restriction.singlefinding}</atcexmpt:thisFinding>
         <atcexmpt:rangeOfFindings enabled="${restriction.rangeOfFindings.enabled}">
           <atcexmpt:restrictByObject object="${restrictByObject.object}" package="${restrictByObject.package}" subobject="${restrictByObject.subobject}">
-          ${encodeEntity(restrictByObject.text)}</atcexmpt:restrictByObject>
-          <atcexmpt:restrictByCheck check="${restrictByCheck.check}" message="${restrictByCheck.message}">${encodeEntity(restrictByCheck.text)}</atcexmpt:restrictByCheck>
+          ${restrictByObject.target}</atcexmpt:restrictByObject>
+          <atcexmpt:restrictByCheck check="${restrictByCheck.check}" message="${restrictByCheck.message}">
+          ${restrictByCheck.target}</atcexmpt:restrictByCheck>
         </atcexmpt:rangeOfFindings>
       </atcexmpt:restriction>
       <atcexmpt:approver>${proposal.approver}</atcexmpt:approver>
@@ -297,4 +298,30 @@ export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Pr
     const result = validateParseResult(atcProposalMessage.decode(raw?.status))
     if (isErrorMessageType(result.type)) throw adtException(result.message)
     return validateParseResult(atcProposalMessage.decode(result))
+}
+
+export async function atcContactUri(h: AdtHTTP, findingUri: string): Promise<string> {
+    const headers = {
+        "Content-Type": "application/vnd.sap.adt.atc.findingreferences.v1+xml",
+        Accept: "application/vnd.sap.adt.atc.items.v1+xml"
+    }
+    const qs = { step: "proposal" }
+    const body = `<?xml version="1.0" encoding="ASCII"?>
+    <atcfinding:findingReferences xmlns:adtcore="http://www.sap.com/adt/core" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
+      <atcfinding:findingReference adtcore:uri="${findingUri}"/>
+    </atcfinding:findingReferences>`
+    const response = await h.request(`/sap/bc/adt/atc/items`, { headers, body, method: "POST", qs })
+    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false, parseAttributeValue: false })
+    const { uri } = xmlNodeAttr(xmlNode(raw, "items", "item"))
+    return validateParseResult(t.string.decode(uri))
+}
+
+
+export async function atcChangeContact(h: AdtHTTP, itemUri: string, userId: string): Promise<void> {
+    const headers = { "Content-Type": "application/vnd.sap.adt.atc.items.v1+xml" }
+    const body = `<?xml version="1.0" encoding="ASCII"?>
+    <atcfinding:items xmlns:adtcore="http://www.sap.com/adt/core" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
+      <atcfinding:item adtcore:uri="${itemUri}" atcfinding:processor="${userId}" atcfinding:status="2"/>
+    </atcfinding:items>`
+    await h.request(`/sap/bc/adt/atc/items`, { headers, body, method: "PUT" })
 }

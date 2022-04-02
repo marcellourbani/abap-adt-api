@@ -557,3 +557,38 @@ test(
     expect(execute).toBeDefined()
   })
 )
+
+const readAtcVariant = async (c: ADTClient) => {
+  const cust = await c.atcCustomizing()
+  const cv = cust.properties.find(x => x.name === "systemCheckVariant")
+  return c.atcCheckVariant(`${cv?.value}`)
+}
+
+test("change contact",
+  runTest(async (c: ADTClient) => {
+    const variant = await readAtcVariant(c)
+    const run = await c.createAtcRun(variant, "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main")
+    const findings = await c.atcWorklists(run.id)
+    const contactUri = await c.atcContactUri(findings.objects[0].findings[0].uri)
+    if (!enableWrite(new Date())) return
+    await c.atcChangeContact(contactUri, process.env.ADT_USER || "")
+  })
+)
+
+test("request exemption",
+  runTest(async (c: ADTClient) => {
+    const variant = await readAtcVariant(c)
+    const run = await c.createAtcRun(variant, "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main")
+    const findings = await c.atcWorklists(run.id)
+    const proposal = await c.atcExemptProposal(findings.objects[0].findings[0].quickfixInfo!)
+    if (c.isProposalMessage(proposal)) fail("Exemption proposal expected")
+    proposal.justification = "Created by unit test"
+    proposal.reason = "FPOS"
+    proposal.restriction.enabled = true
+    proposal.restriction.singlefinding = true
+    proposal.approver = process.env.ADT_ATCAPPROVER || ""
+    if (!enableWrite(new Date())) return
+    const exemption = await c.atcRequestExemption(proposal)
+    if (exemption.type === "E") fail(exemption.message)
+  })
+)

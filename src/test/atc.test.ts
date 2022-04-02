@@ -53,18 +53,3 @@ test("ATC run",
     })
 )
 
-test("users",
-    runTest(async (c: ADTClient) => {
-        const users = await c.atcUsers()
-        expect(users.length).toBeGreaterThan(1)
-        expect(users[0].id).toBeDefined()
-
-    })
-)
-
-test("request exemption",
-    runTest(async (c: ADTClient) => {
-
-    })
-)
-

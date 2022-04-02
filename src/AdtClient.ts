@@ -180,7 +180,11 @@ import {
   AtcWorkList,
   atcUsers,
   atcExemptProposal,
-  isProposalMessage
+  isProposalMessage,
+  atcContactUri,
+  atcChangeContact,
+  AtcProposal,
+  atcRequestExemption
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from 'https'
@@ -1137,6 +1141,19 @@ export class ADTClient {
   public atcExemptProposal(markerId: string) {
     return atcExemptProposal(this.h, markerId)
   }
+
+  public atcRequestExemption(proposal: AtcProposal) {
+    return atcRequestExemption(this.h, proposal)
+  }
+
   public isProposalMessage = isProposalMessage
+
+  public atcContactUri(findingUri: string) {
+    return atcContactUri(this.h, findingUri)
+  }
+
+  public atcChangeContact(itemUri: string, userId: string) {
+    return atcChangeContact(this.h, itemUri, userId)
+  }
 }
 
