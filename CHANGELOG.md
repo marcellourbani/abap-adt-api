@@ -1,6 +1,12 @@
 # Change Log
 
-## 4.2.0 [2022-02-27]
+## 4.2.1 [2022-04-04]
+
+### Fixed
+
+- ATC support on older systems
+
+## 4.2.0 [2022-04-02]
 
 ### Added
 

@@ -1,5 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { Clean, decodeEntity, encodeEntity, fullParse, orUndefined, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { Clean, decodeEntity, encodeEntity, fullParse, isString, orUndefined, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import * as t from "io-ts";
 import { adtException, isErrorMessageType, validateParseResult } from "..";
 import { parseUri, uriParts } from "./urlparser";
@@ -43,7 +43,7 @@ const restriction = t.type({
 })
 
 const atcProposal = t.type({
-    finding: proposalFinding,
+    finding: t.union([proposalFinding, t.string]),
     package: t.string,
     subObject: t.string,
     subObjectType: t.string,
@@ -231,9 +231,11 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
     const { message, type } = xmlNode(raw, "exemptionApply", "status") || {}
     if (isErrorMessageType(type)) throw adtException(message)
     if (message && type) return validateParseResult(atcProposalMessage.decode({ message, type }))
-    const finding = xmlNodeAttr(xmlNode(root, "finding"))
-    finding.priority = toInt(finding.priority)
-    finding.checksum = toInt(finding.checksum)
+    const finding = isString(root.finding) ? root.finding : xmlNodeAttr(xmlNode(root, "finding"))
+    if (!isString(finding)) {
+        finding.priority = toInt(finding.priority)
+        finding.checksum = toInt(finding.checksum)
+    }
     const { package: pa, subObject, subObjectType, subObjectTypeDescr, objectTypeDescr, approver, reason, justification, notify } = root
     const { thisFinding, rangeOfFindings } = xmlNode(root, "restriction")
     const { restrictByObject, restrictByCheck } = rangeOfFindings
@@ -264,16 +266,17 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
 
 export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Promise<AtcProposalMessage> {
     const headers = { "Content-Type": "application/atc.xmptprop.v1+xml", Accept: "application/atc.xmpt.v1+xml, application/atc.xmptprop.v1+xml" }
-    const qs = { markerId: proposal.finding.quickfixInfo }
     const { finding, restriction: { rangeOfFindings: { restrictByCheck, restrictByObject } }, restriction } = proposal
+    const qs = { markerId: isString(finding) ? finding : finding.quickfixInfo }
+    const findingXml = isString(finding) ? `<atcexmpt:finding>${finding}</atcexmpt:finding>` : `<atcfinding:finding adtcore:name="${finding.name}" adtcore:type="${finding.type}" adtcore:uri="${finding.uri}" 
+    atcfinding:checkId="${finding.checkId}" atcfinding:checksum="${finding.checksum}" atcfinding:checkTitle="${finding.checkTitle}" 
+    atcfinding:exemptionApproval="${finding.exemptionApproval}" atcfinding:exemptionKind="${finding.exemptionKind}" 
+    atcfinding:lastChangedBy="${finding.lastChangedBy}" 
+    atcfinding:location="${finding.location}" atcfinding:messageId="${finding.messageId}" atcfinding:messageTitle="${finding.messageTitle}" 
+    atcfinding:priority="${finding.priority}" atcfinding:processor="${finding.processor}" atcfinding:quickfixInfo="${finding.quickfixInfo}"/>`
     const body = `<?xml version="1.0" encoding="ASCII"?>
     <atcexmpt:exemptionProposal xmlns:adtcore="http://www.sap.com/adt/core" xmlns:atcexmpt="http://www.sap.com/adt/atc/exemption" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
-      <atcfinding:finding adtcore:name="${finding.name}" adtcore:type="${finding.type}" adtcore:uri="${finding.uri}" 
-        atcfinding:checkId="${finding.checkId}" atcfinding:checksum="${finding.checksum}" atcfinding:checkTitle="${finding.checkTitle}" 
-        atcfinding:exemptionApproval="${finding.exemptionApproval}" atcfinding:exemptionKind="${finding.exemptionKind}" 
-        atcfinding:lastChangedBy="${finding.lastChangedBy}" 
-        atcfinding:location="${finding.location}" atcfinding:messageId="${finding.messageId}" atcfinding:messageTitle="${finding.messageTitle}" 
-        atcfinding:priority="${finding.priority}" atcfinding:processor="${finding.processor}" atcfinding:quickfixInfo="${finding.quickfixInfo}"/>
+      ${findingXml}
       <atcexmpt:package>${proposal.package}</atcexmpt:package>
       <atcexmpt:subObject>${proposal.subObject}</atcexmpt:subObject>
       <atcexmpt:subObjectType>${proposal.subObjectType}</atcexmpt:subObjectType>
