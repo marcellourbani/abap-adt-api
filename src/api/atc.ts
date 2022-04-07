@@ -205,7 +205,9 @@ export async function atcWorklists(h: AdtHTTP, runResultId: string, timestamp?: 
             const fa = xmlNodeAttr(f)
             const link = xmlNodeAttr(xmlNode(f, "link"))
             const location = parseUri(fa.location)
-            return { ...fa, location, messageId: `${fa.messageId}`, link }
+            const messageTitle = decodeEntity(fa.messageTitle)
+            const checkTitle = decodeEntity(fa.checkTitle)
+            return { ...fa, messageTitle, checkTitle, location, messageId: `${fa.messageId}`, link }
         })
         return { ...oa, findings }
     })
@@ -269,10 +271,10 @@ export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Pr
     const { finding, restriction: { rangeOfFindings: { restrictByCheck, restrictByObject } }, restriction } = proposal
     const qs = { markerId: isString(finding) ? finding : finding.quickfixInfo }
     const findingXml = isString(finding) ? `<atcexmpt:finding>${finding}</atcexmpt:finding>` : `<atcfinding:finding adtcore:name="${finding.name}" adtcore:type="${finding.type}" adtcore:uri="${finding.uri}" 
-    atcfinding:checkId="${finding.checkId}" atcfinding:checksum="${finding.checksum}" atcfinding:checkTitle="${finding.checkTitle}" 
+    atcfinding:checkId="${finding.checkId}" atcfinding:checksum="${finding.checksum}" atcfinding:checkTitle="${encodeEntity(finding.checkTitle)}" 
     atcfinding:exemptionApproval="${finding.exemptionApproval}" atcfinding:exemptionKind="${finding.exemptionKind}" 
     atcfinding:lastChangedBy="${finding.lastChangedBy}" 
-    atcfinding:location="${finding.location}" atcfinding:messageId="${finding.messageId}" atcfinding:messageTitle="${finding.messageTitle}" 
+    atcfinding:location="${finding.location}" atcfinding:messageId="${finding.messageId}" atcfinding:messageTitle="${encodeEntity(finding.messageTitle)}" 
     atcfinding:priority="${finding.priority}" atcfinding:processor="${finding.processor}" atcfinding:quickfixInfo="${finding.quickfixInfo}"/>`
     const body = `<?xml version="1.0" encoding="ASCII"?>
     <atcexmpt:exemptionProposal xmlns:adtcore="http://www.sap.com/adt/core" xmlns:atcexmpt="http://www.sap.com/adt/atc/exemption" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
