@@ -604,7 +604,7 @@ export async function debuggerGoToStack(h: AdtHTTP, stackUri: string) {
 
 export async function debuggerGoToStackOld(h: AdtHTTP, position: number) {
     const qs = { method: "setStackPosition", position }
-    await h.request(`/sap/bc/adt/debugger?method=setStackPosition&position=10`, { method: "POST", qs })
+    await h.request(`/sap/bc/adt/debugger`, { method: "POST", qs })
 }
 
 export async function debuggerSetVariableValue(h: AdtHTTP, variableName: string, value: string) {
