@@ -32,12 +32,12 @@ const restriction = t.type({
             object: t.boolean,
             package: t.boolean,
             subobject: t.boolean,
-            target: t.union([t.literal("subobject"), t.literal("object"), t.literal("package")])
+            target: t.union([t.literal("subobject"), t.literal("object"), t.literal("package"), t.literal("")])
         }),
         restrictByCheck: t.type({
             check: t.boolean,
             message: t.boolean,
-            target: t.union([t.literal("message"), t.literal("check")])
+            target: t.union([t.literal("message"), t.literal("check"), t.literal("")])
         })
     })
 })
