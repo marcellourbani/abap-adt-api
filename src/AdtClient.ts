@@ -1038,10 +1038,10 @@ export class ADTClient {
     return debuggerDeleteListener(this.h, debuggingMode, terminalId, ideId, user)
   }
 
-  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
-  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
-  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope: DebuggerScope = "external", systemDebugging = false, deactivated = false) {
-    return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, scope, systemDebugging, deactivated)
+  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean, syncScupeUrl?: string): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean, syncScupeUrl?: string): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope: DebuggerScope = "external", systemDebugging = false, deactivated = false, syncScupeUrl = "") {
+    return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, scope, systemDebugging, deactivated, syncScupeUrl)
   }
 
   public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "user", terminalId: string, ideId: string, requestUser: string, scope?: DebuggerScope): Promise<void>

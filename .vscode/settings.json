@@ -29,7 +29,7 @@
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
   "[xml]": {
-    "editor.defaultFormatter": "mikeburgh.xml-format"
+    "editor.defaultFormatter": "redhat.vscode-xml"
   },
   "typescript.format.enable": true,
   "typescript.format.insertSpaceAfterCommaDelimiter": true,

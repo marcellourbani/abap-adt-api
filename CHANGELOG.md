@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.3.0 [2022-04-25]
+
+### Added
+
+- partial debugger breakpoint sync
+
 ## 4.2.1 [2022-04-04]
 
 ### Fixed

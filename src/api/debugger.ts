@@ -443,13 +443,17 @@ export async function debuggerSetBreakpoints(
     requestUser?: string,
     scope: DebuggerScope = "external",
     systemDebugging = false,
-    deactivated = false
+    deactivated = false,
+    syncScopeUri = ""
 ) {
+    const syncScope = syncScopeUri ?
+        `<syncScope mode="partial"><adtcore:objectReference xmlns:adtcore="http://www.sap.com/adt/core" adtcore:uri="${syncScopeUri}"/></syncScope>`
+        : `<syncScope mode="full"></syncScope>`
     const body = `<?xml version="1.0" encoding="UTF-8"?>
     <dbg:breakpoints scope="${scope}" debuggingMode="${debuggingMode}" requestUser="${requestUser}" 
         terminalId="${terminalId}" ideId="${ideId}" systemDebugging="${systemDebugging}" deactivated="${deactivated}"
         xmlns:dbg="http://www.sap.com/adt/debugger">
-        <syncScope mode="full"></syncScope>
+        ${syncScope}
         ${breakpoints.map(formatBreakpoint(clientId)).join("")}
     </dbg:breakpoints>`
     const headers = {
