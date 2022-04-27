@@ -133,7 +133,7 @@ export interface BindingServiceNavigation {
 
 
 export const parseServiceBinding = (xml: string) => {
-    const s = fullParse(xml, { ignoreNameSpace: true, parseAttributeValue: false })
+    const s = fullParse(xml, { removeNSPrefix: true, parseAttributeValue: false })
     const attrs = xmlNodeAttr(s.serviceBinding)
     for (const key of ["releaseSupported", "published", "repair", "bindingCreated"])
         attrs[key] = !`${attrs[key]}`.match(/false/i)
@@ -214,7 +214,7 @@ const parseColumn = (raw: any) => {
     return { values, meta }
 }
 export function parseQueryResponse(body: string) {
-    const raw = fullParse(body, { ignoreNameSpace: true, parseNodeValue: false })
+    const raw = fullParse(body, { removeNSPrefix: true, parseTagValue: false })
     const fields = xmlArray(raw, "tableData", "columns").map(parseColumn)
     const columns = fields.map(c => c.meta)
     const longest = fields.map(f => f.values).reduce((m, l) => l.length > m.length ? l : m, [])
@@ -226,7 +226,7 @@ export function parseQueryResponse(body: string) {
 }
 
 export const parseBindingDetails = (xml: string) => {
-    const s = fullParse(xml, { ignoreNameSpace: true, parseAttributeValue: false })
+    const s = fullParse(xml, { removeNSPrefix: true, parseAttributeValue: false })
     const link = xmlNodeAttr(s?.serviceList?.link)
     const parseCollection = (c: any) => {
         const name = c["@_name"]

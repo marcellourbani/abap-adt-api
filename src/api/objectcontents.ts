@@ -1,7 +1,7 @@
-import { parse } from "fast-xml-parser"
+
 import { ValidateObjectUrl, ValidateStateful } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { xmlArray, btoa } from "../utilities"
+import { xmlArray, btoa, parse } from "../utilities"
 
 export interface AdtLock {
   LOCK_HANDLE: string

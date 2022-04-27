@@ -136,7 +136,7 @@ export async function fixEdits(
 }
 
 function parseRenameRefactoring(body: string): RenameRefactoringProposal {
-  const raw = fullParse(body, { ignoreNameSpace: true })
+  const raw = fullParse(body, { removeNSPrefix: true })
   const root = xmlNode(raw, "renameRefactoring")
   const generic = xmlNode(root || raw, "genericRefactoring") // depending on the caller the generic refactoring might be wrapped or not
   const affectedObjects = xmlArray(generic, "affectedObjects", "affectedObject")

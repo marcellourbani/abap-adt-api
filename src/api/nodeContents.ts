@@ -1,6 +1,6 @@
-import { parse } from "fast-xml-parser"
+
 import { AdtHTTP } from "../AdtHTTP"
-import { decodeEntity, isObject, isString, xmlArray } from "../utilities"
+import { decodeEntity, isObject, isString, parse, xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
 
 export function isNodeParent(t: string): t is NodeParents {

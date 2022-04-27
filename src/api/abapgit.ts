@@ -12,9 +12,10 @@ import {
   encodeEntity,
   isString,
   toInt,
+  parse
 } from "../utilities"
 
-import { parse } from "fast-xml-parser"
+
 import { adtException } from "../AdtException"
 
 export interface GitLink {
@@ -115,8 +116,8 @@ export async function gitRepos(h: AdtHTTP) {
   const raw = parse(response.body, {
     ignoreAttributes: false,
     parseAttributeValue: false,
-    parseNodeValue: false,
-    ignoreNameSpace: true
+    parseTagValue: false,
+    removeNSPrefix: true
   })
   return xmlArray(raw, "repositories", "repository").map((x: any) => {
     const {
@@ -176,7 +177,7 @@ export async function externalRepoInfo(
     body,
     headers,
   })
-  const raw = fullParse(response.body, { ignoreNameSpace: true })
+  const raw = fullParse(response.body, { removeNSPrefix: true })
   // tslint:disable-next-line: variable-name
   const access_mode = xmlNode(raw, "externalRepoInfo", "accessMode")
   const branches = xmlArray(
@@ -285,13 +286,13 @@ export async function unlinkRepo(h: AdtHTTP, repoId: string) {
 const deserializeStaging = (body: string) => {
   const raw = xmlNode(fullParse(body), "abapgitstaging:abapgitstaging")
   const parsefile = (x: any) =>
-    ({
-      ...stripNs(xmlNodeAttr(x)),
-      links: xmlArray(x, "atom:link")
-        .map(xmlNodeAttr)
-        .map(stripNs)
-        .map((l) => ({ ...l, href: decodeEntity(l.href) })),
-    } as GitStagingFile)
+  ({
+    ...stripNs(xmlNodeAttr(x)),
+    links: xmlArray(x, "atom:link")
+      .map(xmlNodeAttr)
+      .map(stripNs)
+      .map((l) => ({ ...l, href: decodeEntity(l.href) })),
+  } as GitStagingFile)
   const parseObject = (x: any) => {
     const attrs = stripNs(xmlNodeAttr(x))
     const abapGitFiles = xmlArray(x, "abapgitstaging:abapgitfile").map(

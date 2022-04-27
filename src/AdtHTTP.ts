@@ -1,4 +1,4 @@
-import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosBasicCredentials, Method, AxiosInstance } from "axios"
+import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosBasicCredentials, Method, AxiosInstance, AxiosRequestHeaders } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
 import https from 'https'
 import { adtException, LogCallback } from "."
@@ -76,7 +76,7 @@ export class AdtHTTP {
     )
   }
   private currentSession = session_types.stateless
-  private get commonHeaders(): Record<string, string> {
+  private get commonHeaders(): AxiosRequestHeaders {
     return this.axios.defaults.headers.common
   }
   public _stateful: session_types = session_types.stateless

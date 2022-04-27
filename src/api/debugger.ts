@@ -1,6 +1,6 @@
 import { adtException } from ".."
 import { AdtHTTP } from "../AdtHTTP"
-import { decodeEntity, encodeEntity, fullParse, isString, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { decodeEntity, encodeEntity, fullParse, isString, numberParseOptions, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { parseUri, UriParts } from "./urlparser"
 
 export type DebuggingMode = "user" | "terminal"
@@ -243,7 +243,7 @@ export const debugMetaIsComplex = (m: DebugMetaType): m is DebugMetaTypeComplex 
     !["simple", "string", "boxedcomp", "anonymcomp", "unknown"].find(e => e === m)
 
 const parseStep = (body: string): DebugStep => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     checkException(raw)
     const attrs = xmlNodeAttr(raw.step)
     const settings = xmlNodeAttr(raw?.step?.settings)
@@ -261,14 +261,14 @@ const convertVariable = (v: any) => ({
 })
 
 const parseVariables = (body: string): DebugVariable[] => {
-    const raw = fullParse(body, { ignoreNameSpace: true, parseNodeValue: false, parseTrueNumberOnly: true })
+    const raw = fullParse(body, { removeNSPrefix: true, parseTagValue: false, numberParseOptions })
     const variables = xmlArray(raw, "abap", "values", "DATA", "STPDA_ADT_VARIABLE")
         .map(convertVariable)
     return variables as DebugVariable[]
 }
 
 const parseChildVariables = (body: string): DebugChildVariablesInfo => {
-    const raw = fullParse(body, { ignoreNameSpace: true, parseNodeValue: false, parseTrueNumberOnly: true })
+    const raw = fullParse(body, { removeNSPrefix: true, parseTagValue: false, numberParseOptions })
     const hierarchies = xmlArray(raw, "abap", "values", "DATA", "HIERARCHIES", "STPDA_ADT_VARIABLE_HIERARCHY")
     const variables = xmlArray(raw, "abap", "values", "DATA", "VARIABLES", "STPDA_ADT_VARIABLE")
         .map(convertVariable)
@@ -276,7 +276,7 @@ const parseChildVariables = (body: string): DebugChildVariablesInfo => {
 }
 
 const parseStack = (body: string): DebugStackInfo => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     const stack = xmlArray(raw, "stack", "stackEntry")
         .map(xmlNodeAttr)
         .map(x => ({ ...x, uri: parseUri(x.uri) }))
@@ -285,12 +285,12 @@ const parseStack = (body: string): DebugStackInfo => {
 }
 
 const parseDebugSettings = (body: string): DebugSettings => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     return xmlNodeAttr(raw.settings)
 }
 
 const parseAttach = (body: string): DebugAttach => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     const attrs = xmlNodeAttr(raw.attach)
     const reachedBreakpoints = xmlArray(
         raw,
@@ -303,7 +303,7 @@ const parseAttach = (body: string): DebugAttach => {
 }
 
 const parseBreakpoints = (body: string): (DebugBreakpoint | DebugBreakpointError)[] => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     return xmlArray(raw, "breakpoints", "breakpoint")
         .map(xmlNodeAttr)
         .map(x => {
@@ -353,7 +353,7 @@ const parseDebugListeners = (
     body: string
 ): DebugListenerError | Debuggee | undefined => {
     if (!body) return
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     const err = parseDebugError(raw)
     if (err) return err
     const debug = xmlNode(raw, "abap", "values", "DATA", "STPDA_DEBUGGEE")
@@ -377,7 +377,7 @@ export async function debuggerListeners(
     }
     const response = await h.request("/sap/bc/adt/debugger/listeners", { qs })
     if (!response.body) return
-    const raw = fullParse(response.body, { ignoreNameSpace: true })
+    const raw = fullParse(response.body, { removeNSPrefix: true })
     return parseDebugError(raw)
 }
 export async function debuggerListen(

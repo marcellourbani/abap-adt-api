@@ -1,4 +1,4 @@
-import { parse } from "fast-xml-parser"
+
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { SAPRC } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
@@ -6,6 +6,7 @@ import {
   decodeEntity,
   fullParse,
   JSON2AbapXML,
+  parse,
   parseSapDate,
   toSapDate,
   xmlArray,

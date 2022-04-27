@@ -1,6 +1,5 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import chalk from "chalk"
 import {
   ADTClient,
   isAdtError,
@@ -907,9 +906,7 @@ test(
   runTest(async (c: ADTClient) => {
     const style = (await c.prettyPrinterSetting())["abapformatter:style"]
     if (style === "none" || style === "keywordAuto") {
-      console.log(
-        chalk.yellowBright("Pretty printer doesn't change case, tests skipped")
-      )
+      console.log("Pretty printer doesn't change case, tests skipped")
       return
     }
     const uppercase = style === "toUpper" || style === "keywordUpper"
@@ -1200,11 +1197,7 @@ test(
       expect(repos.length).toBeGreaterThan(0)
       expect(repos[0].sapPackage).toBeDefined()
     } else {
-      console.log(
-        chalk.yellowBright(
-          "ABAPGit backend not installed, relevant tests skipped"
-        )
-      )
+      console.log("ABAPGit backend not installed, relevant tests skipped")
     }
   })
 )
@@ -1244,11 +1237,7 @@ test(
         expect(repoinfo.access_mode).toBe("PRIVATE")
         expect(repoinfo.branches[0]).toBeDefined()
       } else
-        console.log(
-          chalk.yellowBright(
-            "No password protected ABAPGit repo provided, relevant tests skipped"
-          )
-        )
+        console.log("No password protected ABAPGit repo provided, relevant tests skipped")
     }
   })
 )

@@ -1,6 +1,6 @@
-import { parse } from "fast-xml-parser"
+
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
+import { fullParse, parse, xmlArray, xmlNodeAttr } from "../utilities"
 
 export interface AdtDiscoveryResult {
   collection: Array<{

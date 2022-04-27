@@ -1,10 +1,11 @@
-import { parse } from "fast-xml-parser"
+
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
   decodeEntity,
   fullParse,
+  parse,
   parts,
   toInt,
   xmlArray,

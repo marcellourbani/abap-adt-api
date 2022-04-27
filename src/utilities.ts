@@ -1,5 +1,5 @@
-import { parse, X2jOptionsOptional } from "fast-xml-parser"
-import { AllHtmlEntities } from "html-entities"
+import { XMLParser, X2jOptionsOptional, strnumOptions } from "fast-xml-parser"
+import { encode, decode } from "html-entities"
 import * as t from "io-ts"
 
 export const isObject = <T extends Object>(x: unknown): x is T => !!x && typeof x === 'object'
@@ -92,13 +92,19 @@ export const xmlNodeAttr = (n: any) =>
       return part
     }, {})
 
+export const numberParseOptions: strnumOptions = { leadingZeros: false, hex: true }
+
 export const fullParse = (xml: string, options: X2jOptionsOptional = {}) =>
-  parse(xml, {
+  new XMLParser({
     ignoreAttributes: false,
     trimValues: false,
     parseAttributeValue: true,
     ...options
-  })
+  }).
+    parse(xml)
+
+export const parse = (xml: string, options: X2jOptionsOptional = {}) =>
+  new XMLParser(options).parse(xml)
 
 export function toInt(x?: string) {
   if (!x) return 0
@@ -116,19 +122,7 @@ export const parseSapDate = (d: string) => {
 export const toSapDate = (d: Date) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate()
 export const parseJsonDate = (d: string) => new Date(Date.parse(d))
 
-export const [decodeEntity, encodeEntity] = (() => {
-  let entities: AllHtmlEntities | undefined
-  return [
-    (s: string) => {
-      if (!entities) entities = new AllHtmlEntities()
-      return entities.decode(s)
-    },
-    (s: string) => {
-      if (!entities) entities = new AllHtmlEntities()
-      return entities.encode(s)
-    }
-  ]
-})()
+export const [decodeEntity, encodeEntity] = [decode, encode]
 
 export function btoa(s: string) {
   return Buffer.from(s).toString("base64")

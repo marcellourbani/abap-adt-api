@@ -71,7 +71,7 @@ export interface DumpCategory {
 }
 
 const parseFeeds = (body: string): Feed[] => {
-    const raw = fullParse(body, { ignoreNameSpace: true })
+    const raw = fullParse(body, { removeNSPrefix: true })
     const parseDt = (dt: any) => {
         const { "@_id": id, label = "" } = dt
         const operators = xmlArray(dt, "operators", "operator")
@@ -106,7 +106,7 @@ const parseFeeds = (body: string): Feed[] => {
 
 
 const parseDumps = (body: string): DumpsFeed => {
-    const raw = fullParse(body, { ignoreNameSpace: true })?.feed
+    const raw = fullParse(body, { removeNSPrefix: true })?.feed
     const { href } = xmlNodeAttr(raw?.link)
     const { title, updated } = raw
     const dumps = xmlArray(raw, "entry").map((e: any) => {

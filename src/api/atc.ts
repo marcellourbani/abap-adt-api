@@ -1,5 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { Clean, decodeEntity, encodeEntity, fullParse, isString, orUndefined, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { Clean, decodeEntity, encodeEntity, fullParse, isString, numberParseOptions, orUndefined, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import * as t from "io-ts";
 import { adtException, isErrorMessageType, validateParseResult } from "..";
 import { parseUri, uriParts } from "./urlparser";
@@ -157,7 +157,7 @@ export const isProposalMessage = atcProposalMessage.is
 export async function atcCustomizing(h: AdtHTTP): Promise<AtcCustomizing> {
     const headers = { Accept: "application/xml, application/vnd.sap.atc.customizing-v1+xml" }
     const response = await h.request("/sap/bc/adt/atc/customizing", { headers })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false })
     const properties = xmlArray(raw, "customizing", "properties", "property").map(xmlNodeAttr)
     const excemptions = xmlArray(raw, "customizing", "exemption", "reasons", "reason").map(xmlNodeAttr)
     const retval = { properties, excemptions }
@@ -183,7 +183,7 @@ export async function createAtcRun(h: AdtHTTP, variant: string, mainUrl: string,
 </atc:run>`
     const headers = { Accept: "application/xml", "Content-Type": "application/xml" }
     const response = await h.request(`/sap/bc/adt/atc/runs?worklistId=${variant}`, { method: "POST", headers, body })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false })
     const id = xmlNode(raw, "worklistRun", "worklistId")
     const ts = xmlNode(raw, "worklistRun", "worklistTimestamp")
     const infos = xmlArray(raw, "worklistRun", "infos", "info")
@@ -195,7 +195,7 @@ export async function atcWorklists(h: AdtHTTP, runResultId: string, timestamp?: 
     const headers = { Accept: "application/atc.worklist.v1+xml" }
     const qs = { timestamp, usedObjectSet, includeExemptedFindings }
     const response = await h.request(`/sap/bc/adt/atc/worklists/${runResultId}`, { headers, qs })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false, parseTrueNumberOnly: true })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false, numberParseOptions })
     const root = xmlNode(raw, "worklist")
     const attrs = xmlNodeAttr(root)
     const objectSets = xmlArray(root, "objectSets", "objectSet").map(xmlNodeAttr)
@@ -219,7 +219,7 @@ export async function atcWorklists(h: AdtHTTP, runResultId: string, timestamp?: 
 export async function atcUsers(h: AdtHTTP): Promise<AtcUser[]> {
     const headers = { Accept: "application/atom+xml;type=feed" }
     const response = await h.request(`/sap/bc/adt/system/users`, { headers })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false, parseAttributeValue: false })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false, parseAttributeValue: false })
     const users = xmlArray(raw, "feed", "entry")
     return validateParseResult(t.array(atcUser).decode(users))
 }
@@ -228,7 +228,7 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
     const headers = { Accept: "application/atc.xmpt.v1+xml, application/atc.xmptapp.v1+xml" }
     const qs = { markerId }
     const response = await h.request(`/sap/bc/adt/atc/exemptions/apply`, { headers, qs })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false, parseAttributeValue: false })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false, parseAttributeValue: false })
     const root = xmlNode(raw, "exemptionApply", "exemptionProposal")
     const { message, type } = xmlNode(raw, "exemptionApply", "status") || {}
     if (isErrorMessageType(type)) throw adtException(message)
@@ -299,7 +299,7 @@ export async function atcRequestExemption(h: AdtHTTP, proposal: AtcProposal): Pr
       <atcexmpt:notify>${proposal.notify}</atcexmpt:notify>
     </atcexmpt:exemptionProposal>`
     const response = await h.request(`/sap/bc/adt/atc/exemptions/apply`, { headers, body, qs, method: "POST" })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false, parseAttributeValue: false })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false, parseAttributeValue: false })
     const result = validateParseResult(atcProposalMessage.decode(raw?.status))
     if (isErrorMessageType(result.type)) throw adtException(result.message)
     return validateParseResult(atcProposalMessage.decode(result))
@@ -316,7 +316,7 @@ export async function atcContactUri(h: AdtHTTP, findingUri: string): Promise<str
       <atcfinding:findingReference adtcore:uri="${findingUri}"/>
     </atcfinding:findingReferences>`
     const response = await h.request(`/sap/bc/adt/atc/items`, { headers, body, method: "POST", qs })
-    const raw = fullParse(response.body, { ignoreNameSpace: true, parseNodeValue: false, parseAttributeValue: false })
+    const raw = fullParse(response.body, { removeNSPrefix: true, parseTagValue: false, parseAttributeValue: false })
     const { uri } = xmlNodeAttr(xmlNode(raw, "items", "item"))
     return validateParseResult(t.string.decode(uri))
 }
