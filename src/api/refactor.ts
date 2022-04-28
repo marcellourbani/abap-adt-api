@@ -1,8 +1,8 @@
+import { decode } from "html-entities"
 import { rangeToString, UriParts } from "."
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
-  decodeEntity,
   encodeEntity,
   fullParse,
   xmlArray,
@@ -68,16 +68,16 @@ export async function fixProposals(
     headers,
     body
   })
-  const raw = fullParse(response.body)
+  const raw = fullParse(response.body, { processEntities: false })
   const rawResults = xmlArray(raw, "qf:evaluationResults", "evaluationResult")
   return rawResults.map(x => {
     const attrs = xmlNodeAttr(xmlNode(x, "adtcore:objectReference"))
-    const userContent = decodeEntity(xmlNode(x, "userContent") || "")
+    const userContent = decode(xmlNode(x, "userContent") || "")
 
     return {
       ...attrs,
-      "adtcore:name": decodeEntity(attrs["adtcore:name"]),
-      "adtcore:description": decodeEntity(attrs["adtcore:description"]),
+      "adtcore:name": attrs["adtcore:name"],
+      "adtcore:description": attrs["adtcore:description"],
       uri,
       line,
       column,
@@ -118,7 +118,7 @@ export async function fixEdits(
   const raw = fullParse(response.body)
   const parseDelta = (d: any): Delta => {
     const attr = xmlNodeAttr(xmlNode(d, "adtcore:objectReference"))
-    const content = decodeEntity(d.content)
+    const content = d.content
     const { uri, range } = parseUri(attr["adtcore:uri"])
 
     return {
@@ -140,12 +140,12 @@ function parseRenameRefactoring(body: string): RenameRefactoringProposal {
   const root = xmlNode(raw, "renameRefactoring")
   const generic = xmlNode(root || raw, "genericRefactoring") // depending on the caller the generic refactoring might be wrapped or not
   const affectedObjects = xmlArray(generic, "affectedObjects", "affectedObject")
-  const userContent = decodeEntity(xmlNode(generic, "userContent") || "")
-  const adtObjectUri = parseUri(decodeEntity(xmlNode(generic, "adtObjectUri") || ""))
+  const userContent = xmlNode(generic, "userContent") || ""
+  const adtObjectUri = parseUri(xmlNode(generic, "adtObjectUri") || "")
 
   return {
-    oldName: decodeEntity(xmlNode(root, "oldName") || ""),
-    newName: decodeEntity(xmlNode(root, "newName") || ""),
+    oldName: xmlNode(root, "oldName") || "",
+    newName: xmlNode(root, "newName") || "",
     adtObjectUri,
     ignoreSyntaxErrorsAllowed: generic["ignoreSyntaxErrorsAllowed"],
     ignoreSyntaxErrors: generic["ignoreSyntaxErrors"],
@@ -154,18 +154,18 @@ function parseRenameRefactoring(body: string): RenameRefactoringProposal {
       const replacedelta = xmlArray(y, "textReplaceDeltas", "textReplaceDelta")
       const affectedObject = xmlNodeAttr(y)
       return {
-        uri: decodeEntity(xmlNode(affectedObject, "uri")),
-        type: decodeEntity(xmlNode(affectedObject, "type")),
-        name: decodeEntity(xmlNode(affectedObject, "name")),
-        parentUri: decodeEntity(xmlNode(affectedObject, "parentUri")),
+        uri: xmlNode(affectedObject, "uri"),
+        type: xmlNode(affectedObject, "type"),
+        name: xmlNode(affectedObject, "name"),
+        parentUri: xmlNode(affectedObject, "parentUri"),
         textReplaceDeltas: replacedelta.map(z => {
           return {
-            rangeFragment: parseUri(decodeEntity(xmlNode(z, "rangeFragment"))).range,
-            contentOld: decodeEntity(xmlNode(z, "contentOld")),
-            contentNew: decodeEntity(xmlNode(z, "contentNew"))
+            rangeFragment: parseUri(xmlNode(z, "rangeFragment")).range,
+            contentOld: xmlNode(z, "contentOld"),
+            contentNew: xmlNode(z, "contentNew")
           }
         }),
-        userContent: decodeEntity(xmlNode(y, "affectedObject", "userContent") || ""),
+        userContent: xmlNode(y, "affectedObject", "userContent") || "",
       }
     }),
     userContent: userContent

@@ -3,7 +3,6 @@ import { adtException, ValidateObjectUrl } from "../AdtException"
 import { SAPRC } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
-  decodeEntity,
   fullParse,
   JSON2AbapXML,
   parse,
@@ -236,7 +235,7 @@ const parseTask = (t: any) => {
     links: xmlArray(t, "atom:link").map(xmlNodeAttr),
     objects: xmlArray(t, "tm:abap_object").map(xmlNodeAttr)
   }
-  if (task["tm:desc"]) task["tm:desc"] = decodeEntity(task["tm:desc"])
+  if (task["tm:desc"]) task["tm:desc"] = task["tm:desc"]
   return task as TransportTask
 }
 const parseRequest = (r: any) => {

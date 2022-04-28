@@ -1,6 +1,6 @@
 import { adtException } from ".."
 import { AdtHTTP } from "../AdtHTTP"
-import { decodeEntity, encodeEntity, fullParse, isString, numberParseOptions, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { encodeEntity, fullParse, isString, numberParseOptions, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import { parseUri, UriParts } from "./urlparser"
 
 export type DebuggingMode = "user" | "terminal"
@@ -255,9 +255,9 @@ const convertVariable = (v: any) => ({
     ...v, TABLE_LINES: toInt(v.TABLE_LINES),
     LENGTH: toInt(v.LENGTH),
     INHERITANCE_LEVEL: toInt(v.INHERITANCE_LEVEL),
-    VALUE: decodeEntity(v.VALUE),
-    ID: decodeEntity(v.ID),
-    NAME: decodeEntity(v.NAME)
+    VALUE: v.VALUE,
+    ID: v.ID,
+    NAME: v.NAME
 })
 
 const parseVariables = (body: string): DebugVariable[] => {

@@ -1,6 +1,6 @@
 import { Link } from "."
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNodeAttr, xmlNode, parseJsonDate, decodeEntity } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr, xmlNode, parseJsonDate } from "../utilities"
 
 export interface Feed {
     author: string;
@@ -112,7 +112,7 @@ const parseDumps = (body: string): DumpsFeed => {
     const dumps = xmlArray(raw, "entry").map((e: any) => {
         const { category, id, author: { name: author }, summary: { "#text": text, "@_type": type } } = e
         const links = xmlArray(e, "link").map(xmlNodeAttr)
-        return { categories: category.map(xmlNodeAttr), links, id, author, text: decodeEntity(text), type }
+        return { categories: category.map(xmlNodeAttr), links, id, author, text: text, type }
     })
     return { href, title, updated: parseJsonDate(updated), dumps }
 }

@@ -672,7 +672,7 @@ test(
   "fix proposals",
   runTest(async (c: ADTClient) => {
     const source = `FUNCTION-POOL zapidummyfoobar.\nclass fo definition.\npublic section.
-  methods bar.\nendclass.\nclass fo implementation.\nendclass."<`
+  methods bar.\nendclass.\nclass fo implementation.\nendclass."`
     const include =
       "/sap/bc/adt/functions/groups/zapidummyfoobar/includes/lzapidummyfoobartop/source/main"
     const fixProposals = await c.fixProposals(include, source, 4, 10)
@@ -691,7 +691,7 @@ test(
 test(
   "fix proposals reverse",
   runTest(async (c: ADTClient) => {
-    const source = `CLASS zapiadt_testcase_class1 DEFINITION PUBLIC CREATE PUBLIC .ENDCLASS.
+    const source = `CLASS zapiadt_testcase_class1 DEFINITION.ENDCLASS.
 CLASS zapiadt_testcase_class1 IMPLEMENTATION.
   METHOD foo.
   ENDMETHOD.
@@ -707,7 +707,7 @@ ENDCLASS.`
     const edit = edits[0]
     expect(edit && edit.content.match(/methods\s+foo\./gi)).toBeTruthy()
     expect(edit && edit.range.start.line).toBe(1)
-    expect(edit && edit.range.start.column).toBe(63)
+    expect(edit && edit.range.start.column).toBe(41)
   })
 )
 

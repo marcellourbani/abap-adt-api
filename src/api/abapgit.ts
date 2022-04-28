@@ -8,9 +8,7 @@ import {
   stripNs,
   btoa,
   toXmlAttributes,
-  decodeEntity,
   encodeEntity,
-  isString,
   toInt,
   parse
 } from "../utilities"
@@ -291,7 +289,7 @@ const deserializeStaging = (body: string) => {
     links: xmlArray(x, "atom:link")
       .map(xmlNodeAttr)
       .map(stripNs)
-      .map((l) => ({ ...l, href: decodeEntity(l.href) })),
+      .map((l) => ({ ...l, href: l.href })),
   } as GitStagingFile)
   const parseObject = (x: any) => {
     const attrs = stripNs(xmlNodeAttr(x))

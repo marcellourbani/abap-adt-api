@@ -1,6 +1,6 @@
 
 import { AdtHTTP } from "../AdtHTTP"
-import { decodeEntity, isObject, isString, parse, xmlArray } from "../utilities"
+import { isObject, isString, parse, xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
 
 export function isNodeParent(t: string): t is NodeParents {
@@ -57,7 +57,7 @@ const decodeComponents = (keys: string[]) => <T>(x: T): T => {
   if (isObject(x)) {
     const o = keys.reduce((acc, key) => {
       const v = (x as any)[key] || ""
-      return isString(v) ? { ...acc, [key]: decodeEntity(v) } : acc
+      return isString(v) ? { ...acc, [key]: v } : acc
     }, {})
     return { ...x, ...o }
   }
@@ -77,7 +77,7 @@ const parsePackageResponse = (data: string): NodeStructure => {
         node.OBJECT_NAME = (node.OBJECT_NAME as any || "").toString()
         node.TECH_NAME = (node.TECH_NAME || "").toString()
       }
-      node.DESCRIPTION = decodeEntity(node.DESCRIPTION || "")
+      node.DESCRIPTION = node.DESCRIPTION || ""
     }
     categories = xmlArray(root, "CATEGORIES", "SEU_ADT_OBJECT_CATEGORY_INFO")
     objectTypes = xmlArray(root, "OBJECT_TYPES", "SEU_ADT_OBJECT_TYPE_INFO")

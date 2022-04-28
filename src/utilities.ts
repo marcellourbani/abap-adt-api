@@ -1,6 +1,7 @@
 import { XMLParser, X2jOptionsOptional, strnumOptions } from "fast-xml-parser"
-import { encode, decode } from "html-entities"
 import * as t from "io-ts"
+export { encode as encodeEntity } from "html-entities"
+import { encode } from "html-entities";
 
 export const isObject = <T extends Object>(x: unknown): x is T => !!x && typeof x === 'object'
 export const isArray = (x: unknown): x is unknown[] => Array.isArray(x)
@@ -14,7 +15,7 @@ export function JSON2AbapXML(original: any, root: string = "DATA") {
   let inner = ""
   for (const key of Object.keys(original))
     if (original[key])
-      inner = `${inner}\n<${key}>${encodeEntity(original[key]) || ""}</${key}>`
+      inner = `${inner}\n<${key}>${encode(original[key]) || ""}</${key}>`
     else inner = `${inner}\n<${key}/>`
 
   return `<?xml version="1.0" encoding="UTF-8"?><asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
@@ -71,7 +72,7 @@ export function xmlArray<T>(xml: any, ...path: string[]): T[] {
 }
 
 const ok = Object.keys
-export const xmlRoot = (o: any) => o[ok(o)[0]]
+export const xmlRoot = (o: any) => o[ok(o).filter(k => k !== "?xml")[0]]
 
 export const stripNs = (x: any) =>
   x &&
@@ -92,7 +93,7 @@ export const xmlNodeAttr = (n: any) =>
       return part
     }, {})
 
-export const numberParseOptions: strnumOptions = { leadingZeros: false, hex: true }
+export const numberParseOptions: strnumOptions = { leadingZeros: false, hex: true, skipLike: new RegExp("") }
 
 export const fullParse = (xml: string, options: X2jOptionsOptional = {}) =>
   new XMLParser({
@@ -121,8 +122,6 @@ export const parseSapDate = (d: string) => {
 
 export const toSapDate = (d: Date) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate()
 export const parseJsonDate = (d: string) => new Date(Date.parse(d))
-
-export const [decodeEntity, encodeEntity] = [decode, encode]
 
 export function btoa(s: string) {
   return Buffer.from(s).toString("base64")

@@ -3,7 +3,6 @@ import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   btoa,
-  decodeEntity,
   fullParse,
   parse,
   parts,
@@ -66,7 +65,7 @@ export function parseCheckResults(raw: any) {
       line: 0,
       offset: 0,
       severity: m["@_chkrun:type"],
-      text: decodeEntity(m["@_chkrun:shortText"])
+      text: m["@_chkrun:shortText"]
     }
     const matches = rawUri.match(/([^#]+)#start=([\d]+),([\d]+)/)
     if (matches) {
@@ -175,7 +174,7 @@ export async function codeCompletion(
     .filter((p: any) => p.IDENTIFIER && p.IDENTIFIER !== "@end")
     .map((p: any) => ({
       ...p,
-      IDENTIFIER: decodeEntity(p.IDENTIFIER)
+      IDENTIFIER: p.IDENTIFIER
     })) as CompletionProposal[]
   return proposals
 }
@@ -201,7 +200,7 @@ export async function codeCompletionFull(
 function extractDocLink(raw: any): string {
   const link =
     xmlNode(raw, "abapsource:elementInfo", "atom:link", "@_href") || ""
-  return decodeEntity(link.replace(/\w+:\/\/[^\/]*/, ""))
+  return link.replace(/\w+:\/\/[^\/]*/, "")
 }
 
 export async function codeCompletionElement(

@@ -1,5 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
-import { Clean, decodeEntity, encodeEntity, fullParse, isString, numberParseOptions, orUndefined, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import { Clean, encodeEntity, fullParse, isString, numberParseOptions, orUndefined, toInt, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
 import * as t from "io-ts";
 import { adtException, isErrorMessageType, validateParseResult } from "..";
 import { parseUri, uriParts } from "./urlparser";
@@ -203,11 +203,12 @@ export async function atcWorklists(h: AdtHTTP, runResultId: string, timestamp?: 
         const oa = xmlNodeAttr(o)
         const findings = xmlArray(o, "findings", "finding").map(f => {
             const fa = xmlNodeAttr(f)
+            const priority = toInt(fa.priority)
             const link = xmlNodeAttr(xmlNode(f, "link"))
             const location = parseUri(fa.location)
-            const messageTitle = decodeEntity(fa.messageTitle)
-            const checkTitle = decodeEntity(fa.checkTitle)
-            return { ...fa, messageTitle, checkTitle, location, messageId: `${fa.messageId}`, link }
+            const messageTitle = fa.messageTitle
+            const checkTitle = fa.checkTitle
+            return { ...fa, priority, messageTitle, checkTitle, location, messageId: `${fa.messageId}`, link }
         })
         return { ...oa, findings }
     })
@@ -243,7 +244,7 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
     const { restrictByObject, restrictByCheck } = rangeOfFindings
     const result = {
         finding,
-        package: pa, subObject, subObjectType, subObjectTypeDescr, objectTypeDescr, approver, reason, justification: decodeEntity(justification), notify,
+        package: pa, subObject, subObjectType, subObjectTypeDescr, objectTypeDescr, approver, reason, justification: justification, notify,
         restriction: {
             enabled: thisFinding["@_enabled"] === "true",
             singlefinding: thisFinding["#text"] === "true",
@@ -253,12 +254,12 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
                     object: restrictByObject["@_object"] === "true",
                     package: restrictByObject["@_package"] === "true",
                     subobject: restrictByObject["@_subobject"] === "true",
-                    target: decodeEntity(restrictByObject["#text"]),
+                    target: restrictByObject["#text"],
                 },
                 restrictByCheck: {
                     check: restrictByCheck["@_check"] === "true",
                     message: restrictByCheck["@_message"] === "true",
-                    target: decodeEntity(restrictByCheck["#text"]),
+                    target: restrictByCheck["#text"],
                 }
             }
         }

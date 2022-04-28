@@ -1,6 +1,5 @@
 import { AdtHTTP } from "../AdtHTTP"
 import {
-  decodeEntity,
   fullParse,
   xmlArray,
   xmlFlatArray,
@@ -81,7 +80,7 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   const raw = fullParse(response.body)
   const parseDetail = (alert: any) =>
     xmlArray(alert, "details", "detail").reduce((result: string[], d: any) => {
-      const main = decodeEntity((d && d["@_text"]) || "")
+      const main = (d && d["@_text"]) || ""
       const children = xmlArray(d, "details", "detail")
         .map((dd: any) => (dd && `\n\t${dd["@_text"]}`) || "")
         .join("")
@@ -90,7 +89,7 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   const parseStack = (alert: any) =>
     xmlArray(alert, "stack", "stackEntry").map(x => {
       const entry = xmlNodeAttr(x)
-      entry["adtcore:description"] = decodeEntity(entry["adtcore:description"])
+      entry["adtcore:description"] = entry["adtcore:description"]
       return entry
     })
   const parseAlert = (alert: any) => ({
