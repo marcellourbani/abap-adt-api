@@ -1,3 +1,5 @@
+import * as t from "io-ts"
+import { validateParseResult } from ".."
 import { AdtHTTP } from "../AdtHTTP"
 import {
   fullParse,
@@ -5,6 +7,7 @@ import {
   xmlFlatArray,
   xmlNodeAttr
 } from "../utilities"
+import { parseUri, uriParts } from "./urlparser"
 
 export interface UnitTestStackEntry {
   "adtcore:uri": string
@@ -53,6 +56,38 @@ export interface UnitTestClass {
   alerts: UnitTestAlert[]
 }
 
+const markerCodec = t.type({
+  kind: t.string,
+  keepsResult: t.boolean,
+  location: uriParts
+})
+
+export type UnitTestOccurrenceMarker = t.TypeOf<typeof markerCodec>
+
+const parseDetail = (alert: any) =>
+  xmlArray(alert, "details", "detail").reduce((result: string[], d: any) => {
+    const main = (d && d["@_text"]) || ""
+    const children = xmlArray(d, "details", "detail")
+      .map((dd: any) => (dd && `\n\t${dd["@_text"]}`) || "")
+      .join("")
+    return main ? [...result, main + children] : result
+  }, [])
+const parseStack = (alert: any) =>
+  xmlArray(alert, "stack", "stackEntry").map(x => {
+    const entry = xmlNodeAttr(x)
+    entry["adtcore:description"] = entry["adtcore:description"]
+    return entry
+  })
+const parseAlert = (alert: any) => ({
+  ...xmlNodeAttr(alert),
+  details: parseDetail(alert),
+  stack: parseStack(alert)
+})
+const parseMethod = (method: any): UnitTestMethod => ({
+  ...xmlNodeAttr(method),
+  alerts: xmlArray(method, "alerts", "alert").map(parseAlert)
+})
+
 export async function runUnitTest(h: AdtHTTP, url: string) {
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const body = `<?xml version="1.0" encoding="UTF-8"?>
@@ -78,29 +113,7 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
     body
   })
   const raw = fullParse(response.body)
-  const parseDetail = (alert: any) =>
-    xmlArray(alert, "details", "detail").reduce((result: string[], d: any) => {
-      const main = (d && d["@_text"]) || ""
-      const children = xmlArray(d, "details", "detail")
-        .map((dd: any) => (dd && `\n\t${dd["@_text"]}`) || "")
-        .join("")
-      return main ? [...result, main + children] : result
-    }, [])
-  const parseStack = (alert: any) =>
-    xmlArray(alert, "stack", "stackEntry").map(x => {
-      const entry = xmlNodeAttr(x)
-      entry["adtcore:description"] = entry["adtcore:description"]
-      return entry
-    })
-  const parseAlert = (alert: any) => ({
-    ...xmlNodeAttr(alert),
-    details: parseDetail(alert),
-    stack: parseStack(alert)
-  })
-  const parseMethod = (method: any) => ({
-    ...xmlNodeAttr(method),
-    alerts: xmlArray(method, "alerts", "alert").map(parseAlert)
-  })
+
 
   const classes: UnitTestClass[] = xmlFlatArray(
     raw,
@@ -116,4 +129,52 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
     }
   })
   return classes
+}
+
+export async function unitTestEvaluation(h: AdtHTTP, clas: UnitTestClass) {
+  const headers = { "Content-Type": "application/*l", Accept: "application/*" }
+  const references = clas.testmethods.map(m => `<adtcore:objectReference adtcore:uri="${m["adtcore:uri"]}" />`).join("\n")
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+  <aunit:runConfiguration xmlns:aunit="http://www.sap.com/adt/aunit">
+      <options>
+          <uriType value="${clas.uriType}"></uriType>
+          <testDeterminationStrategy sameProgram="true" assignedTests="false"></testDeterminationStrategy>
+          <testRiskLevels harmless="true" dangerous="true" critical="true"></testRiskLevels>
+          <testDurations short="true" medium="true" long="true"></testDurations>
+          <withNavigationUri enabled="true"></withNavigationUri>
+      </options>
+      <adtcore:objectSets xmlns:adtcore="http://www.sap.com/adt/core">
+          <objectSet kind="inclusive">
+              <adtcore:objectReferences>
+              ${references}
+              </adtcore:objectReferences>
+          </objectSet>
+      </adtcore:objectSets>
+  </aunit:runConfiguration>`
+  const response = await h.request("/sap/bc/adt/abapunit/testruns/evaluation", {
+    method: "POST",
+    headers,
+    body
+  })
+
+  const raw = fullParse(response.body)
+  return xmlArray(raw, "aunit:runResult", "program", "testClasses", "testClass", "testMethods", "testMethod").map(parseMethod)
+}
+
+export async function unitTestOccurrenceMarkers(h: AdtHTTP, uri: string, source: string): Promise<UnitTestOccurrenceMarker[]> {
+  const headers = { "Content-Type": "text/plain", Accept: "application/*" }
+  const response = await h.request("/sap/bc/adt/abapsource/occurencemarkers", {
+    method: "POST",
+    headers,
+    body: source,
+    qs: { uri }
+  })
+  const raw = fullParse(response.body, { removeNSPrefix: true })
+  const markers = xmlArray(raw, "occurrenceInfo", "occurrences", "occurrence").map(o => {
+    const { kind, keepsResult } = xmlNodeAttr(o)
+    const { uri } = xmlNodeAttr((o as any)?.objectReference)
+    return { kind, keepsResult, location: parseUri(uri) }
+  })
+
+  return validateParseResult(t.array(markerCodec).decode(markers))
 }

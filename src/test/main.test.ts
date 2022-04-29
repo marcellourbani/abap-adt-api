@@ -1,5 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
+import { execPath } from "process"
 import {
   ADTClient,
   isAdtError,
@@ -10,7 +11,7 @@ import {
 } from "../"
 import { session_types } from "../AdtHTTP"
 import { classIncludes, isBindingOptions, NewBindingOptions, NewObjectOptions, parseUri } from "../api"
-import { fullParse, isArray, isString } from "../utilities"
+import { fullParse, isArray, isString, xmlArray, xmlNodeAttr } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -794,6 +795,24 @@ test(
     }
   })
 )
+
+test("unit test evaluation", runTest(async (c: ADTClient) => {
+  const testResults = await c.runUnitTest("/sap/bc/adt/programs/programs/zapiadtunitcases")
+  const class1 = findBy(testResults, "adtcore:name", "LCL_TEST1")
+  expect(class1).toBeDefined()
+  const methods = await c.unitTestEvaluation(class1!)
+  expect(methods).toBeDefined()
+  expect(methods.length).toBe(class1?.testmethods.length)
+}))
+
+test("unit test markers", runTest(async (c: ADTClient) => {
+  const testResults = await c.runUnitTest("/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main")
+  const class1 = findBy(testResults, "adtcore:name", "UT")
+  expect(class1).toBeDefined()
+  const source = await c.getObjectSource(class1!.navigationUri)
+  const markers = await c.unitTestOccurrenceMarkers(class1!.testmethods[0].navigationUri, source)
+  expect(markers[1].location.range.start.line).toBe(13)
+}))
 
 test(
   "class components",

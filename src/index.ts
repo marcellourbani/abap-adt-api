@@ -156,6 +156,7 @@ export {
   UnitTestAlertKind,
   UnitTestClass,
   UnitTestMethod,
+  UnitTestOccurrenceMarker,
   UnitTestSeverity,
   UnitTestStackEntry,
   UriParts,

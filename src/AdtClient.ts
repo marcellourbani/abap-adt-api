@@ -184,10 +184,13 @@ import {
   atcContactUri,
   atcChangeContact,
   AtcProposal,
-  atcRequestExemption
+  atcRequestExemption,
+  unitTestEvaluation,
+  unitTestOccurrenceMarkers
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from 'https'
+import { string } from "fp-ts"
 
 export function createSSLConfig(
   allowUnauthorized: boolean,
@@ -751,6 +754,14 @@ export class ADTClient {
   }
   public runUnitTest(url: string) {
     return runUnitTest(this.h, url)
+  }
+
+  public unitTestEvaluation(clas: UnitTestClass) {
+    return unitTestEvaluation(this.h, clas)
+  }
+
+  public unitTestOccurrenceMarkers(url: string, source: string) {
+    return unitTestOccurrenceMarkers(this.h, url, source)
   }
 
   public classComponents(url: string) {
