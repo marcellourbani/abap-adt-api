@@ -1,7 +1,6 @@
 import { Clean, parts, toInt } from "../utilities"
 import { Location } from "./syntax"
 import * as t from "io-ts";
-import { validateParseResult } from "..";
 
 const location = t.type({
   line: t.number,
@@ -25,6 +24,21 @@ export type UriParts = Clean<t.TypeOf<typeof uriParts>>
 
 export const rangeToString = (range: Range) =>
   `#start=${range.start.line},${range.start.column};end=${range.end.line},${range.end.column}`
+
+const serializeKv = (r?: Record<string, string>) => {
+  const rec = r || {}
+  return Object.keys(rec).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(rec[k])}`)
+}
+const isNullRange = (r: Range) =>
+  r.start.line === 0 && r.start.column === 0 && r.end.line === 0 && r.end.column === 0
+
+export const uriPartsToString = (parts: UriParts) => {
+  const range = isNullRange(parts.range) ? "" : rangeToString(parts.range)
+  const parms = serializeKv(parts.hashparms).join(";")
+  const query = serializeKv(parts.query).join("&")
+  const hash = `${range ? range : ""}${parms ? `${range ? ";" : "#"}${parms}` : ``}`
+  return `${parts.uri}${query ? `?${query}` : ``}${hash}`
+}
 
 export function parseUri(sourceuri: string): UriParts {
   const [uri, qs, hash] = parts(sourceuri, /([^\?#]*)(?:\?([^#]*))?(?:#(.*))?/)
@@ -55,3 +69,5 @@ export function parseUri(sourceuri: string): UriParts {
 
   return { range, uri, query, hashparms }
 }
+
+

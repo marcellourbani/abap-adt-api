@@ -1,5 +1,16 @@
 # Change Log
 
+## 5.0.0
+
+### Changed
+
+- Unit test support
+- updated dependencies
+
+### Fixed
+
+- keepalive
+
 ## 4.3.0 [2022-04-25]
 
 ### Added

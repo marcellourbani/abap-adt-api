@@ -263,7 +263,6 @@ export class ADTClient {
 
   private h: AdtHTTP
   private pClone?: ADTClient
-  private pIsClone?: boolean
   private options: HttpOptions
 
   /**
@@ -302,6 +301,14 @@ export class ADTClient {
       o.language,
       o.options
     )
+  }
+
+  private get pIsClone() {
+    return this.h.isClone
+  }
+
+  private set pIsClone(isClone: boolean) {
+    this.h.isClone = isClone
   }
 
   private wrapFetcher: (f: BearerFetcher) => BearerFetcher = fetcher => {
@@ -752,7 +759,7 @@ export class ADTClient {
   public fixEdits(proposal: FixProposal, source: string) {
     return fixEdits(this.h, proposal, source)
   }
-  public runUnitTest(url: string) {
+  public unitTestRun(url: string) {
     return runUnitTest(this.h, url)
   }
 

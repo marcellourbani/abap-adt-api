@@ -39,7 +39,7 @@ export interface UnitTestMethod {
   "adtcore:name": string
   executionTime: number
   uriType: string
-  navigationUri: string
+  navigationUri?: string
   unit: string
   alerts: UnitTestAlert[]
 }
@@ -49,7 +49,7 @@ export interface UnitTestClass {
   "adtcore:type": string
   "adtcore:name": string
   uriType: string
-  navigationUri: string
+  navigationUri?: string
   durationCategory: string
   riskLevel: string
   testmethods: UnitTestMethod[]

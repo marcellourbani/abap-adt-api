@@ -762,7 +762,7 @@ const findBy = <T, K extends keyof T>(
 test(
   "unit test",
   runTest(async (c: ADTClient) => {
-    const testResults = await c.runUnitTest(
+    const testResults = await c.unitTestRun(
       "/sap/bc/adt/programs/programs/zapiadtunitcases"
     )
     expect(testResults).toBeDefined()
@@ -797,7 +797,7 @@ test(
 )
 
 test("unit test evaluation", runTest(async (c: ADTClient) => {
-  const testResults = await c.runUnitTest("/sap/bc/adt/programs/programs/zapiadtunitcases")
+  const testResults = await c.unitTestRun("/sap/bc/adt/programs/programs/zapiadtunitcases")
   const class1 = findBy(testResults, "adtcore:name", "LCL_TEST1")
   expect(class1).toBeDefined()
   const methods = await c.unitTestEvaluation(class1!)
@@ -806,11 +806,11 @@ test("unit test evaluation", runTest(async (c: ADTClient) => {
 }))
 
 test("unit test markers", runTest(async (c: ADTClient) => {
-  const testResults = await c.runUnitTest("/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main")
+  const testResults = await c.unitTestRun("/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main")
   const class1 = findBy(testResults, "adtcore:name", "UT")
   expect(class1).toBeDefined()
-  const source = await c.getObjectSource(class1!.navigationUri)
-  const markers = await c.unitTestOccurrenceMarkers(class1!.testmethods[0].navigationUri, source)
+  const source = await c.getObjectSource(class1!.navigationUri || class1!["adtcore:uri"])
+  const markers = await c.unitTestOccurrenceMarkers(class1!.testmethods[0].navigationUri || class1!.testmethods[0]["adtcore:uri"], source)
   expect(markers[1].location.range.start.line).toBe(13)
 }))
 

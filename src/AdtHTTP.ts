@@ -65,6 +65,7 @@ export class AdtHTTP {
   private bearer?: string
   readonly id = ++lastClientId
   readonly password?: string
+  public isClone = false
   debugCallback?: LogCallback
   keepAlive: NodeJS.Timeout | undefined
   didcall: boolean = false
@@ -151,7 +152,7 @@ export class AdtHTTP {
 
   }
   keep_session(): void {
-    if (this.isStateful && this.loggedin && !this.didcall)
+    if (!this.isClone && this.loggedin && !this.didcall)
       this._request("/sap/bc/adt/compatibility/graph", {}).then(() => this.didcall = false)
     else this.didcall = false
   }
