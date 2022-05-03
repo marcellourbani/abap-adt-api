@@ -127,16 +127,16 @@ export type AdtException =
   | AdtCsrfException
   | AdtHttpException
 
-export function isAdtError(e: any): e is AdtErrorException {
-  return (e as AdtErrorException).typeID === ADTEXTYPEID
+export function isAdtError(e: unknown): e is AdtErrorException {
+  return (e as any)?.typeID === ADTEXTYPEID
 }
-export function isCsrfError(e: any): e is AdtErrorException {
-  return (e as AdtErrorException).typeID === CSRFEXTYPEID
+export function isCsrfError(e: unknown): e is AdtCsrfException {
+  return (e as any)?.typeID === CSRFEXTYPEID
 }
-export function isHttpError(e: any): e is AdtHttpException {
-  return (e as AdtErrorException).typeID === HTTPEXTYPEID
+export function isHttpError(e: unknown): e is AdtHttpException {
+  return (e as any)?.typeID === HTTPEXTYPEID
 }
-export function isAdtException(e: any): e is AdtException {
+export function isAdtException(e: unknown): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 

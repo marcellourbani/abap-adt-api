@@ -1,7 +1,7 @@
 import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosBasicCredentials, Method, AxiosInstance, AxiosRequestHeaders } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
 import https from 'https'
-import { adtException, LogCallback } from "."
+import { AdtException, adtException, isHttpError, LogCallback } from "."
 import { logError, logResponse } from "./requestLogger"
 
 const FETCH_CSRF_TOKEN = "fetch"
@@ -53,6 +53,9 @@ const toAxiosConfig = (options: RequestOptions): AxiosRequestConfig => {
   }
   return config
 }
+
+const isLoginError = (adtErr: AdtException) =>
+  (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
 
 export type BearerFetcher = () => Promise<string>
 let adtRequestNumber = 0
@@ -269,7 +272,7 @@ export class AdtHTTP {
       const adtErr = fromException(e)
       // if the logon ticket expired try to logon again, unless in stateful mode
       // or already tried a login
-      if (isCsrfError(adtErr) && !autologin && !this.isStateful) {
+      if (isLoginError(adtErr) && !autologin && !this.isStateful) {
         try {
           this.csrfToken = FETCH_CSRF_TOKEN
           await this.login()
