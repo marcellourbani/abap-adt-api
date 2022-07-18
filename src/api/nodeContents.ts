@@ -1,5 +1,5 @@
 
-import { AdtHTTP } from "../AdtHTTP"
+import { AdtHTTP, RequestOptions } from "../AdtHTTP"
 import { isObject, isString, parse, xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
 
@@ -105,12 +105,14 @@ export async function nodeContents(
     parent_type,
     withShortDescriptions: true
   }
+  const options: RequestOptions = { method: "POST", qs }
   if (parent_name) qs.parent_name = parent_name
   if (parent_tech_name) qs.parent_tech_name = parent_tech_name
   if (user_name) qs.user_name = user_name
-  const response = await h.request("/sap/bc/adt/repository/nodestructure", {
-    method: "POST",
-    qs
-  })
+  if (parent_type === "FUGR/F") {
+    options.body = `<asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA><TV_NODEKEY>000000</TV_NODEKEY></DATA></asx:values></asx:abap>`
+    options.headers = { "Content-Type": "application/xml", Accept: "application/xml" }
+  }
+  const response = await h.request("/sap/bc/adt/repository/nodestructure", options)
   return parsePackageResponse(response.body)
 }

@@ -254,12 +254,12 @@ export async function atcExemptProposal(h: AdtHTTP, markerId: string): Promise<A
                     object: restrictByObject["@_object"] === "true",
                     package: restrictByObject["@_package"] === "true",
                     subobject: restrictByObject["@_subobject"] === "true",
-                    target: restrictByObject["#text"],
+                    target: restrictByObject["#text"] || ""
                 },
                 restrictByCheck: {
                     check: restrictByCheck["@_check"] === "true",
                     message: restrictByCheck["@_message"] === "true",
-                    target: restrictByCheck["#text"],
+                    target: restrictByCheck["#text"] || ""
                 }
             }
         }
