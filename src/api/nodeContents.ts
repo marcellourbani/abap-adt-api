@@ -110,7 +110,7 @@ export async function nodeContents(
   if (parent_tech_name) qs.parent_tech_name = parent_tech_name
   if (user_name) qs.user_name = user_name
   if (parent_type === "FUGR/F") {
-    options.body = `<asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA><TV_NODEKEY>000000</TV_NODEKEY></DATA></asx:values></asx:abap>`
+    options.body = `<asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml"><asx:values><DATA></DATA></asx:values></asx:abap>`
     options.headers = { "Content-Type": "application/xml", Accept: "application/xml" }
   }
   const response = await h.request("/sap/bc/adt/repository/nodestructure", options)
