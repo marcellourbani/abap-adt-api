@@ -32,6 +32,7 @@ export interface UnitTestAlert {
   severity: UnitTestSeverity
   details: string[]
   stack: UnitTestStackEntry[]
+  title: string
 }
 export interface UnitTestMethod {
   "adtcore:uri": string
@@ -81,7 +82,8 @@ const parseStack = (alert: any) =>
 const parseAlert = (alert: any) => ({
   ...xmlNodeAttr(alert),
   details: parseDetail(alert),
-  stack: parseStack(alert)
+  stack: parseStack(alert),
+  title: alert?.title || ""
 })
 const parseMethod = (method: any): UnitTestMethod => ({
   ...xmlNodeAttr(method),

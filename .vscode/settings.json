@@ -49,5 +49,9 @@
   "typescript.format.placeOpenBraceOnNewLineForControlBlocks": false,
   "typescript.format.placeOpenBraceOnNewLineForFunctions": false,
   "typescript.format.semicolons": "ignore",
-  "typescript.preferences.quoteStyle": "auto"
+  "typescript.preferences.quoteStyle": "auto",
+  "files.watcherExclude": {
+    "**/node_modules/*/**": false,
+    "**/node_modules/[!@]*/**/*": true
+  }
 }
