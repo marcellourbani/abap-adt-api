@@ -1,13 +1,27 @@
-import axios, { Axios, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosBasicCredentials, Method, AxiosInstance, AxiosRequestHeaders } from "axios"
+import axios, {
+  Axios,
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+  AxiosBasicCredentials,
+  Method,
+  AxiosInstance,
+  AxiosRequestHeaders,
+  AxiosResponseHeaders
+} from "axios"
 import { fromException, isCsrfError } from "./AdtException"
-import https from 'https'
-import { AdtException, adtException, isHttpError, LogCallback } from "."
+import https from "https"
+import { AdtException, adtException, fromError, isAdtException, isHttpError, LogCallback } from "."
 import { logError, logResponse } from "./requestLogger"
+import { isString } from "./utilities"
 
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
-const runningInNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null
+const runningInNode =
+  typeof process !== "undefined" &&
+  process.versions != null &&
+  process.versions.node != null
 let lastClientId = 0
 export enum session_types {
   stateful = "stateful",
@@ -34,22 +48,24 @@ export interface RequestOptions extends ClientOptions {
   headers?: Record<string, string>
   httpsAgent?: https.Agent
   qs?: Record<string, any>
-  baseURL?: string,
+  baseURL?: string
   timeout?: number
   auth?: AxiosBasicCredentials
   body?: string
 }
 
-const toAxiosConfig = (options: RequestOptions): AxiosRequestConfig => {
-  const config: AxiosRequestConfig = {
+const toAxiosConfig = (options: HttpClientOptions): AxiosRequestConfig & RequestMetadata => {
+  const config: AxiosRequestConfig & RequestMetadata = {
     method: options.method || "GET",
+    url: options.url,
     headers: options.headers || {},
     params: options.qs,
     httpsAgent: options.httpsAgent,
     timeout: options.timeout,
-    baseURL: options.baseURL,
     auth: options.auth,
-    data: options.body
+    data: options.body,
+    adtRequestNumber: options.adtRequestNumber,
+    adtStartTime: options.adtStartTime
   }
   return config
 }
@@ -59,165 +75,127 @@ const isLoginError = (adtErr: AdtException) =>
 
 export type BearerFetcher = () => Promise<string>
 let adtRequestNumber = 0
+export interface HttpClientResponse {
+  body: string;
+  status: number;
+  statusText: string;
+  headers: AxiosResponseHeaders;
+  request?: any;
+}
+
+interface RequestMetadata {
+  adtRequestNumber?: number,
+  adtStartTime?: Date
+}
+
+export interface HttpClientOptions extends RequestOptions, RequestMetadata {
+  url: string
+}
+/**
+ * Abstract HTTP client
+ * cookies, authentication and CSRF tokens usually handled by higher level intercacve
+ */
+export interface HttpClient {
+  /**
+   * HTTP request
+   * @param options url, headers,...
+   * @returns the result of the HTTP call
+   * 
+   * expected to throw only AdtException errors
+   */
+  request: (options: HttpClientOptions) => Promise<HttpClientResponse>
+}
+
+export class AxiosHttpClient implements HttpClient {
+  private axios: Axios
+  constructor(private baseURL: string) {
+    this.axios = new Axios({ baseURL })
+  }
+  async request(options: HttpClientOptions) {
+    try {
+      const config = toAxiosConfig(options)
+      const { data, ...rest } = await this.axios.request(config)
+      const body = data ? (isString(data) ? data : `${data}`) : ""
+      return { body, ...rest }
+    } catch (error) {
+      throw fromError(error)
+    }
+  }
+}
+
+
 export class AdtHTTP {
-  private loginPromise?: Promise<any>
-  private getToken?: BearerFetcher
-  private userName?: string
-  private axios: AxiosInstance
-  private cookie = new Map<string, string>()
-  private bearer?: string
-  readonly id = ++lastClientId
+  readonly baseURL: string
+  readonly id: number
   readonly password?: string
-  public isClone = false
-  debugCallback?: LogCallback
-  keepAlive: NodeJS.Timeout | undefined
-  didcall: boolean = false
-  public get isStateful() {
+  isClone: boolean = false
+  private currentSession = session_types.stateless
+  private _stateful: session_types = session_types.stateless
+  private needKeepalive = false
+  readonly keepAlive?: NodeJS.Timer
+  private commonHeaders: Record<string, string>
+  private bearer?: string
+  private getToken?: BearerFetcher
+  private auth?: AxiosBasicCredentials
+  private httpclient: HttpClient
+  private debugCallback?: LogCallback
+  private loginPromise?: Promise<HttpClientResponse>
+  get isStateful(): boolean {
     return (
       this.stateful === session_types.stateful ||
       (this.stateful === session_types.keep &&
         this.currentSession === session_types.stateful)
     )
   }
-  private currentSession = session_types.stateless
-  private get commonHeaders(): AxiosRequestHeaders {
-    return this.axios.defaults.headers.common
-  }
-  public _stateful: session_types = session_types.stateless
-  public get stateful() {
+  get stateful(): session_types {
     return this._stateful
   }
-  public set stateful(value: session_types) {
+  set stateful(value: session_types) {
     this._stateful = value
     if (value !== session_types.keep)
       this.currentSession = value
   }
-  public csrfToken: string = FETCH_CSRF_TOKEN
-
-  private get options() {
-    return this.axios.defaults
+  get csrfToken() {
+    return this.commonHeaders[CSRF_TOKEN_HEADER] || FETCH_CSRF_TOKEN
   }
-
-  public get loggedin() {
+  set csrfToken(token: string) {
+    this.commonHeaders[CSRF_TOKEN_HEADER] = token
+  }
+  get loggedin(): boolean {
     return this.csrfToken !== FETCH_CSRF_TOKEN
   }
-  public get baseURL() {
-    return this.axios.defaults.baseURL!
-  }
-  public get username() {
-    return this.userName || (this.axios.defaults.auth?.username) || ""
-  }
-
-  /**
-   * Creates an instance of AdtHTTP.
-   * @param {string} baseURL  Base url, i.e. http://vhcalnplci.local:8000
-   * @param {string} username SAP logon user
-   * @param {string} password Password
-   * @param {string} client   login client
-   * @param {string} language login language
-   * @param {string} [sslOptions] Custom certificate authority
-   * @memberof AdtHTTP
-   */
   constructor(
-    baseURL: string,
-    username: string,
+    baseURLOrClient: string | HttpClient,
+    readonly username: string,
     password: string | BearerFetcher,
     readonly client: string,
     readonly language: string,
-    config: ClientOptions = {}
+    config?: ClientOptions
   ) {
-    config = { keepAlive: true, ...config }
-    if (config.keepAlive) this.keepAlive = setInterval(() => this.keep_session(), 120000)
-    const headers: any = {
-      ...config.headers,
+    if (!(baseURLOrClient && username && (password || !isString(baseURLOrClient))))
+      throw adtException("Invalid ADTClient configuration: url, login and password are required")
+    this.baseURL = isString(baseURLOrClient) ? baseURLOrClient : ""
+    this.id = lastClientId++
+    if (isString(password)) this.password = password
+    else this.getToken = password
+    this.commonHeaders = {
+      ...config?.headers,
       Accept: "*/*",
       "Cache-Control": "no-cache",
-      "x-csrf-token": FETCH_CSRF_TOKEN,
+      [CSRF_TOKEN_HEADER]: FETCH_CSRF_TOKEN,
     }
-    headers[SESSION_HEADER] = session_types.stateless
-    const options: ClientOptions = {
-      ...config,
-      baseURL,
-      headers,
-    }
-    this.userName = username
-    if (typeof password === "string") {
-      this.password = password
-      if (!(baseURL && username && password))
-        throw adtException("Invalid ADTClient configuration: url, login and password are required")
-    } else
-      this.getToken = password
-
-    this.axios = axios.create(toAxiosConfig(options))
-    this.debugCallback = config.debugCallback
-    this._initializeRequestInterceptor()
-    this._initializeResponseInterceptor();
-
-  }
-  keep_session(): void {
-    if (!this.isClone && this.loggedin && !this.didcall)
-      this._request("/sap/bc/adt/compatibility/graph", {}).then(() => this.didcall = false)
-    else this.didcall = false
+    this.httpclient = isString(baseURLOrClient) ? new AxiosHttpClient(baseURLOrClient) : baseURLOrClient
+    this.debugCallback = config?.debugCallback
+    if (config?.keepAlive) this.keepAlive = setInterval(() => this.keep_session(), 120000)
   }
 
-  private _initializeResponseInterceptor = () => {
-    this.axios.interceptors.response.use(
-      this._handleResponse,
-      this._handleError,
-    );
-  };
-
-  private _initializeRequestInterceptor = () => {
-    this.axios.interceptors.request.use(
-      this._handleRequest
-    );
-  };
-
-
-  private _handleRequest = async (config: AxiosRequestConfig) => {
-    const headers = config.headers || {}
-    headers[CSRF_TOKEN_HEADER] = this.csrfToken
-    headers[SESSION_HEADER] = this.stateful
-    if (this.getToken && !this.bearer)
-      this.bearer = await this.getToken()
-
-    if (this.bearer) headers.Authorization = `bearer ${this.bearer}`
-
-    if (headers && !headers['Cookie'] && runningInNode)
-      headers['Cookie'] = this.ascookies()
-
-
-    adtRequestNumber++
-    return { ...config, headers, adtRequestNumber, adtStartTime: new Date() };
-  };
-
-  private _handleResponse = (response: AxiosResponse) => {
-    logResponse(this.id, response, this.debugCallback)
-    if (runningInNode) {
-      const cookies = response.headers["set-cookie"] || []
-      cookies.forEach(cookie => {
-        const cleaned = cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0]
-        const [key] = cookie.split('=', 1)
-        this.cookie.set(key, cleaned)
-      })
-    }
-    return response;
-  }
-
-  protected _handleError = async (error: any) => {
-    logError(this.id, error, this.debugCallback)
-    return error
-  }
-  /**
-   * Logs on an ADT server. parameters provided on creation
-   */
-  public async login() {
+  async login(): Promise<any> {
     if (this.loginPromise) return this.loginPromise
     this.cookie.clear()
     // oauth
     if (this.getToken && !this.bearer) {
       await this.getToken().then(bearer => (this.bearer = bearer))
-    } else this.options.auth = { username: this.userName || "", password: this.password || "" }
+    } else this.auth = { username: this.username || "", password: this.password || "" }
     const qs: Record<string, string> = {}
     if (this.client) qs["sap-client"] = this.client
     if (this.language) qs["sap-language"] = this.language
@@ -229,38 +207,28 @@ export class AdtHTTP {
       this.loginPromise = undefined
     }
   }
-
-  public ascookies(): string {
+  private cookie = new Map<string, string>()
+  ascookies(): string {
     return [...this.cookie.values()].join('; ')
   }
-
-  public async logout() {
+  async logout(): Promise<void> {
     this.stateful = session_types.stateless
     await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
-    this.options.auth = undefined
+    this.auth = undefined
     this.bearer = undefined
     // new cookie jar
     this.cookie.clear()
     // clear token
     this.csrfToken = FETCH_CSRF_TOKEN
-  }
 
-  public async dropSession() {
+  }
+  async dropSession(): Promise<void> {
     this.stateful = session_types.stateless
     await this._request("/sap/bc/adt/compatibility/graph", {})
-  }
 
-  /**
-   * HTTP request using default values, and updating cookies/token
-   * will login automatically if needed, and try refresh the login (once) if:
-   * - expired
-   * - stateless (for stateful sessions the client needs to do some cleanup)
-   *
-   * @param url URL suffix
-   * @param config request options
-   */
-  public async request(url: string, config?: RequestOptions): Promise<HttpResponse> {
+  }
+  async request(url: string, config?: RequestOptions): Promise<HttpClientResponse> {
     let autologin = false
     try {
       if (!this.loggedin) {
@@ -283,6 +251,28 @@ export class AdtHTTP {
       } else throw adtErr
     }
   }
+  private keep_session = async () => {
+    if (this.needKeepalive && this.loggedin) await this._request("/sap/bc/adt/compatibility/graph", {}).catch(() => { })
+    this.needKeepalive = true
+  }
+  private updateCookies(response: HttpClientResponse) {
+    if (runningInNode) {
+      const cookies = response.headers["set-cookie"] || []
+      cookies.forEach(cookie => {
+        const cleaned = cookie.replace(/path=\/,/g, '').replace(/path=\//g, '').split(";")[0]
+        const [key] = cookie.split('=', 1)
+        this.cookie.set(key, cleaned)
+      })
+    }
+  }
+
+  private logResponse(exceptionOrResponse: AdtException | HttpClientResponse, options: HttpClientOptions) {
+    if (!this.debugCallback) return
+    if (isAdtException(exceptionOrResponse)) logError(this.id, exceptionOrResponse, this.debugCallback)
+    else logResponse(this.id, exceptionOrResponse, options, this.debugCallback)
+
+
+  }
 
   /**
    * HTTP request without automated login / retry
@@ -290,26 +280,33 @@ export class AdtHTTP {
    * @param url URL suffix
    * @param options request options
    */
-  private _request(url: string, options: RequestOptions): Promise<HttpResponse> {
-    return new Promise<HttpResponse>(async (resolve, reject) => {
-      this.didcall = true
-      try {
-        const response = await this.axios.request({ url, ...toAxiosConfig(options) });
-        if (response.status < 400) {
-          if (this.csrfToken === FETCH_CSRF_TOKEN) {
-            const newtoken = response.headers[CSRF_TOKEN_HEADER]
-            if (typeof newtoken === "string") this.csrfToken = newtoken
-            this.commonHeaders!["x-csrf-token"] = this.csrfToken
-          }
-          const httpResponse: HttpResponse = { ...response, body: "" + response.data }
-          resolve(httpResponse)
-        }
-        else {
-          reject(response)
-        }
-      } catch (error) {
-        reject(error)
-      }
-    })
+  private async _request(url: string, options: RequestOptions): Promise<HttpClientResponse> {
+    this.needKeepalive = false
+    const headers = { ...this.commonHeaders, ...options.headers }
+    headers[SESSION_HEADER] = this.stateful
+    if (!headers['Cookie'] && runningInNode)
+      headers['Cookie'] = this.ascookies()
+
+    adtRequestNumber++
+    const adtStartTime = new Date()
+    const config = { ...options, auth: this.auth, headers, adtStartTime, adtRequestNumber, url }
+    try {
+      if (this.getToken && !this.bearer)
+        this.bearer = await this.getToken()
+      if (this.bearer) headers.Authorization = `bearer ${this.bearer}`
+      const response = await this.httpclient.request(config)
+
+      this.updateCookies(response)
+      if (response.status >= 400) throw fromException(response)
+      if (this.csrfToken === FETCH_CSRF_TOKEN && isString(response.headers[CSRF_TOKEN_HEADER]))
+        this.csrfToken = response.headers[CSRF_TOKEN_HEADER]
+      this.logResponse(response, config)
+      return response
+
+    } catch (error) {
+      const exc = fromException(error)
+      this.logResponse(exc, config)
+      throw exc
+    }
   }
 }
