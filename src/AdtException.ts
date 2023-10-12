@@ -1,4 +1,4 @@
-import { AdtHTTP } from "./AdtHTTP"
+import { AdtHTTP, HttpClientResponse } from "./AdtHTTP"
 import { fullParse, isNativeError, isNumber, isObject, isString, xmlArray } from "./utilities"
 import axios, { AxiosResponse, AxiosError } from "axios";
 import { isLeft } from "fp-ts/lib/These"
@@ -26,14 +26,14 @@ export interface ExceptionProperties {
 }
 
 
-const isResponse = (r: any): r is AxiosResponse => isObject(r) && !!r?.status && isString(r?.statusText)
+const isResponse = (r: any): r is HttpClientResponse => isObject(r) && !!r?.status && isString(r?.statusText)
 
 class AdtErrorException extends Error {
   get typeID(): symbol {
     return ADTEXTYPEID
   }
 
-  public static create(resp: AxiosResponse, properties: ExceptionProperties | Record<string, string>): AdtErrorException
+  public static create(resp: HttpClientResponse, properties: ExceptionProperties | Record<string, string>): AdtErrorException
   public static create(
     err: number,
     properties: ExceptionProperties | Record<string, string>,
@@ -42,17 +42,17 @@ class AdtErrorException extends Error {
     parent?: Error,
     namespace?: string,
     localizedMessage?: string,
-    response?: AxiosResponse
+    response?: HttpClientResponse
   ): AdtErrorException
   public static create(
-    errOrResponse: number | AxiosResponse,
+    errOrResponse: number | HttpClientResponse,
     properties: ExceptionProperties | Record<string, string>,
     type?: string,
     message?: string,
     parent?: Error,
     namespace?: string,
     localizedMessage?: string,
-    response?: AxiosResponse
+    response?: HttpClientResponse
   ): AdtErrorException {
     if (!isNumber(errOrResponse)) {
       return this.create(
@@ -87,7 +87,7 @@ class AdtErrorException extends Error {
     public readonly parent?: Error,
     public readonly namespace?: string,
     public readonly localizedMessage?: string,
-    public readonly response?: AxiosResponse
+    public readonly response?: HttpClientResponse
   ) {
     super()
   }
@@ -140,42 +140,57 @@ export function isAdtException(e: unknown): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
-const simpleError = (response: AxiosResponse) => adtException(`Error ${response.status}:${response.statusText}`, response.status)
 
-const isCsrfException = (r: AxiosResponse) => (r.status === 403 && r.headers["x-csrf-token"] === "Required")
+
+const simpleError = (response: HttpClientResponse | AxiosResponse) => adtException(`Error ${response.status}:${response.statusText}`, response.status)
+
+const isCsrfException = (r: HttpClientResponse) => (r.status === 403 && r.headers["x-csrf-token"] === "Required")
   || (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
 
-export function fromException_int(errOrResp: AxiosResponse | AxiosError): AdtException {
+export const fromResponse = (data: string, response: HttpClientResponse | AxiosResponse) => {
+  if (!data) return simpleError(response)
+  if (data.match(/CSRF/)) return new AdtCsrfException(data)
+  const raw = fullParse(data as string)
+  const root = raw["exc:exception"]
+  if (!root) return simpleError(response)
+  const getf = (base: any, idx: string) => (base ? base[idx] : "")
+  const properties: Record<string, string> = {}
+  xmlArray(root, "properties", "entry").forEach((p: any) => {
+    properties[p["@_key"]] = `${p["#text"]}`.replace(/^\s+/, "").replace(/\s+$/, "")
+  })
+  return new AdtErrorException(
+    response.status,
+    properties,
+    root.type["@_id"],
+    root.message["#text"],
+    undefined,
+    getf(root.namespace, "@_id"),
+    getf(root.localizedMessage, "#text")
+  )
+}
+
+const axiosErrorBody = (e: AxiosError): string => e.response?.data ? `${e.response.data}` : ""
+
+export const fromError = (error: unknown): AdtException => {
   try {
-    if (isResponse(errOrResp) || (axios.isAxiosError(errOrResp) && errOrResp.response)) {
-      const response = isResponse(errOrResp) ? errOrResp : errOrResp.response! // not null enforced above
-      if (!response.data) return simpleError(response)
-      if (isCsrfException(response)) return new AdtCsrfException(response.data as string)
-      const raw = fullParse(response.data as string)
-      const root = raw["exc:exception"]
-      if (!root) return simpleError(response)
-      const getf = (base: any, idx: string) => (base ? base[idx] : "")
-      const properties: Record<string, string> = {}
-      xmlArray(root, "properties", "entry").forEach((p: any) => {
-        properties[p["@_key"]] = `${p["#text"]}`.replace(/^\s+/, "").replace(/\s+$/, "")
-      })
-      return new AdtErrorException(
-        response.status,
-        properties,
-        root.type["@_id"],
-        root.message["#text"],
-        undefined,
-        getf(root.namespace, "@_id"),
-        getf(root.localizedMessage, "#text")
-      )
-    } else {
-      const error = new AdtHttpException({ name: errOrResp.name, message: `${errOrResp.message} : ${(errOrResp?.response) ? errOrResp.response.data : ''}`, stack: errOrResp.stack })
-      return error
-    }
+    if (isAdtError(error)) return error
+
+    if (axios.isAxiosError(error) && error.response)
+      return fromResponse(axiosErrorBody(error), error.response)
+
+    if (isObject(error) && "message" in error && isString(error?.message)) return new AdtErrorException(500, {}, "", error.message)
+  } catch (error) { }
+  return AdtErrorException.create(500, {}, "Unknown error", `${error}`) // hopefully will never happen
+}
+
+function fromExceptionOrResponse_int(errOrResp: HttpClientResponse | unknown): AdtException {
+  try {
+    if (isResponse(errOrResp)) return fromResponse(errOrResp.body, errOrResp)
+    else return fromError(errOrResp)
   } catch (e) {
     return isResponse(errOrResp)
       ? AdtErrorException.create(errOrResp, {})
-      : new AdtHttpException(errOrResp)
+      : fromError(e)
   }
 }
 
@@ -185,7 +200,7 @@ export function fromException(errOrResp: unknown): AdtException {
     && (!isNativeError(errOrResp)
       || (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp))))
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
-  return fromException_int(errOrResp)
+  return fromExceptionOrResponse_int(errOrResp)
 }
 
 export function adtException(message: string, number = 0) {

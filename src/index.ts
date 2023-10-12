@@ -1,4 +1,4 @@
-export { session_types, ClientOptions, HttpResponse } from "./AdtHTTP"
+export { session_types, ClientOptions, HttpResponse, HttpClient } from "./AdtHTTP"
 export * from "./AdtClient"
 export * from "./AdtException"
 export { LogCallback, LogData } from "./requestLogger"

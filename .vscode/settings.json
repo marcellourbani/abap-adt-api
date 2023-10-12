@@ -10,12 +10,17 @@
     "no-duplicate-header": false,
     "no-duplicate-heading": false
   },
+  "jest.autoRun": "off",
   "prettier.semi": false,
   "prettier.trailingComma": "none",
   "prettier.arrowParens": "avoid",
   "editor.formatOnSave": true,
   "typescript.updateImportsOnFileMove.enabled": "always",
-  "jest.debugCodeLens.showWhenTestStateIn": ["pass", "fail", "unknown"],
+  "jest.debugCodeLens.showWhenTestStateIn": [
+    "pass",
+    "fail",
+    "unknown"
+  ],
   "[html]": {
     "editor.defaultFormatter": "vscode.html-language-features"
   },

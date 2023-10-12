@@ -1,8 +1,10 @@
 build
-/node_modules
+node_modules
 tmp
 setenv.js
 package-lock.json
 .pnpm-lock.yaml
 pnpm-lock.yaml
 .vscode/bookmarks.json
+_noderfc.log
+dev_rfc.log

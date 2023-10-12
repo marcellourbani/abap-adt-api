@@ -1,5 +1,5 @@
 import { adtException } from "./AdtException"
-import { AdtHTTP, ClientOptions, session_types, BearerFetcher } from "./AdtHTTP"
+import { AdtHTTP, ClientOptions, session_types, BearerFetcher, HttpClient } from "./AdtHTTP"
 
 import {
   AbapClassStructure,
@@ -205,7 +205,7 @@ export function createSSLConfig(
   return { httpsAgent: agent }
 }
 interface HttpOptions {
-  baseUrl: string
+  baseUrlOrClient: string | HttpClient
   username: string
   password: string | BearerFetcher
   client: string
@@ -268,33 +268,33 @@ export class ADTClient {
   /**
    * Create an ADT client
    *
-   * @argument baseUrl  Base url, i.e. http://vhcalnplci.local:8000
+   * @argument baseUrlOrClient  Base url, i.e. http://vhcalnplci.local:8000
    * @argument username SAP logon user
    * @argument password Password
    * @argument client   Login client (optional)
    * @argument language Language key (optional)
    */
   constructor(
-    baseUrl: string,
+    baseUrlOrClient: string | HttpClient,
     username: string,
     password: string | BearerFetcher,
     client: string = "",
     language: string = "",
     options: ClientOptions = {}
   ) {
-    if (!(baseUrl && username && password))
+    if (!(baseUrlOrClient && username && (password || !isString(baseUrlOrClient))))
       throw adtException(
         "Invalid ADTClient configuration: url, login and password are required"
       )
     if (typeof password !== "string") password = this.wrapFetcher(password)
-    this.options = { baseUrl, username, password, client, language, options }
+    this.options = { baseUrlOrClient: baseUrlOrClient, username, password, client, language, options }
     this.h = this.createHttp()
   }
 
   private createHttp() {
     const o = this.options
     return new AdtHTTP(
-      o.baseUrl,
+      o.baseUrlOrClient,
       o.username,
       o.password,
       o.client,
