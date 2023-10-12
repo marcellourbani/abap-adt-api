@@ -1,0 +1,19 @@
+{
+  "name": "rfctransportdemo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "callwithrfc.ts",
+  "bin": {
+    "callwithrfc": "./callwithrfc.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "abap-adt-api": "file:../"
+  },
+  "dependencies": {
+    "node-rfc": "^3.3.0"
+  }
+}
