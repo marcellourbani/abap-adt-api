@@ -5,11 +5,11 @@ Authorization: Basic {{user}}:{{password}}
 x-csrf-token: fetch
 
 ### hit lists
-GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000002.DAT/hitlist?withSystemEvents=false
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/hitlist?withSystemEvents=false
 Authorization: Basic {{user}}:{{password}}
 
 ### database accesses
-GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000002.DAT/dbAccesses?withSystemEvents=false
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/dbAccesses?withSystemEvents=false
 Accept: application/vnd.sap.adt.runtime.traces.abaptraces.dbaccesses+xml, application/xml
 Authorization: Basic {{user}}:{{password}}
 

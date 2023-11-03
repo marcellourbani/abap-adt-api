@@ -4,7 +4,7 @@ export { encode as encodeEntity } from "html-entities"
 import { encode } from "html-entities";
 
 export const isObject = <T extends Object>(x: unknown): x is T => !!x && typeof x === 'object'
-export const isArray = (x: unknown): x is unknown[] => Array.isArray(x)
+export const isArray = <T = unknown>(x: unknown): x is T[] => Array.isArray(x)
 export const isString = (x: unknown): x is string => typeof (x) === "string"
 export const isNumber = (x: unknown): x is number => typeof x === "number"
 export const isNativeError = (e: unknown): e is Error => !!e && e instanceof Error
@@ -26,6 +26,10 @@ export function JSON2AbapXML(original: any, root: string = "DATA") {
     </asx:values>
   </asx:abap>`
 }
+
+export const xmlArrayType = <C extends t.Mixed>(x: C) => t.union([t.array(x), x, t.undefined])
+export const extractXmlArray = <T>(x: T | T[] | undefined): T[] => x ? isArray(x) ? x : [x] : []
+
 export function xmlNode(xml: any, ...path: string[]): any {
   let current = xml
 
@@ -83,6 +87,11 @@ export const stripNs = (x: any) =>
     return obj
   }, {} as any)
 
+type StripAttrPrefix<T extends string> = T extends `@_${infer B}` ? B : never
+const stripAttrPrefix = <T extends string, R = T extends `@_${infer P}` ? P : T>(x: T): R => x.replace(/^@_/, "") as R
+type attribKeys<T, K = keyof T> = K extends keyof T & `@_${infer _}` ? K : never
+type attribValues<T> = { [P in attribKeys<T> as StripAttrPrefix<P>]: T[P] }
+type foo = attribValues<{ a: 1, "@_b": 2 }>
 // extract XML attributes of a node from its JSON representation
 export const xmlNodeAttr = (n: any) =>
   n &&
@@ -93,6 +102,16 @@ export const xmlNodeAttr = (n: any) =>
       return part
     }, {})
 
+export const typedNodeAttr = <T = unknown>(n: T): attribValues<T> =>
+  n &&
+  ok(n)
+    .filter(k => k.match(/^(?!@_xmlns)@_/))
+    .reduce((part: any, cur) => {
+      // @ts-ignore
+      part[cur.replace(/^@_/, "")] = n[cur]
+      return part
+    }, {})
+export const bar = stripAttrPrefix("@_pip")
 export const numberParseOptions: strnumOptions = { leadingZeros: false, hex: true, skipLike: new RegExp("") }
 
 export const fullParse = (xml: string, options: X2jOptionsOptional = {}) =>
@@ -166,4 +185,4 @@ export const toXmlAttributes = (o: any, prefix: string) => {
 
 export type Clean<T> = Pick<T, keyof T>
 
-export const orUndefined = <T extends t.Mixed>(x: T) => t.union([t.undefined, t.null, x])
+export const orUndefined = <T extends t.Mixed>(x: T) => t.union([t.undefined, x])

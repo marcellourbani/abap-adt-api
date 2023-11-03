@@ -108,6 +108,7 @@ import {
   objectTypes,
   packageSearchHelp,
   PackageValueHelpResult,
+  listTraces,
   PackageValueHelpType,
   PathStep,
   prettyPrinter,
@@ -186,7 +187,7 @@ import {
   AtcProposal,
   atcRequestExemption,
   unitTestEvaluation,
-  unitTestOccurrenceMarkers
+  unitTestOccurrenceMarkers,
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from 'https'
@@ -1172,6 +1173,9 @@ export class ADTClient {
 
   public atcChangeContact(itemUri: string, userId: string) {
     return atcChangeContact(this.h, itemUri, userId)
+  }
+  public listTraces(user?: string) {
+    return listTraces(this.h, user || this.username)
   }
 }
 

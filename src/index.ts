@@ -97,7 +97,6 @@ export {
   InactiveObject,
   InactiveObjectElement,
   InactiveObjectRecord,
-  Link,
   Location,
   MainInclude,
   NewBindingOptions,
