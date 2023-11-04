@@ -2,8 +2,10 @@ import * as t from "io-ts"
 import {
   extractXmlArray,
   fullParse,
+  isNumber,
   mixed,
   orUndefined,
+  toInt,
   typedNodeAttr,
   xmlArrayType,
   xmlNode
@@ -167,6 +169,42 @@ const dBAccesses = t.type({
 })
 
 const traceDBAccesResponse = t.type({ dbAccesses: dBAccesses })
+///
+const statement = mixed(
+  {
+    callingProgram: callingProgram,
+    grossTime: time,
+    traceEventNetTime: time,
+    proceduralNetTime: time,
+    "@_index": t.number,
+    "@_id": t.number,
+    "@_description": t.string,
+    "@_hitCount": t.number,
+    "@_hasDetailSubnodes": t.boolean,
+    "@_hasProcedureLikeSubnodes": t.boolean,
+    "@_callerId": t.number,
+    "@_callLevel": t.number,
+    "@_subnodeCount": t.number,
+    "@_directSubnodeCount": t.number,
+    "@_directSubnodeCountProcedureLike": t.number,
+    "@_hitlistAnchor": t.number
+  },
+  {
+    "@_isProcedureLike": t.boolean,
+    "@_isProceduralUnit": t.boolean,
+    "@_isAutoDrillDowned": t.boolean
+  }
+)
+
+const traceStatementResponse = t.type({
+  statements: t.type({
+    link: baseLink,
+    statement: xmlArrayType(statement),
+    "@_withDetails": t.boolean,
+    "@_withSysEvents": t.boolean,
+    "@_count": t.union([t.number, t.string])
+  })
+})
 
 export interface TraceResults {
   author: string
@@ -244,12 +282,12 @@ export interface HitListEntry {
   dbAccessAnchor?: number
   callingProgram?: CallingProgram
   calledProgram: string
-  grossTime: Time
-  traceEventNetTime: Time
-  proceduralNetTime: Time
+  grossTime: TraceTime
+  traceEventNetTime: TraceTime
+  proceduralNetTime: TraceTime
 }
 
-export interface Time {
+export interface TraceTime {
   time: number
   percentage: number
 }
@@ -289,6 +327,45 @@ export interface Table {
   storageType: string
   package: string
 }
+
+///
+
+export interface TraceStatement {
+  index: number
+  id: number
+  description: string
+  hitCount: number
+  hasDetailSubnodes: boolean
+  hasProcedureLikeSubnodes: boolean
+  callerId: number
+  callLevel: number
+  subnodeCount: number
+  directSubnodeCount: number
+  directSubnodeCountProcedureLike: number
+  isAutoDrillDowned?: boolean
+  isProceduralUnit?: boolean
+  isProcedureLike?: boolean
+  hitlistAnchor: number
+  callingProgram: CallingProgram
+  grossTime: TraceTime
+  traceEventNetTime: TraceTime
+  proceduralNetTime: TraceTime
+}
+
+export interface TraceStatementResponse {
+  withDetails: boolean
+  withSysEvents: boolean
+  count: number
+  parentLink: string
+  statements: TraceStatement[]
+}
+
+export type TraceStatementOptions = Partial<{
+  id: number
+  withDetails: boolean
+  autoDrillDownThreshold: number
+  withSystemEvents: boolean
+}>
 
 const parseRawTrace = (x: unknown) =>
   validateParseResult(traceResults.decode(x)).feed
@@ -374,4 +451,35 @@ export const parseTraceDbAccess = (xml: string): TraceDBAccessResponse => {
   })
   const tables = extractXmlArray(raw.tables.table).map(typedNodeAttr)
   return { parentLink, dbaccesses, tables }
+}
+
+const parseCount = (count: string | number) => {
+  if (isNumber(count)) return count
+  const [base, exp] = count.split("E").map(toInt)
+  if (exp) return base * 10 ** exp
+  return base
+}
+
+export const parseTraceStatements = (xml: string) => {
+  const raw = validateParseResult(
+    traceStatementResponse.decode(fullParse(xml, { removeNSPrefix: true }))
+  ).statements
+
+  const parentLink = raw.link["@_href"]
+  const statements = extractXmlArray(raw.statement).map(s => {
+    const callingProgram = typedNodeAttr(s.callingProgram)
+    const grossTime = typedNodeAttr(s.grossTime)
+    const proceduralNetTime = typedNodeAttr(s.proceduralNetTime)
+    const traceEventNetTime = typedNodeAttr(s.traceEventNetTime)
+    return {
+      ...typedNodeAttr(s),
+      callingProgram,
+      grossTime,
+      traceEventNetTime,
+      proceduralNetTime
+    }
+  })
+  const count = parseCount(raw["@_count"])
+
+  return { ...typedNodeAttr(raw), count, parentLink, statements }
 }

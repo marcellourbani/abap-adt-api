@@ -9,7 +9,8 @@ import {
 import {
   parseTraceDbAccess,
   parseTraceHitList,
-  parseTraceResults
+  parseTraceResults,
+  parseTraceStatements
 } from "./tracetypes"
 import { validateParseResult } from ".."
 
@@ -33,36 +34,18 @@ test("parse trace results", () => {
   )
 })
 
-// const callingProgram = mixed(
-//   {
-//     "@_context": t.string,
-//     "@_byteCodeOffset": t.number
-//   },
-//   {
-//     "@_uri": t.string,
-//     "@_type": t.string,
-//     "@_name": t.string,
-//     "@_packageName": t.string,
-//     "@_objectReferenceQuery": t.string
-//   }
-// )
-// const baseLink = t.type({
-//   "@_rel": t.string,
-//   "@_href": t.string
-// })
-
-// ///
-
-// // export enum Type {
-// //     Empty = "",
-// //     ExecSQL = "EXEC SQL",
-// //     OpenSQL = "OpenSQL",
-// // }
-
 test("parse trace db accesses", () => {
   const sample = `<?xml version="1.0" encoding="utf-8"?><trc:dbAccesses totalDbTime="0" xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"><atom:link rel="parent" href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT" xmlns:atom="http://www.w3.org/2005/Atom"/><trc:dbAccess index="1" tableName="&lt;DB Access from Kernel&gt;" statement="" type="" totalCount="6" bufferedCount="0"><trc:accessTime total="210" applicationServer="0" database="210" ratioOfTraceTotal="4.2"/></trc:dbAccess><trc:dbAccess index="2" tableName="SECURITY_CONTEXT" statement="insert" type="OpenSQL" totalCount="1" bufferedCount="0"><trc:accessTime total="432" applicationServer="0" database="432" ratioOfTraceTotal="8.6"/><trc:callingProgram adtcore:context="CL_HTTP_SECURITY_SESSION_ICF==CP" byteCodeOffset="538" adtcore:uri="/sap/bc/adt/oo/classes/cl_http_security_session_icf/source/main#start=456" adtcore:type="CLAS/OC" adtcore:name="CL_HTTP_SECURITY_SESSION_ICF" adtcore:packageName="SHTTP_SECURITY_SESSIONS" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="3" tableName="&lt;unspecified&gt;" statement="commit" type="EXEC SQL" totalCount="1" bufferedCount="0"><trc:accessTime total="2014" applicationServer="0" database="2014" ratioOfTraceTotal="40.0"/><trc:callingProgram adtcore:context="CL_HTTP_SECURITY_SESSION_ICF==CP" byteCodeOffset="624" adtcore:uri="/sap/bc/adt/oo/classes/cl_http_security_session_icf/source/main#start=502" adtcore:type="CLAS/OC" adtcore:name="CL_HTTP_SECURITY_SESSION_ICF" adtcore:packageName="SHTTP_SECURITY_SESSIONS" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="4" tableName="SEPP__REGISTRY" statement="select single" type="OpenSQL" totalCount="1" bufferedCount="1"><trc:accessTime total="24" applicationServer="0" database="24" ratioOfTraceTotal="0.5"/><trc:callingProgram adtcore:context="CL_EPP_REGISTRY===============CP" byteCodeOffset="51" adtcore:uri="/sap/bc/adt/oo/classes/cl_epp_registry/source/main#start=154" adtcore:type="CLAS/OC" adtcore:name="CL_EPP_REGISTRY" adtcore:packageName="SEPP" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="5" tableName="SOTR_HEAD" statement="select single" type="OpenSQL" totalCount="1" bufferedCount="1"><trc:accessTime total="19" applicationServer="0" database="19" ratioOfTraceTotal="0.4"/><trc:callingProgram adtcore:context="SAPLSOTR_DB_READ" byteCodeOffset="813" adtcore:uri="/sap/bc/adt/functions/groups/sotr_db_read/fmodules/sotr_get_text_key/source/main#start=52" adtcore:type="FUGR/I" adtcore:name="LSOTR_DB_READU11" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="6" tableName="SOTR_TEXT" statement="select" type="OpenSQL" totalCount="1" bufferedCount="1"><trc:accessTime total="21" applicationServer="0" database="21" ratioOfTraceTotal="0.4"/><trc:callingProgram adtcore:context="SAPLSOTR_DB_READ" byteCodeOffset="977" adtcore:uri="/sap/bc/adt/functions/groups/sotr_db_read/fmodules/sotr_get_text_key/source/main#start=146" adtcore:type="FUGR/I" adtcore:name="LSOTR_DB_READU11" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="7" tableName="ICFATTRIB" statement="select" type="OpenSQL" totalCount="1" bufferedCount="1"><trc:accessTime total="21" applicationServer="0" database="21" ratioOfTraceTotal="0.4"/><trc:callingProgram adtcore:context="SAPLHTTP_RUNTIME" byteCodeOffset="6332" adtcore:uri="/sap/bc/adt/functions/groups/http_runtime/fmodules/http_read_debug/source/main#start=78" adtcore:type="FUGR/I" adtcore:name="LHTTP_RUNTIMEU21" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="8" tableName="ICFATTRIB" statement="select single" type="OpenSQL" totalCount="1" bufferedCount="1"><trc:accessTime total="8" applicationServer="0" database="8" ratioOfTraceTotal="0.2"/><trc:callingProgram adtcore:context="SAPLHTTP_RUNTIME" byteCodeOffset="6345" adtcore:uri="/sap/bc/adt/functions/groups/http_runtime/fmodules/http_read_debug/source/main#start=99" adtcore:type="FUGR/I" adtcore:name="LHTTP_RUNTIMEU21" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="9" tableName="/BTI/WP_WS_HANDL" statement="select single" type="OpenSQL" totalCount="1" bufferedCount="1"><trc:accessTime total="21" applicationServer="0" database="21" ratioOfTraceTotal="0.4"/><trc:callingProgram adtcore:context="/BTI/WP_WS_HANDLER============CP" byteCodeOffset="113" adtcore:uri="/sap/bc/adt/oo/classes/%2fbti%2fwp_ws_handler/source/main#start=21" adtcore:type="CLAS/OC" adtcore:name="/BTI/WP_WS_HANDLER" adtcore:packageName="/BTI/WP" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="10" tableName="SECURITY_CONTEXT" statement="select" type="OpenSQL" totalCount="1" bufferedCount="0"><trc:accessTime total="440" applicationServer="0" database="440" ratioOfTraceTotal="8.7"/><trc:callingProgram adtcore:context="CL_HTTP_SECURITY_SESSION_ADMINCP" byteCodeOffset="26" adtcore:uri="/sap/bc/adt/oo/classes/cl_http_security_session_admin/source/main#start=363" adtcore:type="CLAS/OC" adtcore:name="CL_HTTP_SECURITY_SESSION_ADMIN" adtcore:packageName="SHTTP_SECURITY_SESSIONS" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:dbAccess><trc:dbAccess index="11" tableName="&lt;DB Time of System Events&gt;" statement="" type="" totalCount="0" bufferedCount="0"><trc:accessTime total="0" applicationServer="0" database="0" ratioOfTraceTotal="0.0"/></trc:dbAccess><trc:tables><trc:table name="SECURITY_CONTEXT" type="TRANSP" description="HTTP Security Context (Cross-Server Attributes)" bufferMode="Single Entries buffered" storageType="" adtcore:package="SHTTP_SECURITY_SESSIONS" xmlns:adtcore="http://www.sap.com/adt/core"/><trc:table name="SEPP__REGISTRY" type="TRANSP" description="Registry for Application Data in EPP" bufferMode="Entirely buffered" storageType="" adtcore:package="SEPP" xmlns:adtcore="http://www.sap.com/adt/core"/><trc:table name="SOTR_HEAD" type="TRANSP" description="Header Table for OTR Texts" bufferMode="Single Entries buffered" storageType="" adtcore:package="SOTR" xmlns:adtcore="http://www.sap.com/adt/core"/><trc:table name="SOTR_TEXT" type="TRANSP" description="Text Table in the OTR" bufferMode="Generically buffered" storageType="" adtcore:package="SOTR" xmlns:adtcore="http://www.sap.com/adt/core"/><trc:table name="ICFATTRIB" type="TRANSP" description="Description of ICF Attributes (Trace/Debugging)" bufferMode="Entirely buffered" storageType="" adtcore:package="SHTTP" xmlns:adtcore="http://www.sap.com/adt/core"/><trc:table name="/BTI/WP_WS_HANDL" type="TRANSP" description="Web Platform: HTTP Handlers" bufferMode="Entirely buffered" storageType="" adtcore:package="/BTI/WP" xmlns:adtcore="http://www.sap.com/adt/core"/></trc:tables></trc:dbAccesses>`
   const results = parseTraceDbAccess(sample)
   expect(results.parentLink).toBeDefined()
   expect(results.tables.length).toBeTruthy()
   expect(results.dbaccesses.length).toBeTruthy()
+})
+
+test("parse trace statements", () => {
+  const sample = `<?xml version="1.0" encoding="utf-8"?> <trc:statements withDetails="false" withSysEvents="false" m:count="43" xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces" xmlns:m="http://schema.microsoft.com/ado/2007/08/dataservices/metadata"> <atom:link rel="parent" href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT" xmlns:atom="http://www.w3.org/2005/Atom" /> <trc:statement index="1" id="1" description="Runtime analysis " hitCount="1" hasDetailSubnodes="false" hasProcedureLikeSubnodes="true" callerId="1" callLevel="0" subnodeCount="71" directSubnodeCount="1" directSubnodeCountProcedureLike="1" isAutoDrillDowned="true" isProceduralUnit="true" isProcedureLike="true" hitlistAnchor="1"> <trc:callingProgram adtcore:context="CL_HTTP_SERVER_NET============CP" byteCodeOffset="28249" adtcore:uri="/sap/bc/adt/oo/classes/cl_http_server_net/source/main#start=9857" adtcore:type="CLAS/OC" adtcore:name="CL_HTTP_SERVER_NET" adtcore:packageName="SHTTP" xmlns:adtcore="http://www.sap.com/adt/core" /> <trc:grossTime time="5035" percentage="100.0" /> <trc:traceEventNetTime time="213" percentage="4.2304" /> <trc:proceduralNetTime time="213" percentage="4.2304" /> </trc:statement> <trc:statement index="2" id="2" description="Runtime Analysis On " hitCount="1" hasDetailSubnodes="true" hasProcedureLikeSubnodes="true" callerId="1" callLevel="1" subnodeCount="154" directSubnodeCount="15" directSubnodeCountProcedureLike="11" isAutoDrillDowned="true" isProceduralUnit="true" isProcedureLike="true" hitlistAnchor="2"> <trc:callingProgram adtcore:context="CL_HTTP_SERVER_NET============CP" byteCodeOffset="28249" adtcore:uri="/sap/bc/adt/oo/classes/cl_http_server_net/source/main#start=9857" adtcore:type="CLAS/OC" adtcore:name="CL_HTTP_SERVER_NET" adtcore:packageName="SHTTP" xmlns:adtcore="http://www.sap.com/adt/core" /> <trc:grossTime time="4822" percentage="95.7696" /> <trc:traceEventNetTime time="153" percentage="3.0387" /> <trc:proceduralNetTime time="221" percentage="4.3893" /> </trc:statement> </trc:statements>`
+  const results = parseTraceStatements(sample)
+  expect(results.parentLink).toBeDefined()
+  expect(results.statements.length).toBe(2)
+  expect(results.statements[0].callingProgram.name).toBeTruthy()
 })

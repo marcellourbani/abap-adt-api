@@ -40,3 +40,19 @@ test(
     }
   })
 )
+
+test(
+  "TraceDbStatements",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.tracesList()
+    expect(resp).toBeDefined()
+    expect(resp.runs).toBeDefined()
+    const id = resp.runs.find(r =>
+      r.links.find(l => l.href.match(/statements/))
+    )?.id
+    if (id) {
+      const dbaccess = await c.tracesStatements(id)
+      expect(dbaccess.parentLink).toBeTruthy()
+    }
+  })
+)

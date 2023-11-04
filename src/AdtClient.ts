@@ -195,11 +195,12 @@ import {
   atcRequestExemption,
   unitTestEvaluation,
   unitTestOccurrenceMarkers,
-  tracesDbAccess
+  tracesDbAccess,
+  tracesStatements,
+  TraceStatementOptions
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
-import { string } from "fp-ts"
 
 export function createSSLConfig(
   allowUnauthorized: boolean,
@@ -1399,5 +1400,8 @@ export class ADTClient {
   }
   public tracesDbAccess(id: string, withSystemEvents = false) {
     return tracesDbAccess(this.h, id, withSystemEvents)
+  }
+  public tracesStatements(id: string, options: TraceStatementOptions = {}) {
+    return tracesStatements(this.h, id, options)
   }
 }

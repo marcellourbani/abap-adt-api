@@ -2,13 +2,22 @@ import {
   TraceDBAccessResponse,
   TraceHitList,
   TraceResults,
+  TraceStatementOptions,
+  TraceStatementResponse,
   parseTraceDbAccess,
   parseTraceHitList,
-  parseTraceResults
+  parseTraceResults,
+  parseTraceStatements
 } from "./tracetypes"
 import { AdtHTTP } from "../AdtHTTP"
 
-export { TraceResults, TraceHitList, TraceDBAccessResponse } from "./tracetypes"
+export {
+  TraceResults,
+  TraceHitList,
+  TraceDBAccessResponse,
+  TraceStatementResponse,
+  TraceStatementOptions
+} from "./tracetypes"
 
 export const tracesList = async (
   h: AdtHTTP,
@@ -41,4 +50,18 @@ export const tracesDbAccess = async (
   const opts = { qs: { withSystemEvents } }
   const response = await h.request(`${traceId(id)}/dbAccesses`, opts)
   return parseTraceDbAccess(response.body)
+}
+
+export const tracesStatements = async (
+  h: AdtHTTP,
+  id: string,
+  options: TraceStatementOptions = {}
+): Promise<TraceStatementResponse> => {
+  const headers = {
+    Accept:
+      "application/vnd.sap.adt.runtime.traces.abaptraces.aggcalltree+xml, application/xml"
+  }
+  const opts = { qs: options, headers }
+  const response = await h.request(`${traceId(id)}/statements`, opts)
+  return parseTraceStatements(response.body)
 }

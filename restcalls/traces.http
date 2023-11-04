@@ -14,14 +14,19 @@ Accept: application/vnd.sap.adt.runtime.traces.abaptraces.dbaccesses+xml, applic
 Authorization: Basic {{user}}:{{password}}
 
 ### statements (call tree) - change id for drilldown
-GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000003.DAT/statements?id=1&withDetails=false&autoDrillDownThreshold=80&withSystemEvents=false HTTP/1.1
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/statements?id=1&withDetails=false&autoDrillDownThreshold=80&withSystemEvents=false HTTP/1.1
 Accept: application/vnd.sap.adt.runtime.traces.abaptraces.aggcalltree+xml, application/xml
 Authorization: Basic {{user}}:{{password}}
 
 ### statements for flamegraph
-GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000003.DAT/statements?withSystemEvents=false
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/statements?withSystemEvents=false
 Accept: application/vnd.sap.adt.runtime.traces.abaptraces.aggcalltree+xml, application/xml
 Authorization: Basic {{user}}:{{password}}
+
+### Trace requests
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/requests?user=MURBANI
+Authorization: Basic {{user}}:{{password}}
+Accept: application/atom+xml;type=feed
 
 ### Create trace configuration
 POST {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/parameters
