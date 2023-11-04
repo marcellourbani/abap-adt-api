@@ -1,5 +1,11 @@
 import { adtException } from "./AdtException"
-import { AdtHTTP, ClientOptions, session_types, BearerFetcher, HttpClient } from "./AdtHTTP"
+import {
+  AdtHTTP,
+  ClientOptions,
+  session_types,
+  BearerFetcher,
+  HttpClient
+} from "./AdtHTTP"
 
 import {
   AbapClassStructure,
@@ -189,20 +195,20 @@ import {
   atcRequestExemption,
   unitTestEvaluation,
   unitTestOccurrenceMarkers,
+  tracesDbAccess
 } from "./api"
 import { followUrl, isString } from "./utilities"
-import https from 'https'
+import https from "https"
 import { string } from "fp-ts"
 
 export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
 ): ClientOptions {
-
   const agent = new https.Agent({
     keepAlive: true,
-    rejectUnauthorized: false, // disable CA checks
-  });
+    rejectUnauthorized: false // disable CA checks
+  })
 
   return { httpsAgent: agent }
 }
@@ -284,12 +290,21 @@ export class ADTClient {
     language: string = "",
     options: ClientOptions = {}
   ) {
-    if (!(baseUrlOrClient && username && (password || !isString(baseUrlOrClient))))
+    if (
+      !(baseUrlOrClient && username && (password || !isString(baseUrlOrClient)))
+    )
       throw adtException(
         "Invalid ADTClient configuration: url, login and password are required"
       )
     if (typeof password !== "string") password = this.wrapFetcher(password)
-    this.options = { baseUrlOrClient: baseUrlOrClient, username, password, client, language, options }
+    this.options = {
+      baseUrlOrClient: baseUrlOrClient,
+      username,
+      password,
+      client,
+      language,
+      options
+    }
     this.h = this.createHttp()
   }
 
@@ -605,7 +620,9 @@ export class ADTClient {
   }
 
   public hasTransportConfig = async () => {
-    const collection = await this.findCollectionByUrl("/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations")
+    const collection = await this.findCollectionByUrl(
+      "/sap/bc/adt/cts/transportrequests/searchconfiguration/configurations"
+    )
     return !!collection
   }
 
@@ -814,7 +831,11 @@ export class ADTClient {
     return getTransportConfiguration(this.h, url)
   }
 
-  public setTransportsConfig(uri: string, etag: string, config: TransportConfiguration) {
+  public setTransportsConfig(
+    uri: string,
+    etag: string,
+    config: TransportConfiguration
+  ) {
     return setTransportsConfig(this.h, uri, etag, config)
   }
 
@@ -997,11 +1018,7 @@ export class ADTClient {
   }
 
   /** Runs a given SQL query on the target */
-  public runQuery(
-    sqlQuery: string,
-    rowNumber: number = 100,
-    decode = true
-  ) {
+  public runQuery(sqlQuery: string, rowNumber: number = 100, decode = true) {
     return runQuery(this.h, sqlQuery, rowNumber, decode)
   }
 
@@ -1017,30 +1034,84 @@ export class ADTClient {
     return dumps(this.h, query)
   }
 
-  public debuggerListeners(debuggingMode: "user", terminalId: string, ideId: string, user: string, checkConflict?: boolean): Promise<DebugListenerError | undefined>
-  public debuggerListeners(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, checkConflict?: boolean): Promise<DebugListenerError | undefined>
-  public debuggerListeners(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, checkConflict = true) {
-    return debuggerListeners(this.h, debuggingMode, terminalId, ideId, user, checkConflict)
+  public debuggerListeners(
+    debuggingMode: "user",
+    terminalId: string,
+    ideId: string,
+    user: string,
+    checkConflict?: boolean
+  ): Promise<DebugListenerError | undefined>
+  public debuggerListeners(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    user?: string,
+    checkConflict?: boolean
+  ): Promise<DebugListenerError | undefined>
+  public debuggerListeners(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    user?: string,
+    checkConflict = true
+  ) {
+    return debuggerListeners(
+      this.h,
+      debuggingMode,
+      terminalId,
+      ideId,
+      user,
+      checkConflict
+    )
   }
 
-  /** 
+  /**
    * Listens for debugging events
    * **WARNING** this usually only returns when a breakpoint is hit, a timeout is reached or another client terminated it
    * On timeout/termination it will return undefined, and the client will decide whether to launch it again after prompting the user
-   * 
+   *
    * @param {string} debuggingMode - break on any user activity or just on the current terminal
    * @param {string} terminalId - the terminal ID - a GUID generated the first time any debugger is ran on the current machine
    *        in Windows is stored in registry key Software\SAP\ABAP Debugging
    *        in other systems in file ~/.SAP/ABAPDebugging/terminalId
    * @param {string} ideId - the IDE ID - UI5 hash of the IDE's workspace root
    * @param {string} user - the user to break for. Mandatory in user mode
-   * 
+   *
    * @returns either an error, if another client is listening, or the details of the object being debugged. Can take hours to return
    */
-  public debuggerListen(debuggingMode: "user", terminalId: string, ideId: string, user: string, checkConflict?: boolean, isNotifiedOnConflict?: boolean): Promise<DebugListenerError | Debuggee | undefined>
-  public debuggerListen(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, checkConflict?: boolean, isNotifiedOnConflict?: boolean): Promise<DebugListenerError | Debuggee | undefined>
-  public debuggerListen(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string, checkConflict = true, isNotifiedOnConflict = true) {
-    return debuggerListen(this.h, debuggingMode, terminalId, ideId, user, checkConflict, isNotifiedOnConflict)
+  public debuggerListen(
+    debuggingMode: "user",
+    terminalId: string,
+    ideId: string,
+    user: string,
+    checkConflict?: boolean,
+    isNotifiedOnConflict?: boolean
+  ): Promise<DebugListenerError | Debuggee | undefined>
+  public debuggerListen(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    user?: string,
+    checkConflict?: boolean,
+    isNotifiedOnConflict?: boolean
+  ): Promise<DebugListenerError | Debuggee | undefined>
+  public debuggerListen(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    user?: string,
+    checkConflict = true,
+    isNotifiedOnConflict = true
+  ) {
+    return debuggerListen(
+      this.h,
+      debuggingMode,
+      terminalId,
+      ideId,
+      user,
+      checkConflict,
+      isNotifiedOnConflict
+    )
   }
 
   /**
@@ -1052,28 +1123,143 @@ export class ADTClient {
    * @param {string} ideId - the IDE ID - UI5 hash of the IDE's workspace root
    * @param {string} user - the user to break for. Mandatory in user mode
    */
-  public debuggerDeleteListener(debuggingMode: "user", terminalId: string, ideId: string, user: string): Promise<void>
-  public debuggerDeleteListener(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string): Promise<void>
-  public debuggerDeleteListener(debuggingMode: DebuggingMode, terminalId: string, ideId: string, user?: string) {
-    return debuggerDeleteListener(this.h, debuggingMode, terminalId, ideId, user)
+  public debuggerDeleteListener(
+    debuggingMode: "user",
+    terminalId: string,
+    ideId: string,
+    user: string
+  ): Promise<void>
+  public debuggerDeleteListener(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    user?: string
+  ): Promise<void>
+  public debuggerDeleteListener(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    user?: string
+  ) {
+    return debuggerDeleteListener(
+      this.h,
+      debuggingMode,
+      terminalId,
+      ideId,
+      user
+    )
   }
 
-  public debuggerSetBreakpoints(debuggingMode: "user", terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean, syncScupeUrl?: string): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
-  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope?: DebuggerScope, systemDebugging?: boolean, deactivated?: boolean, syncScupeUrl?: string): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
-  public debuggerSetBreakpoints(debuggingMode: DebuggingMode, terminalId: string, ideId: string, clientId: string, breakpoints: (string | DebugBreakpoint)[], user?: string, scope: DebuggerScope = "external", systemDebugging = false, deactivated = false, syncScupeUrl = "") {
-    return debuggerSetBreakpoints(this.h, debuggingMode, terminalId, ideId, clientId, breakpoints, user, scope, systemDebugging, deactivated, syncScupeUrl)
+  public debuggerSetBreakpoints(
+    debuggingMode: "user",
+    terminalId: string,
+    ideId: string,
+    clientId: string,
+    breakpoints: (string | DebugBreakpoint)[],
+    user: string,
+    scope?: DebuggerScope,
+    systemDebugging?: boolean,
+    deactivated?: boolean,
+    syncScupeUrl?: string
+  ): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    clientId: string,
+    breakpoints: (string | DebugBreakpoint)[],
+    user?: string,
+    scope?: DebuggerScope,
+    systemDebugging?: boolean,
+    deactivated?: boolean,
+    syncScupeUrl?: string
+  ): Promise<(DebugBreakpoint | DebugBreakpointError)[]>
+  public debuggerSetBreakpoints(
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    clientId: string,
+    breakpoints: (string | DebugBreakpoint)[],
+    user?: string,
+    scope: DebuggerScope = "external",
+    systemDebugging = false,
+    deactivated = false,
+    syncScupeUrl = ""
+  ) {
+    return debuggerSetBreakpoints(
+      this.h,
+      debuggingMode,
+      terminalId,
+      ideId,
+      clientId,
+      breakpoints,
+      user,
+      scope,
+      systemDebugging,
+      deactivated,
+      syncScupeUrl
+    )
   }
 
-  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: "user", terminalId: string, ideId: string, requestUser: string, scope?: DebuggerScope): Promise<void>
-  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string,): Promise<void>
-  public debuggerDeleteBreakpoints(breakpoint: DebugBreakpoint, debuggingMode: DebuggingMode, terminalId: string, ideId: string, requestUser?: string, scope: DebuggerScope = "external") {
-    return debuggerDeleteBreakpoints(this.h, breakpoint, debuggingMode, terminalId, ideId, requestUser, scope)
+  public debuggerDeleteBreakpoints(
+    breakpoint: DebugBreakpoint,
+    debuggingMode: "user",
+    terminalId: string,
+    ideId: string,
+    requestUser: string,
+    scope?: DebuggerScope
+  ): Promise<void>
+  public debuggerDeleteBreakpoints(
+    breakpoint: DebugBreakpoint,
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    requestUser?: string
+  ): Promise<void>
+  public debuggerDeleteBreakpoints(
+    breakpoint: DebugBreakpoint,
+    debuggingMode: DebuggingMode,
+    terminalId: string,
+    ideId: string,
+    requestUser?: string,
+    scope: DebuggerScope = "external"
+  ) {
+    return debuggerDeleteBreakpoints(
+      this.h,
+      breakpoint,
+      debuggingMode,
+      terminalId,
+      ideId,
+      requestUser,
+      scope
+    )
   }
 
-  public debuggerAttach(debuggingMode: "user", debuggeeId: string, user: string, dynproDebugging?: boolean): Promise<DebugAttach>
-  public debuggerAttach(debuggingMode: DebuggingMode, debuggeeId: string, user?: string, dynproDebugging?: boolean): Promise<DebugAttach>
-  public debuggerAttach(debuggingMode: DebuggingMode, debuggeeId: string, user?: string, dynproDebugging = false) {
-    return debuggerAttach(this.h, debuggingMode, debuggeeId, user, dynproDebugging)
+  public debuggerAttach(
+    debuggingMode: "user",
+    debuggeeId: string,
+    user: string,
+    dynproDebugging?: boolean
+  ): Promise<DebugAttach>
+  public debuggerAttach(
+    debuggingMode: DebuggingMode,
+    debuggeeId: string,
+    user?: string,
+    dynproDebugging?: boolean
+  ): Promise<DebugAttach>
+  public debuggerAttach(
+    debuggingMode: DebuggingMode,
+    debuggeeId: string,
+    user?: string,
+    dynproDebugging = false
+  ) {
+    return debuggerAttach(
+      this.h,
+      debuggingMode,
+      debuggeeId,
+      user,
+      dynproDebugging
+    )
   }
 
   public debuggerSaveSettings(settings: Partial<DebugSettings>) {
@@ -1081,7 +1267,9 @@ export class ADTClient {
   }
 
   public async debuggerStackTrace(semanticURIs = true) {
-    const stack = await this.collectionFeatureDetails("/sap/bc/adt/debugger/stack")
+    const stack = await this.collectionFeatureDetails(
+      "/sap/bc/adt/debugger/stack"
+    )
     if (stack) return debuggerStack(this.h, semanticURIs)
     else return simpleDebuggerStack(this.h, semanticURIs)
   }
@@ -1094,24 +1282,36 @@ export class ADTClient {
     return debuggerChildVariables(this.h, parent)
   }
 
-  public debuggerStep(steptype: "stepRunToLine" | "stepJumpToLine", url: string): Promise<DebugStep>
-  public debuggerStep(steptype: "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "terminateDebuggee"): Promise<DebugStep>
+  public debuggerStep(
+    steptype: "stepRunToLine" | "stepJumpToLine",
+    url: string
+  ): Promise<DebugStep>
+  public debuggerStep(
+    steptype:
+      | "stepInto"
+      | "stepOver"
+      | "stepReturn"
+      | "stepContinue"
+      | "terminateDebuggee"
+  ): Promise<DebugStep>
   public debuggerStep(steptype: DebugStepType, url?: string) {
     return debuggerStep(this.h, steptype, url)
   }
 
   /**
    * Go to stack entry
-   * 
-   * @param urlOrPosition The stack entry stackUri in newer systems, the stack id in older ones that return a DebugStackSimple 
+   *
+   * @param urlOrPosition The stack entry stackUri in newer systems, the stack id in older ones that return a DebugStackSimple
    */
   public debuggerGoToStack(urlOrPosition: number | string) {
-    if (isString(urlOrPosition))
-      return debuggerGoToStack(this.h, urlOrPosition)
+    if (isString(urlOrPosition)) return debuggerGoToStack(this.h, urlOrPosition)
     else return debuggerGoToStackOld(this.h, urlOrPosition)
   }
 
-  public debuggerSetVariableValue(variableName: string, value: string): Promise<string> {
+  public debuggerSetVariableValue(
+    variableName: string,
+    value: string
+  ): Promise<string> {
     return debuggerSetVariableValue(this.h, variableName, value)
   }
 
@@ -1124,9 +1324,9 @@ export class ADTClient {
     return renameEvaluate(this.h, uri, line, startColumn, endColumn)
   }
 
-
   public renamePreview(
-    renameRefactoring: RenameRefactoringProposal, transport: string = ""
+    renameRefactoring: RenameRefactoringProposal,
+    transport: string = ""
   ): Promise<RenameRefactoring> {
     return renamePreview(this.h, renameRefactoring, transport)
   }
@@ -1149,10 +1349,26 @@ export class ADTClient {
     return createAtcRun(this.h, variant, mainUrl, maxResults)
   }
 
-  public atcWorklists(runResultId: string): Promise<AtcWorkList>;
-  public atcWorklists(runResultId: string, timestamp: number, usedObjectSet: string, includeExempted?: boolean): Promise<AtcWorkList>
-  public atcWorklists(runResultId: string, timestamp?: number, usedObjectSet?: string, includeExempted = false): Promise<AtcWorkList> {
-    return atcWorklists(this.h, runResultId, timestamp, usedObjectSet, includeExempted)
+  public atcWorklists(runResultId: string): Promise<AtcWorkList>
+  public atcWorklists(
+    runResultId: string,
+    timestamp: number,
+    usedObjectSet: string,
+    includeExempted?: boolean
+  ): Promise<AtcWorkList>
+  public atcWorklists(
+    runResultId: string,
+    timestamp?: number,
+    usedObjectSet?: string,
+    includeExempted = false
+  ): Promise<AtcWorkList> {
+    return atcWorklists(
+      this.h,
+      runResultId,
+      timestamp,
+      usedObjectSet,
+      includeExempted
+    )
   }
   public atcUsers() {
     return atcUsers(this.h)
@@ -1181,5 +1397,7 @@ export class ADTClient {
   public tracesHitList(id: string, withSystemEvents = false) {
     return tracesHitList(this.h, id, withSystemEvents)
   }
+  public tracesDbAccess(id: string, withSystemEvents = false) {
+    return tracesDbAccess(this.h, id, withSystemEvents)
+  }
 }
-
