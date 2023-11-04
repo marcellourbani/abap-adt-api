@@ -108,7 +108,8 @@ import {
   objectTypes,
   packageSearchHelp,
   PackageValueHelpResult,
-  listTraces,
+  tracesHitList,
+  tracesList,
   PackageValueHelpType,
   PathStep,
   prettyPrinter,
@@ -1174,8 +1175,11 @@ export class ADTClient {
   public atcChangeContact(itemUri: string, userId: string) {
     return atcChangeContact(this.h, itemUri, userId)
   }
-  public listTraces(user?: string) {
-    return listTraces(this.h, user || this.username)
+  public tracesList(user?: string) {
+    return tracesList(this.h, user || this.username)
+  }
+  public tracesHitList(id: string, withSystemEvents = false) {
+    return tracesHitList(this.h, id, withSystemEvents)
   }
 }
 

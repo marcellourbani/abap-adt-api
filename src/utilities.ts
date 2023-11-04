@@ -186,3 +186,10 @@ export const toXmlAttributes = (o: any, prefix: string) => {
 export type Clean<T> = Pick<T, keyof T>
 
 export const orUndefined = <T extends t.Mixed>(x: T) => t.union([t.undefined, x])
+
+export function mixed<R extends t.Props, O extends t.Props>(
+  required: R,
+  optional: O
+): t.IntersectionC<[t.TypeC<R>, t.PartialC<O>]> {
+  return t.intersection([t.type(required), t.partial(optional)])
+}
