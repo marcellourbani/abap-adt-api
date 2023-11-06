@@ -9,6 +9,7 @@ import {
 import {
   parseTraceDbAccess,
   parseTraceHitList,
+  parseTraceRequestList,
   parseTraceResults,
   parseTraceStatements
 } from "./tracetypes"
@@ -24,7 +25,7 @@ test("parse trace results", () => {
   expect(results.runs[0].links[0].href).toBeDefined()
 })
 
-test("parse trace results", () => {
+test("parse trace hitlist", () => {
   const sample = `<?xml version="1.0" encoding="utf-8"?> <trc:hitlist xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"> <atom:link rel="parent" href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT" xmlns:atom="http://www.w3.org/2005/Atom" /> <trc:entry topDownIndex="1" index="19" hitCount="1" stackCount="1" recursionDepth="0" description="DB: Exec Static " proceduralEntryAnchor="3" dbAccessAnchor="3"> <trc:callingProgram adtcore:context="CL_HTTP_SECURITY_SESSION_ICF==CP" byteCodeOffset="624" adtcore:uri="/sap/bc/adt/oo/classes/cl_http_security_session_icf/source/main#start=502" adtcore:type="CLAS/OC" adtcore:name="CL_HTTP_SECURITY_SESSION_ICF" adtcore:packageName="SHTTP_SECURITY_SESSIONS" xmlns:adtcore="http://www.sap.com/adt/core" /> <trc:calledProgram adtcore:context="" xmlns:adtcore="http://www.sap.com/adt/core" /> <trc:grossTime time="1812" percentage="35.9881" /> <trc:traceEventNetTime time="1812" percentage="35.9881" /> <trc:proceduralNetTime time="-1" percentage="0.0" /> </trc:entry> <trc:entry topDownIndex="2" index="2" hitCount="1" stackCount="1" recursionDepth="0" description="Runtime Analysis On "> <trc:callingProgram adtcore:context="CL_HTTP_SERVER_NET============CP" byteCodeOffset="28249" objectReferenceQuery="/sap/bc/adt/runtime/traces/abaptraces/objectReferences?context=CL_HTTP_SERVER_NET%3d%3d%3d%3d%3d%3d%3d%3d%3d%3d%3d%3dCP&amp;byteCodeOffset=28249" xmlns:adtcore="http://www.sap.com/adt/core" /> <trc:calledProgram adtcore:context="" xmlns:adtcore="http://www.sap.com/adt/core" /> <trc:grossTime time="4822" percentage="95.7696" /> <trc:traceEventNetTime time="708" percentage="14.0616" /> <trc:proceduralNetTime time="708" percentage="14.0616" /> </trc:entry> </trc:hitlist>`
   const results = parseTraceHitList(sample)
   expect(results.entries.length).toBe(2)
@@ -48,4 +49,12 @@ test("parse trace statements", () => {
   expect(results.parentLink).toBeDefined()
   expect(results.statements.length).toBe(2)
   expect(results.statements[0].callingProgram.name).toBeTruthy()
+})
+
+test("parse trace request list", () => {
+  const sample = `<?xml version="1.0" encoding="utf-8"?><atom:feed xmlns:atom="http://www.w3.org/2005/Atom"><atom:contributor trc:role="orgination" xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"><atom:name>ACD</atom:name></atom:contributor><atom:title>ABAP Trace Requests ACD</atom:title><atom:updated>2023-11-06T09:44:47Z</atom:updated><atom:entry xml:lang="EN"><atom:author trc:role="admin" xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"><atom:name>MURBANI</atom:name><atom:uri>https://intranet.sap.corp/~form/handler?_APP=00200682500000001086&amp;_EVENT=DISPLAY&amp;00200682500000002188=MURBANI</atom:uri></atom:author><atom:author trc:role="trace" xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"><atom:name>MURBANI</atom:name><atom:uri>https://intranet.sap.corp/~form/handler?_APP=00200682500000001086&amp;_EVENT=DISPLAY&amp;00200682500000002188=MURBANI</atom:uri></atom:author><atom:content type="application/atom+xml" src="/sap/bc/adt/runtime/traces/abaptraces/requests/bti1033_acd_00%2c1%2c20231103000153"/><atom:id>/sap/bc/adt/runtime/traces/abaptraces/requests/bti1033_acd_00%2c1%2c20231103000153</atom:id><atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT" rel="http://www.sap.com/adt/relations/runtime/traces/abaptraces/tracefile" type="application/atom+xml" title="03.11.2023/00:02:09/HTTP"/><atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000021.DAT" rel="http://www.sap.com/adt/relations/runtime/traces/abaptraces/tracefile" type="application/atom+xml" title="03.11.2023/00:02:09/HTTP"/><atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000022.DAT" rel="http://www.sap.com/adt/relations/runtime/traces/abaptraces/tracefile" type="application/atom+xml" title="03.11.2023/00:02:09/HTTP"/><atom:published>2023-11-03T00:01:53Z</atom:published><atom:title>HTTP</atom:title><atom:updated>2023-11-03T00:01:53Z</atom:updated><trc:extendedData xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"><trc:host>bti1033</trc:host><trc:requestIndex>1</trc:requestIndex><trc:client trc:role="admin">100</trc:client><trc:client trc:role="trace">100</trc:client><trc:description>HTTP</trc:description><trc:isAggregated>false</trc:isAggregated><trc:expires>2023-11-03T00:59:58Z</trc:expires><trc:processType trc:processTypeId="/sap/bc/adt/runtime/traces/abaptraces/processtypes/http"/><trc:object trc:objectTypeId="/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url"/><trc:executions trc:maximal="3" trc:completed="3"/></trc:extendedData></atom:entry></atom:feed>`
+  const results = parseTraceRequestList(sample)
+  expect(results.title).toBe("ABAP Trace Requests ACD")
+  expect(results.requests.length).toBe(1)
+  expect(results.requests[0].title).toBe("HTTP")
 })

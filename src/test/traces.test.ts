@@ -1,4 +1,6 @@
+import { assert } from "console"
 import { ADTClient } from "../AdtClient"
+import { TraceParameters, TracesCreationConfig } from "../api"
 import { runTest } from "./login"
 
 test(
@@ -42,7 +44,7 @@ test(
 )
 
 test(
-  "TraceDbStatements",
+  "TraceStatements",
   runTest(async (c: ADTClient) => {
     const resp = await c.tracesList()
     expect(resp).toBeDefined()
@@ -54,5 +56,36 @@ test(
       const dbaccess = await c.tracesStatements(id)
       expect(dbaccess.parentLink).toBeTruthy()
     }
+  })
+)
+
+test(
+  "set trace parameters",
+  runTest(async (c: ADTClient) => {
+    const params: TraceParameters = {
+      allMiscAbapStatements: false,
+      allProceduralUnits: true,
+      allInternalTableEvents: false,
+      allDynproEvents: false,
+      aggregate: false,
+      explicitOnOff: false,
+      withRfcTracing: false,
+      allSystemKernelEvents: false,
+      sqlTrace: false,
+      allDbEvents: true,
+      maxSizeForTraceFile: 30720,
+      maxTimeForTracing: 1800,
+      description: "FOOBAR"
+    }
+    const resp = await c.tracesSetParameters(params)
+    expect(resp).toBeTruthy()
+  })
+)
+
+test(
+  "list trace request",
+  runTest(async (c: ADTClient) => {
+    const requests = await c.tracesListRequests()
+    expect(requests.requests.length).toBeTruthy()
   })
 )

@@ -197,7 +197,13 @@ import {
   unitTestOccurrenceMarkers,
   tracesDbAccess,
   tracesStatements,
-  TraceStatementOptions
+  TraceStatementOptions,
+  tracesSetParameters,
+  TraceParameters,
+  TracesCreationConfig,
+  tracesCreateConfiguration,
+  tracesDeleteConfiguration,
+  tracesListRequests
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -1395,6 +1401,9 @@ export class ADTClient {
   public tracesList(user?: string) {
     return tracesList(this.h, user || this.username)
   }
+  public tracesListRequests(user?: string) {
+    return tracesListRequests(this.h, user || this.username)
+  }
   public tracesHitList(id: string, withSystemEvents = false) {
     return tracesHitList(this.h, id, withSystemEvents)
   }
@@ -1403,5 +1412,16 @@ export class ADTClient {
   }
   public tracesStatements(id: string, options: TraceStatementOptions = {}) {
     return tracesStatements(this.h, id, options)
+  }
+  public tracesSetParameters(parameters: TraceParameters) {
+    return tracesSetParameters(this.h, parameters)
+  }
+
+  public tracesCreateConfiguration(config: TracesCreationConfig) {
+    return tracesCreateConfiguration(this.h, config)
+  }
+
+  public tracesDeleteConfiguration(id: string) {
+    return tracesDeleteConfiguration(this.h, id)
   }
 }

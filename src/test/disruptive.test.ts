@@ -11,6 +11,8 @@ import {
   isGroupType,
   NewPackageOptions,
   RenameRefactoringProposal,
+  TraceParameters,
+  TracesCreationConfig,
   TransportsOfUser
 } from "../api"
 import { ObjectValidateOptions } from "./../api"
@@ -51,11 +53,11 @@ async function createObj(
   } as ObjectValidateOptions // typescript is not smart enough to rule out grouptypes, so I have to cast
   const validateOptions = hasPackageOptions(options)
     ? {
-      ...baseValidateOptions,
-      swcomp: options.swcomp,
-      transportLayer: options.transportLayer,
-      packagetype: options.description
-    }
+        ...baseValidateOptions,
+        swcomp: options.swcomp,
+        transportLayer: options.transportLayer,
+        packagetype: options.description
+      }
     : baseValidateOptions
 
   const vresult = await c.validateNewObject(validateOptions)
@@ -548,8 +550,14 @@ test(
         return replaceRelta
       })
     )
-    const info = await c.transportInfo(renameEvaluate.affectedObjects[0].parentUri, "ZAPIDUMMY")
-    const preview = await c.renamePreview(renamePreview, info.LOCKS?.HEADER.TRKORR)
+    const info = await c.transportInfo(
+      renameEvaluate.affectedObjects[0].parentUri,
+      "ZAPIDUMMY"
+    )
+    const preview = await c.renamePreview(
+      renamePreview,
+      info.LOCKS?.HEADER.TRKORR
+    )
     expect(preview).toBeDefined()
 
     if (!enableWrite(new Date())) return
@@ -564,23 +572,35 @@ const readAtcVariant = async (c: ADTClient) => {
   return c.atcCheckVariant(`${cv?.value}`)
 }
 
-test("change contact",
+test(
+  "change contact",
   runTest(async (c: ADTClient) => {
     const variant = await readAtcVariant(c)
-    const run = await c.createAtcRun(variant, "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main")
+    const run = await c.createAtcRun(
+      variant,
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main"
+    )
     const findings = await c.atcWorklists(run.id)
-    const contactUri = await c.atcContactUri(findings.objects[0].findings[0].uri)
+    const contactUri = await c.atcContactUri(
+      findings.objects[0].findings[0].uri
+    )
     if (!enableWrite(new Date())) return
     await c.atcChangeContact(contactUri, process.env.ADT_USER || "")
   })
 )
 
-test("request exemption",
+test(
+  "request exemption",
   runTest(async (c: ADTClient) => {
     const variant = await readAtcVariant(c)
-    const run = await c.createAtcRun(variant, "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main")
+    const run = await c.createAtcRun(
+      variant,
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main"
+    )
     const findings = await c.atcWorklists(run.id)
-    const proposal = await c.atcExemptProposal(findings.objects[0].findings[0].quickfixInfo!)
+    const proposal = await c.atcExemptProposal(
+      findings.objects[0].findings[0].quickfixInfo!
+    )
     if (c.isProposalMessage(proposal)) fail("Exemption proposal expected")
     proposal.justification = "Created by unit test"
     proposal.reason = "FPOS"
@@ -590,5 +610,47 @@ test("request exemption",
     if (!enableWrite(new Date())) return
     const exemption = await c.atcRequestExemption(proposal)
     if (exemption.type === "E") fail(exemption.message)
+  })
+)
+
+test(
+  "create/list/delete trace request",
+  runTest(async (c: ADTClient) => {
+    if (!enableWrite(new Date())) return
+    const params: TraceParameters = {
+      allMiscAbapStatements: false,
+      allProceduralUnits: true,
+      allInternalTableEvents: false,
+      allDynproEvents: false,
+      aggregate: false,
+      explicitOnOff: false,
+      withRfcTracing: false,
+      allSystemKernelEvents: false,
+      sqlTrace: false,
+      allDbEvents: true,
+      maxSizeForTraceFile: 30720,
+      maxTimeForTracing: 1800,
+      description: "FOOBAR"
+    }
+    const parametersId = await c.tracesSetParameters(params)
+    expect(parametersId).toBeTruthy()
+    const config: TracesCreationConfig = {
+      description: "FOOBAR__adt_unittest_",
+      expires: new Date(new Date().getTime() + 10000),
+      maximalExecutions: 1,
+      objectType: "URL",
+      processType: "HTTP",
+      parametersId,
+      traceClient: c.client,
+      traceUser: c.username
+    }
+    const resp = await c.tracesCreateConfiguration(config)
+    expect(resp).toBeTruthy()
+    const requests = await c.tracesListRequests()
+    const myreq = requests.requests.find(
+      r => r.extendedData.description === config.description
+    )
+    await c.tracesDeleteConfiguration(resp.requests[0].id)
+    expect(myreq).toBeTruthy()
   })
 )

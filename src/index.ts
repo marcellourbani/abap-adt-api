@@ -1,4 +1,9 @@
-export { session_types, ClientOptions, HttpResponse, HttpClient } from "./AdtHTTP"
+export {
+  session_types,
+  ClientOptions,
+  HttpResponse,
+  HttpClient
+} from "./AdtHTTP"
 export * from "./AdtClient"
 export * from "./AdtException"
 export { LogCallback, LogData } from "./requestLogger"
@@ -183,5 +188,14 @@ export {
   objectPath,
   parentTypeId,
   parseServiceBinding,
-  servicePreviewUrl
+  servicePreviewUrl,
+  TraceResults,
+  TraceHitList,
+  TraceDBAccessResponse,
+  TraceStatementResponse,
+  TraceStatementOptions,
+  TracesCreationConfig,
+  TraceParameters,
+  traceProcessObjects,
+  TraceRequestList
 } from "./api"

@@ -206,6 +206,65 @@ const traceStatementResponse = t.type({
   })
 })
 
+///
+
+const author = t.type({
+  name: t.string,
+  uri: t.string,
+  "@_role": t.string
+})
+
+const client = t.partial({
+  "#text": orUndefined(t.number),
+  "@_role": t.string
+})
+
+const executions = t.type({
+  "@_maximal": t.number,
+  "@_completed": t.number
+})
+
+const traceListextendedData = t.type({
+  host: t.string,
+  requestIndex: t.number,
+  client: xmlArrayType(client),
+  description: t.string,
+  isAggregated: t.boolean,
+  expires: t.string,
+  processType: t.type({ "@_processTypeId": t.string }),
+  object: t.type({ "@_objectTypeId": t.string }),
+  executions: executions
+})
+
+const traceListEntry = mixed(
+  {
+    id: t.string,
+    author: xmlArrayType(author),
+    content: t.type({
+      "@_type": t.string,
+      "@_src": t.string
+    }),
+    published: t.string,
+    title: t.string,
+    updated: t.string,
+    extendedData: traceListextendedData,
+    "@_lang": t.string
+  },
+  {
+    link: xmlArrayType(link)
+  }
+)
+const tlFeed = t.type({
+  contributor: t.type({
+    name: t.string,
+    "@_role": t.string
+  }),
+  title: t.string,
+  updated: t.string,
+  entry: xmlArrayType(traceListEntry)
+})
+const tracesListRequest = t.type({ feed: tlFeed })
+
 export interface TraceResults {
   author: string
   contributor: string
@@ -359,13 +418,148 @@ export interface TraceStatementResponse {
   parentLink: string
   statements: TraceStatement[]
 }
-
+///
 export type TraceStatementOptions = Partial<{
   id: number
   withDetails: boolean
   autoDrillDownThreshold: number
   withSystemEvents: boolean
 }>
+///
+export interface TraceRequestAuthor {
+  name: string
+  role: string
+  uri: string
+}
+export interface TraceRequestClient {
+  id: number
+  role: string
+}
+
+export interface TraceRequestExecutions {
+  maximal: number
+  completed: number
+}
+
+export interface TraceRequestExtendedData {
+  description: string
+  executions: TraceRequestExecutions
+  isAggregated: boolean
+  host: string
+  expires: Date
+  processType: string
+  objectType: string
+  requestIndex: number
+  clients: TraceRequestClient[]
+}
+
+export interface TraceRequest {
+  id: string
+  lang: string
+  title: string
+  published: Date
+  updated: Date
+  links: TraceLink[]
+  authors: TraceRequestAuthor[]
+  contentSrc: string
+  contentType: string
+  extendedData: TraceRequestExtendedData
+}
+
+export interface TraceRequestList {
+  title: string
+  contributorName: string
+  contributorRole: string
+  requests: TraceRequest[]
+}
+
+///
+export interface TraceParameters {
+  allMiscAbapStatements: boolean
+  allProceduralUnits: boolean
+  allInternalTableEvents: boolean
+  allDynproEvents: boolean
+  description: string
+  aggregate: boolean
+  explicitOnOff: boolean
+  withRfcTracing: boolean
+  allSystemKernelEvents: boolean
+  sqlTrace: boolean
+  allDbEvents: boolean
+  maxSizeForTraceFile: number
+  maxTimeForTracing: number
+}
+///
+
+export type TracedProcessType =
+  | "HTTP"
+  | "DIALOG"
+  | "RFC"
+  | "BATCH"
+  | "SHARED_OBJECTS_AREA"
+  | "ANY"
+export type TracedObjectType =
+  | "FUNCTION_MODULE"
+  | "URL"
+  | "TRANSACTION"
+  | "REPORT"
+  | "SHARED_OBJECTS_AREA"
+  | "ANY"
+
+export const traceProcessTypeUris: Record<TracedProcessType, string> = {
+  ANY: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/any",
+  HTTP: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/http",
+  DIALOG: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog",
+  BATCH: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch",
+  RFC: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc",
+  SHARED_OBJECTS_AREA:
+    "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea"
+}
+
+export const traceObjectTypeUris: Record<TracedObjectType, string> = {
+  ANY: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/any",
+  URL: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url",
+  TRANSACTION: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/transaction",
+  REPORT: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/report",
+  FUNCTION_MODULE:
+    "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/functionmodule",
+  SHARED_OBJECTS_AREA:
+    "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/sharedobjectarea"
+}
+
+export const traceProcessObjects: Record<
+  TracedProcessType,
+  TracedObjectType[]
+> = {
+  ANY: [
+    "FUNCTION_MODULE",
+    "URL",
+    "TRANSACTION",
+    "REPORT",
+    "SHARED_OBJECTS_AREA",
+    "ANY"
+  ],
+  HTTP: ["URL"],
+  DIALOG: ["TRANSACTION", "REPORT"],
+  BATCH: ["REPORT"],
+  RFC: ["FUNCTION_MODULE"],
+  SHARED_OBJECTS_AREA: ["SHARED_OBJECTS_AREA"]
+}
+
+export interface TracesCreationConfig {
+  /**
+   * server name, use * for all servers
+   */
+  server?: string
+  description: string
+  traceUser: string
+  traceClient: string
+  processType: TracedProcessType
+  objectType: TracedObjectType
+  expires: Date
+  maximalExecutions: number
+  parametersId: string
+}
 
 const parseRawTrace = (x: unknown) =>
   validateParseResult(traceResults.decode(x)).feed
@@ -482,4 +676,55 @@ export const parseTraceStatements = (xml: string) => {
   const count = parseCount(raw["@_count"])
 
   return { ...typedNodeAttr(raw), count, parentLink, statements }
+}
+
+export const parseTraceRequestList = (xml: string): TraceRequestList => {
+  const raw = fullParse(xml, { removeNSPrefix: true })
+  const parsed = validateParseResult(tracesListRequest.decode(raw)).feed
+  const {
+    contributor: { name: contributorName, "@_role": contributorRole },
+    title
+  } = parsed
+  const requests = extractXmlArray(parsed.entry).map(e => {
+    const { id, "@_lang": lang, title } = e
+    const published = new Date(e.published)
+    const updated = new Date(e.updated)
+    const links = extractXmlArray(e.link).map(typedNodeAttr)
+    const authors = extractXmlArray(e.author).map(
+      ({ name, uri, "@_role": role }) => ({ name, role, uri })
+    )
+    const { "@_src": contentSrc, "@_type": contentType } = e.content
+    const { description, executions, isAggregated, host, requestIndex } =
+      e.extendedData
+    const expires = new Date(e.extendedData.expires)
+    const processType = e.extendedData.processType["@_processTypeId"]
+    const objectType = e.extendedData.object["@_objectTypeId"]
+    const clients = extractXmlArray(e.extendedData.client).map(
+      ({ "#text": id = 0, "@_role": role = "" }) => ({ id, role })
+    )
+    const extendedData = {
+      description,
+      executions: typedNodeAttr(executions),
+      isAggregated,
+      host,
+      expires,
+      processType,
+      objectType,
+      requestIndex,
+      clients
+    }
+    return {
+      id,
+      lang,
+      title,
+      published,
+      updated,
+      links,
+      authors,
+      contentSrc,
+      contentType,
+      extendedData
+    }
+  })
+  return { title, contributorName, contributorRole, requests }
 }

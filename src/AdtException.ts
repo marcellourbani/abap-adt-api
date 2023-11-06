@@ -1,10 +1,19 @@
 import { AdtHTTP, HttpClientResponse } from "./AdtHTTP"
-import { fullParse, isNativeError, isNumber, isObject, isString, xmlArray } from "./utilities"
-import axios, { AxiosResponse, AxiosError } from "axios";
+import {
+  fullParse,
+  isNativeError,
+  isNumber,
+  isObject,
+  isString,
+  xmlArray
+} from "./utilities"
+import axios, { AxiosResponse, AxiosError } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
-import reporter from "io-ts-reporters";
-
+import reporter from "io-ts-reporters"
+import { report } from "io-ts-human-reporter"
+// import PrettyPrintIoTsErrors from "io-ts-better-union-error-reporter/dist/PrettyPrintIoTsErrors"
+import { StructuralErrorReporter } from "@pavelkucera/io-ts-structural-error-reporter"
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
 const HTTPEXTYPEID = Symbol()
@@ -18,22 +27,25 @@ export enum SAPRC {
   Exception = "X"
 }
 export interface ExceptionProperties {
-  conflictText: string;
-  ideUser: string;
-  "com.sap.adt.communicationFramework.subType": string;
-  "T100KEY-ID": string;
-  "T100KEY-NO": string;
+  conflictText: string
+  ideUser: string
+  "com.sap.adt.communicationFramework.subType": string
+  "T100KEY-ID": string
+  "T100KEY-NO": string
 }
 
-
-const isResponse = (r: any): r is HttpClientResponse => isObject(r) && !!r?.status && isString(r?.statusText)
+const isResponse = (r: any): r is HttpClientResponse =>
+  isObject(r) && !!r?.status && isString(r?.statusText)
 
 class AdtErrorException extends Error {
   get typeID(): symbol {
     return ADTEXTYPEID
   }
 
-  public static create(resp: HttpClientResponse, properties: ExceptionProperties | Record<string, string>): AdtErrorException
+  public static create(
+    resp: HttpClientResponse,
+    properties: ExceptionProperties | Record<string, string>
+  ): AdtErrorException
   public static create(
     err: number,
     properties: ExceptionProperties | Record<string, string>,
@@ -140,14 +152,20 @@ export function isAdtException(e: unknown): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 
+const simpleError = (response: HttpClientResponse | AxiosResponse) =>
+  adtException(
+    `Error ${response.status}:${response.statusText}`,
+    response.status
+  )
 
+const isCsrfException = (r: HttpClientResponse) =>
+  (r.status === 403 && r.headers["x-csrf-token"] === "Required") ||
+  (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
 
-const simpleError = (response: HttpClientResponse | AxiosResponse) => adtException(`Error ${response.status}:${response.statusText}`, response.status)
-
-const isCsrfException = (r: HttpClientResponse) => (r.status === 403 && r.headers["x-csrf-token"] === "Required")
-  || (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
-
-export const fromResponse = (data: string, response: HttpClientResponse | AxiosResponse) => {
+export const fromResponse = (
+  data: string,
+  response: HttpClientResponse | AxiosResponse
+) => {
   if (!data) return simpleError(response)
   if (data.match(/CSRF/)) return new AdtCsrfException(data)
   const raw = fullParse(data as string)
@@ -156,7 +174,9 @@ export const fromResponse = (data: string, response: HttpClientResponse | AxiosR
   const getf = (base: any, idx: string) => (base ? base[idx] : "")
   const properties: Record<string, string> = {}
   xmlArray(root, "properties", "entry").forEach((p: any) => {
-    properties[p["@_key"]] = `${p["#text"]}`.replace(/^\s+/, "").replace(/\s+$/, "")
+    properties[p["@_key"]] = `${p["#text"]}`
+      .replace(/^\s+/, "")
+      .replace(/\s+$/, "")
   })
   return new AdtErrorException(
     response.status,
@@ -169,7 +189,8 @@ export const fromResponse = (data: string, response: HttpClientResponse | AxiosR
   )
 }
 
-const axiosErrorBody = (e: AxiosError): string => e.response?.data ? `${e.response.data}` : ""
+const axiosErrorBody = (e: AxiosError): string =>
+  e.response?.data ? `${e.response.data}` : ""
 
 export const fromError = (error: unknown): AdtException => {
   try {
@@ -178,12 +199,15 @@ export const fromError = (error: unknown): AdtException => {
     if (axios.isAxiosError(error) && error.response)
       return fromResponse(axiosErrorBody(error), error.response)
 
-    if (isObject(error) && "message" in error && isString(error?.message)) return new AdtErrorException(500, {}, "", error.message)
-  } catch (error) { }
+    if (isObject(error) && "message" in error && isString(error?.message))
+      return new AdtErrorException(500, {}, "", error.message)
+  } catch (error) {}
   return AdtErrorException.create(500, {}, "Unknown error", `${error}`) // hopefully will never happen
 }
 
-function fromExceptionOrResponse_int(errOrResp: HttpClientResponse | unknown): AdtException {
+function fromExceptionOrResponse_int(
+  errOrResp: HttpClientResponse | unknown
+): AdtException {
   try {
     if (isResponse(errOrResp)) return fromResponse(errOrResp.body, errOrResp)
     else return fromError(errOrResp)
@@ -196,9 +220,11 @@ function fromExceptionOrResponse_int(errOrResp: HttpClientResponse | unknown): A
 
 export function fromException(errOrResp: unknown): AdtException {
   if (isAdtException(errOrResp)) return errOrResp
-  if (!isResponse(errOrResp)
-    && (!isNativeError(errOrResp)
-      || (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp))))
+  if (
+    !isResponse(errOrResp) &&
+    (!isNativeError(errOrResp) ||
+      (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp)))
+  )
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   return fromExceptionOrResponse_int(errOrResp)
 }
@@ -209,13 +235,19 @@ export function adtException(message: string, number = 0) {
 
 export function ValidateObjectUrl(url: string) {
   if (url.match(/^\/sap\/bc\/adt\/[a-z]+\/[a-zA-Z%\$]?[\w%]+/)) return // valid
-  throw new AdtErrorException(0, {}, "BADOBJECTURL", "Invalid Object URL:" + url)
+  throw new AdtErrorException(
+    0,
+    {},
+    "BADOBJECTURL",
+    "Invalid Object URL:" + url
+  )
 }
 
 export function ValidateStateful(h: AdtHTTP) {
   if (h.isStateful) return
   throw new AdtErrorException(
-    0, {},
+    0,
+    {},
     "STATELESS",
     "This operation can only be performed in stateful mode"
   )
@@ -223,9 +255,13 @@ export function ValidateStateful(h: AdtHTTP) {
 export const validateParseResult = <T>(parseResult: t.Validation<T>): T => {
   if (isLeft(parseResult)) {
     const messages = reporter.report(parseResult)
+    const message2 = report(parseResult)
+    const messages3 = StructuralErrorReporter.report(parseResult)
+    messages.push(...message2, `${messages3}`)
     throw adtException(messages.slice(0, 3).join("\n"))
   }
   return parseResult.right
 }
 
-export const isErrorMessageType = (x: string | SAPRC | undefined) => !!`${x}`.match(/^[EAX]$/i)
+export const isErrorMessageType = (x: string | SAPRC | undefined) =>
+  !!`${x}`.match(/^[EAX]$/i)

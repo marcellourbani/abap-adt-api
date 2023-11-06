@@ -1,6 +1,18 @@
 # Change Log
 
-## 5.0.0
+## 5.2.0 [2023-11-06]
+
+### Added
+
+- tracing APIs
+
+## 5.1.0 [2023-10-28]
+
+### Added
+
+- custom transport
+
+## 5.0.0 [2022-05-01]
 
 ### Changed
 

@@ -4,6 +4,11 @@ GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces?user=MURBANI
 Authorization: Basic {{user}}:{{password}}
 x-csrf-token: fetch
 
+### list traces requests
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/requests?user=MURBANI
+Authorization: Basic {{user}}:{{password}}
+x-csrf-token: fetch
+
 ### hit lists
 GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/hitlist?withSystemEvents=false
 Authorization: Basic {{user}}:{{password}}
@@ -14,7 +19,7 @@ Accept: application/vnd.sap.adt.runtime.traces.abaptraces.dbaccesses+xml, applic
 Authorization: Basic {{user}}:{{password}}
 
 ### statements (call tree) - change id for drilldown
-GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/statements?id=1&withDetails=false&autoDrillDownThreshold=80&withSystemEvents=false HTTP/1.1
+GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000020.DAT/statements?id=1&withDetails=false&autoDrillDownThreshold=80&withSystemEvents=false
 Accept: application/vnd.sap.adt.runtime.traces.abaptraces.aggcalltree+xml, application/xml
 Authorization: Basic {{user}}:{{password}}
 
@@ -29,6 +34,17 @@ Authorization: Basic {{user}}:{{password}}
 Accept: application/atom+xml;type=feed
 
 ### Create trace configuration
+POST {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/requests?server=*&description=FOOBAR&traceUser=MURBANI&traceClient=100&processType=%2Fsap%2Fbc%2Fadt%2Fruntime%2Ftraces%2Fabaptraces%2Fprocesstypes%2Fhttp&objectType=%2Fsap%2Fbc%2Fadt%2Fruntime%2Ftraces%2Fabaptraces%2Fobjecttypes%2Furl&expires=2023-11-08T11%3A04%3A59Z&maximalExecutions=3&parametersId=%2Fsap%2Fbc%2Fadt%2Fruntime%2Ftraces%2Fabaptraces%2Fparameters%2F9AB0558D76FE1EEE9F968956CF41E99C
+Accept: application/atom+xml;type=feed
+Authorization: Basic {{user}}:{{password}}
+x-csrf-token: {{readtraces.response.headers.x-csrf-token}}
+
+### DELETE trace configuration
+DELETE {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/requests/bti1033_acd_00%2c11%2c20231106082846
+Authorization: Basic {{user}}:{{password}}
+x-csrf-token: {{readtraces.response.headers.x-csrf-token}}
+
+### Set trace parameters
 POST {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/parameters
 Authorization: Basic {{user}}:{{password}}
 Content-Type: application/xml
@@ -40,7 +56,7 @@ x-csrf-token: {{readtraces.response.headers.x-csrf-token}}
     <trc:allProceduralUnits value="true"></trc:allProceduralUnits>
     <trc:allInternalTableEvents value="false"></trc:allInternalTableEvents>
     <trc:allDynproEvents value="false"></trc:allDynproEvents>
-    <trc:description value="ZABAPGIT3"></trc:description>
+    <trc:description value="FOOBAR"></trc:description>
     <trc:aggregate value="false"></trc:aggregate>
     <trc:explicitOnOff value="false"></trc:explicitOnOff>
     <trc:withRfcTracing value="false"></trc:withRfcTracing>
@@ -50,4 +66,5 @@ x-csrf-token: {{readtraces.response.headers.x-csrf-token}}
     <trc:maxSizeForTraceFile value="30720"></trc:maxSizeForTraceFile>
     <trc:maxTimeForTracing value="1800"></trc:maxTimeForTracing>
 </trc:parameters>
+
 
