@@ -11,9 +11,6 @@ import axios, { AxiosResponse, AxiosError } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
-import { report } from "io-ts-human-reporter"
-// import PrettyPrintIoTsErrors from "io-ts-better-union-error-reporter/dist/PrettyPrintIoTsErrors"
-import { StructuralErrorReporter } from "@pavelkucera/io-ts-structural-error-reporter"
 const ADTEXTYPEID = Symbol()
 const CSRFEXTYPEID = Symbol()
 const HTTPEXTYPEID = Symbol()
@@ -255,9 +252,6 @@ export function ValidateStateful(h: AdtHTTP) {
 export const validateParseResult = <T>(parseResult: t.Validation<T>): T => {
   if (isLeft(parseResult)) {
     const messages = reporter.report(parseResult)
-    const message2 = report(parseResult)
-    const messages3 = StructuralErrorReporter.report(parseResult)
-    messages.push(...message2, `${messages3}`)
     throw adtException(messages.slice(0, 3).join("\n"))
   }
   return parseResult.right
