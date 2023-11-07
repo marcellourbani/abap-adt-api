@@ -1,11 +1,3 @@
-import * as t from "io-ts"
-import {
-  extractXmlArray,
-  fullParse,
-  mixed,
-  typedNodeAttr,
-  xmlArrayType
-} from "../utilities"
 import {
   parseTraceDbAccess,
   parseTraceHitList,
@@ -13,7 +5,6 @@ import {
   parseTraceResults,
   parseTraceStatements
 } from "./tracetypes"
-import { validateParseResult } from ".."
 
 test("parse trace results", () => {
   const sample = `<?xml version="1.0" encoding="utf-8"?> <atom:feed xmlns:atom="http://www.w3.org/2005/Atom"> <atom:author> <atom:name>SAP AG</atom:name> </atom:author> <atom:contributor> <atom:name>ACD</atom:name> </atom:contributor> <atom:title>ABAP Traces in ACD</atom:title> <atom:updated>2023-11-03T00:14:08Z</atom:updated> <atom:entry xml:lang="EN"> <atom:author> <atom:name>MURBANI</atom:name> <atom:uri> http://intranet.sap.com/~form/handler?_APP=00200682500000001086&amp;_EVENT=DISPLAY&amp;00200682500000002188=MURBANI</atom:uri> </atom:author> <atom:content type="application/vnd.sap.adt.runtime.traces.abaptraces.hitlist+xml" src="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT/hitlist" /> <atom:id>/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT</atom:id> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT" rel="self" type="application/atom+xml;type=entry" title="Trace File Self Link" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT" rel="alternate" type="application/vnd.sap.sapgui.adt.runtime.traces.abaptraces.satclassic" title="SAT (SAP GUI)" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT" rel="related" type="application/vnd.sap.sapgui.adt.runtime.traces.abaptraces.filedisplay" title="Display Original Trace File (SAP GUI)" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT" rel="http://www.sap.com/adt/relations/delete" type="text/plain" title="Delete Trace File" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT/hitlist" rel="alternate" type="application/vnd.sap.adt.runtime.traces.abaptraces.hitlist+xml" title="Display Hitlist" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT/attributes?title=$value" rel="edit" type="text/plain" title="Change Trace Description" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT/attributes?expiration=$value" rel="edit" type="text/plain" title="Change Trace Expiry Date" /> <atom:link href="/sap/bc/adt/runtime/traces/abaptraces/bti1033_acd_00%2cAT000000.DAT/dbAccesses" rel="alternate" type="application/vnd.sap.adt.runtime.traces.abaptraces.dbaccesses+xml" title="Show DB Accesses" /> <atom:published>2023-10-27T14:25:43Z</atom:published> <atom:title>DEFAULT</atom:title> <atom:updated>2023-10-27T14:25:43Z</atom:updated> <trc:extendedData xmlns:trc="http://www.sap.com/adt/runtime/traces/abaptraces"> <trc:host>BTI1033</trc:host> <trc:size>21</trc:size> <trc:runtime>5531427</trc:runtime> <trc:runtimeABAP>5524781</trc:runtimeABAP> <trc:runtimeSystem>1643</trc:runtimeSystem> <trc:runtimeDatabase>5003</trc:runtimeDatabase> <trc:expiration>2023-11-24T14:25:43Z</trc:expiration> <trc:system>ACD</trc:system> <trc:client>100</trc:client> <trc:isAggregated>true</trc:isAggregated> <trc:aggregationKind>byCallPosition</trc:aggregationKind> <trc:objectName>YMUHIERTABPERFTEST</trc:objectName> <trc:state value="R" text="Finished" /> </trc:extendedData> </atom:entry> </atom:feed>`

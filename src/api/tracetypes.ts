@@ -224,6 +224,29 @@ const executions = t.type({
   "@_completed": t.number
 })
 
+const rawProcessTypes = t.union([
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/any"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/http"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc"),
+  t.literal(
+    "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea"
+  )
+])
+
+const rawObjectTypes = t.union([
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/any"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/transaction"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/report"),
+  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/functionmodule"),
+  t.literal(
+    "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/sharedobjectarea"
+  )
+])
+type RawObjectTypes = t.TypeOf<typeof rawObjectTypes>
+type RawProcessTypes = t.TypeOf<typeof rawProcessTypes>
 const traceListextendedData = t.type({
   host: t.string,
   requestIndex: t.number,
@@ -231,8 +254,8 @@ const traceListextendedData = t.type({
   description: t.string,
   isAggregated: t.boolean,
   expires: t.string,
-  processType: t.type({ "@_processTypeId": t.string }),
-  object: t.type({ "@_objectTypeId": t.string }),
+  processType: t.type({ "@_processTypeId": rawProcessTypes }),
+  object: t.type({ "@_objectTypeId": rawObjectTypes }),
   executions: executions
 })
 
@@ -447,8 +470,8 @@ export interface TraceRequestExtendedData {
   isAggregated: boolean
   host: string
   expires: Date
-  processType: string
-  objectType: string
+  processType: TracedProcessType
+  objectType: TracedObjectType
   requestIndex: number
   clients: TraceRequestClient[]
 }
@@ -506,17 +529,18 @@ export type TracedObjectType =
   | "SHARED_OBJECTS_AREA"
   | "ANY"
 
-export const traceProcessTypeUris: Record<TracedProcessType, string> = {
-  ANY: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/any",
-  HTTP: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/http",
-  DIALOG: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog",
-  BATCH: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch",
-  RFC: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc",
-  SHARED_OBJECTS_AREA:
-    "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea"
-}
+export const traceProcessTypeUris: Record<TracedProcessType, RawProcessTypes> =
+  {
+    ANY: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/any",
+    HTTP: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/http",
+    DIALOG: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog",
+    BATCH: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch",
+    RFC: "/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc",
+    SHARED_OBJECTS_AREA:
+      "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea"
+  }
 
-export const traceObjectTypeUris: Record<TracedObjectType, string> = {
+export const traceObjectTypeUris: Record<TracedObjectType, RawObjectTypes> = {
   ANY: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/any",
   URL: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url",
   TRANSACTION: "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/transaction",
@@ -525,6 +549,44 @@ export const traceObjectTypeUris: Record<TracedObjectType, string> = {
     "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/functionmodule",
   SHARED_OBJECTS_AREA:
     "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/sharedobjectarea"
+}
+
+const decodeObjectType = (x: RawObjectTypes): TracedObjectType => {
+  switch (x) {
+    case "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/any":
+      return "ANY"
+    case "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url":
+      return "URL"
+    case "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/transaction":
+      return "TRANSACTION"
+    case "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/report":
+      return "REPORT"
+    case "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/functionmodule":
+      return "FUNCTION_MODULE"
+    case "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/sharedobjectarea":
+      return "SHARED_OBJECTS_AREA"
+    default:
+      return "ANY"
+  }
+}
+
+const decodeProcessType = (x: RawProcessTypes): TracedProcessType => {
+  switch (x) {
+    case "/sap/bc/adt/runtime/traces/abaptraces/processtypes/any":
+      return "ANY"
+    case "/sap/bc/adt/runtime/traces/abaptraces/processtypes/http":
+      return "HTTP"
+    case "/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog":
+      return "DIALOG"
+    case "/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch":
+      return "BATCH"
+    case "/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc":
+      return "RFC"
+    case "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea":
+      return "SHARED_OBJECTS_AREA"
+    default:
+      return "ANY"
+  }
 }
 
 export const traceProcessObjects: Record<
@@ -697,8 +759,10 @@ export const parseTraceRequestList = (xml: string): TraceRequestList => {
     const { description, executions, isAggregated, host, requestIndex } =
       e.extendedData
     const expires = new Date(e.extendedData.expires)
-    const processType = e.extendedData.processType["@_processTypeId"]
-    const objectType = e.extendedData.object["@_objectTypeId"]
+    const processType = decodeProcessType(
+      e.extendedData.processType["@_processTypeId"]
+    )
+    const objectType = decodeObjectType(e.extendedData.object["@_objectTypeId"])
     const clients = extractXmlArray(e.extendedData.client).map(
       ({ "#text": id = 0, "@_role": role = "" }) => ({ id, role })
     )
