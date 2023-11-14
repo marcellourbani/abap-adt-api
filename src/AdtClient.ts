@@ -203,7 +203,8 @@ import {
   TracesCreationConfig,
   tracesCreateConfiguration,
   tracesDeleteConfiguration,
-  tracesListRequests
+  tracesListRequests,
+  tracesDelete
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -1424,5 +1425,8 @@ export class ADTClient {
 
   public tracesDeleteConfiguration(id: string) {
     return tracesDeleteConfiguration(this.h, id)
+  }
+  public tracesDelete(id: string) {
+    return tracesDelete(this.h, id)
   }
 }

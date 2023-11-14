@@ -149,5 +149,11 @@ export const tracesCreateConfiguration = async (
 export const tracesDeleteConfiguration = async (h: AdtHTTP, id: string) => {
   const prefix = `/sap/bc/adt/runtime/traces/abaptraces/requests`
   const url = id.startsWith(prefix) ? id : `${prefix}/${id}`
-  const response = await h.request(url, { method: "DELETE" })
+  await h.request(url, { method: "DELETE" })
+}
+
+export const tracesDelete = async (h: AdtHTTP, id: string) => {
+  const prefix = `/sap/bc/adt/runtime/traces/abaptraces/`
+  const url = id.startsWith(prefix) ? id : `${prefix}/${id}`
+  await h.request(url, { method: "DELETE" })
 }
