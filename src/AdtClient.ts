@@ -212,12 +212,13 @@ export function createSSLConfig(
   allowUnauthorized: boolean,
   ca?: string
 ): ClientOptions {
-  const agent = new https.Agent({
+  const httpsAgent = new https.Agent({
     keepAlive: true,
-    rejectUnauthorized: false // disable CA checks
+    ca,
+    rejectUnauthorized: !allowUnauthorized // disable CA checks?
   })
 
-  return { httpsAgent: agent }
+  return { httpsAgent }
 }
 interface HttpOptions {
   baseUrlOrClient: string | HttpClient

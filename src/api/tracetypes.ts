@@ -192,7 +192,9 @@ const statement = mixed(
   {
     "@_isProcedureLike": t.boolean,
     "@_isProceduralUnit": t.boolean,
-    "@_isAutoDrillDowned": t.boolean
+    "@_isAutoDrillDowned": t.boolean,
+    "@_calltreeAnchor": t.number,
+    "@_moduleHitlistAnchor": t.number
   }
 )
 
@@ -428,6 +430,8 @@ export interface TraceStatement {
   isProceduralUnit?: boolean
   isProcedureLike?: boolean
   hitlistAnchor: number
+  calltreeAnchor?: number
+  moduleHitlistAnchor?: number
   callingProgram: CallingProgram
   grossTime: TraceTime
   traceEventNetTime: TraceTime
