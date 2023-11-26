@@ -10,3 +10,6 @@ tmp
 tsconfig.json
 tslint.json
 rfctransportdemo
+testdata
+restcalls
+*.tgz
