@@ -198,5 +198,6 @@ export {
   TracesCreationConfig,
   TraceParameters,
   traceProcessObjects,
-  TraceRequestList
+  TraceRequestList,
+  UnitTestRunFlags
 } from "./api"

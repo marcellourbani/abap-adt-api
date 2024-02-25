@@ -204,7 +204,9 @@ import {
   tracesCreateConfiguration,
   tracesDeleteConfiguration,
   tracesListRequests,
-  tracesDelete
+  tracesDelete,
+  UnitTestRunFlags,
+  DefaultUnitTestRunFlags
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -787,12 +789,18 @@ export class ADTClient {
   public fixEdits(proposal: FixProposal, source: string) {
     return fixEdits(this.h, proposal, source)
   }
-  public unitTestRun(url: string) {
-    return runUnitTest(this.h, url)
+  public unitTestRun(
+    url: string,
+    flags: UnitTestRunFlags = DefaultUnitTestRunFlags
+  ) {
+    return runUnitTest(this.h, url, flags)
   }
 
-  public unitTestEvaluation(clas: UnitTestClass) {
-    return unitTestEvaluation(this.h, clas)
+  public unitTestEvaluation(
+    clas: UnitTestClass,
+    flags: UnitTestRunFlags = DefaultUnitTestRunFlags
+  ) {
+    return unitTestEvaluation(this.h, clas, flags)
   }
 
   public unitTestOccurrenceMarkers(url: string, source: string) {

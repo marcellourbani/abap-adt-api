@@ -1,12 +1,7 @@
 import * as t from "io-ts"
 import { validateParseResult } from ".."
 import { AdtHTTP } from "../AdtHTTP"
-import {
-  fullParse,
-  xmlArray,
-  xmlFlatArray,
-  xmlNodeAttr
-} from "../utilities"
+import { fullParse, xmlArray, xmlFlatArray, xmlNodeAttr } from "../utilities"
 import { parseUri, uriParts } from "./urlparser"
 
 export interface UnitTestStackEntry {
@@ -90,7 +85,29 @@ const parseMethod = (method: any): UnitTestMethod => ({
   alerts: xmlArray(method, "alerts", "alert").map(parseAlert)
 })
 
-export async function runUnitTest(h: AdtHTTP, url: string) {
+export interface UnitTestRunFlags {
+  harmless: boolean
+  dangerous: boolean
+  critical: boolean
+  short: boolean
+  medium: boolean
+  long: boolean
+}
+
+export const DefaultUnitTestRunFlags: UnitTestRunFlags = {
+  harmless: true,
+  dangerous: false,
+  critical: false,
+  short: true,
+  medium: false,
+  long: false
+}
+
+export async function runUnitTest(
+  h: AdtHTTP,
+  url: string,
+  flags: UnitTestRunFlags = DefaultUnitTestRunFlags
+) {
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
   const body = `<?xml version="1.0" encoding="UTF-8"?>
   <aunit:runConfiguration xmlns:aunit="http://www.sap.com/adt/aunit">
@@ -100,6 +117,9 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   <options>
     <uriType value="semantic"/>
     <testDeterminationStrategy sameProgram="true" assignedTests="false"/>
+    <testRiskLevels harmless="${flags.harmless}" dangerous="${flags.dangerous}" critical="${flags.critical}"/>
+    <testDurations short="${flags.short}" medium="${flags.medium}" long="${flags.long}"/>
+    <withNavigationUri enabled="false"/>    
   </options>
   <adtcore:objectSets xmlns:adtcore="http://www.sap.com/adt/core">
     <objectSet kind="inclusive">
@@ -115,7 +135,6 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
     body
   })
   const raw = fullParse(response.body)
-
 
   const classes: UnitTestClass[] = xmlFlatArray(
     raw,
@@ -133,16 +152,22 @@ export async function runUnitTest(h: AdtHTTP, url: string) {
   return classes
 }
 
-export async function unitTestEvaluation(h: AdtHTTP, clas: UnitTestClass) {
+export async function unitTestEvaluation(
+  h: AdtHTTP,
+  clas: UnitTestClass,
+  flags: UnitTestRunFlags = DefaultUnitTestRunFlags
+) {
   const headers = { "Content-Type": "application/*l", Accept: "application/*" }
-  const references = clas.testmethods.map(m => `<adtcore:objectReference adtcore:uri="${m["adtcore:uri"]}" />`).join("\n")
+  const references = clas.testmethods
+    .map(m => `<adtcore:objectReference adtcore:uri="${m["adtcore:uri"]}" />`)
+    .join("\n")
   const body = `<?xml version="1.0" encoding="UTF-8"?>
   <aunit:runConfiguration xmlns:aunit="http://www.sap.com/adt/aunit">
       <options>
           <uriType value="${clas.uriType}"></uriType>
           <testDeterminationStrategy sameProgram="true" assignedTests="false"></testDeterminationStrategy>
-          <testRiskLevels harmless="true" dangerous="true" critical="true"></testRiskLevels>
-          <testDurations short="true" medium="true" long="true"></testDurations>
+          <testRiskLevels harmless="${flags.harmless}" dangerous="${flags.dangerous}" critical="${flags.critical}"/>
+          <testDurations short="${flags.short}" medium="${flags.medium}" long="${flags.long}"/>      
           <withNavigationUri enabled="true"></withNavigationUri>
       </options>
       <adtcore:objectSets xmlns:adtcore="http://www.sap.com/adt/core">
@@ -160,10 +185,22 @@ export async function unitTestEvaluation(h: AdtHTTP, clas: UnitTestClass) {
   })
 
   const raw = fullParse(response.body)
-  return xmlArray(raw, "aunit:runResult", "program", "testClasses", "testClass", "testMethods", "testMethod").map(parseMethod)
+  return xmlArray(
+    raw,
+    "aunit:runResult",
+    "program",
+    "testClasses",
+    "testClass",
+    "testMethods",
+    "testMethod"
+  ).map(parseMethod)
 }
 
-export async function unitTestOccurrenceMarkers(h: AdtHTTP, uri: string, source: string): Promise<UnitTestOccurrenceMarker[]> {
+export async function unitTestOccurrenceMarkers(
+  h: AdtHTTP,
+  uri: string,
+  source: string
+): Promise<UnitTestOccurrenceMarker[]> {
   const headers = { "Content-Type": "text/plain", Accept: "application/*" }
   const response = await h.request("/sap/bc/adt/abapsource/occurencemarkers", {
     method: "POST",
@@ -172,7 +209,12 @@ export async function unitTestOccurrenceMarkers(h: AdtHTTP, uri: string, source:
     qs: { uri }
   })
   const raw = fullParse(response.body, { removeNSPrefix: true })
-  const markers = xmlArray(raw, "occurrenceInfo", "occurrences", "occurrence").map(o => {
+  const markers = xmlArray(
+    raw,
+    "occurrenceInfo",
+    "occurrences",
+    "occurrence"
+  ).map(o => {
     const { kind, keepsResult } = xmlNodeAttr(o)
     const { uri } = xmlNodeAttr((o as any)?.objectReference)
     return { kind, keepsResult, location: parseUri(uri) }
