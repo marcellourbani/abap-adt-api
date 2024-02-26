@@ -119,7 +119,7 @@ export async function runUnitTest(
     <testDeterminationStrategy sameProgram="true" assignedTests="false"/>
     <testRiskLevels harmless="${flags.harmless}" dangerous="${flags.dangerous}" critical="${flags.critical}"/>
     <testDurations short="${flags.short}" medium="${flags.medium}" long="${flags.long}"/>
-    <withNavigationUri enabled="false"/>    
+    <withNavigationUri enabled="true"/>    
   </options>
   <adtcore:objectSets xmlns:adtcore="http://www.sap.com/adt/core">
     <objectSet kind="inclusive">
