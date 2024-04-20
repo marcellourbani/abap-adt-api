@@ -206,7 +206,8 @@ import {
   tracesListRequests,
   tracesDelete,
   UnitTestRunFlags,
-  DefaultUnitTestRunFlags
+  DefaultUnitTestRunFlags,
+  ObjectVersion
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -476,8 +477,11 @@ export class ADTClient {
     )
   }
 
-  public objectStructure(objectUrl: string): Promise<AbapObjectStructure> {
-    return objectStructure(this.h, objectUrl)
+  public objectStructure(
+    objectUrl: string,
+    version?: ObjectVersion
+  ): Promise<AbapObjectStructure> {
+    return objectStructure(this.h, objectUrl, version)
   }
   public activate(
     object: InactiveObject | InactiveObject[],

@@ -26,7 +26,11 @@ export type NonGroupTypeIds =
 
 export type ParentTypeIds = "DEVC/K" | "FUGR/F"
 
-export type CreatableTypeIds = GroupTypeIds | NonGroupTypeIds | PackageTypeId | BindingTypeId
+export type CreatableTypeIds =
+  | GroupTypeIds
+  | NonGroupTypeIds
+  | PackageTypeId
+  | BindingTypeId
 export interface CreatableType {
   validationPath: string
   creationPath: string
@@ -58,15 +62,15 @@ export interface PackageSpecificData {
 }
 export interface PackageValidateOptions
   extends PackageSpecificData,
-  BaseValidateOptions {
+    BaseValidateOptions {
   objtype: PackageTypeId
   packagename: string
 }
 
 export interface BindingValidationOptions extends BaseValidateOptions {
   objtype: BindingTypeId
-  serviceBindingVersion: "ODATA\\V2",
-  serviceDefinition: string,
+  serviceBindingVersion: "ODATA\\V2"
+  serviceDefinition: string
   package: string
 }
 
@@ -81,14 +85,14 @@ export interface NewObjectOptions {
 }
 export interface NewPackageOptions
   extends NewObjectOptions,
-  PackageSpecificData {
+    PackageSpecificData {
   objtype: PackageTypeId
 }
 
 export type BindingCategory = "0" | "1"
 export const BindinTypes = [
   { description: "Odata V2 - Web API", bindingtype: "ODATA", category: "0" },
-  { description: "Odata V2 - UI", bindingtype: "ODATA", category: "1" },
+  { description: "Odata V2 - UI", bindingtype: "ODATA", category: "1" }
 ]
 export interface NewBindingOptions extends NewObjectOptions {
   objtype: BindingTypeId
@@ -104,7 +108,9 @@ export const isPackageOptions = (o: NewObjectOptions): o is NewPackageOptions =>
   (o as any)?.objtype === "DEVC/K" && hasPackageOptions(o)
 
 export const isBindingOptions = (o: NewObjectOptions): o is NewBindingOptions =>
-  (o as any)?.objtype === "SRVB/SVB" && !!(o as any)?.service && !!(o as any)?.bindingtype
+  (o as any)?.objtype === "SRVB/SVB" &&
+  !!(o as any)?.service &&
+  !!(o as any)?.bindingtype
 
 export interface ObjectType {
   CAPABILITIES: string[]
@@ -127,8 +133,10 @@ export type ValidateOptions =
   | PackageValidateOptions
   | BindingValidationOptions
 
-const xmlEntry = (value: string, key: string) => value ? `<${key}>${encodeEntity(value)}</${key}>}` : `<${key}/>`
-const xmlAttribute = (value: string, key: string) => value ? `${key}="${encodeEntity(value)}"` : ``
+const xmlEntry = (value: string, key: string) =>
+  value ? `<${key}>${encodeEntity(value)}</${key}>}` : `<${key}/>`
+const xmlAttribute = (value: string, key: string) =>
+  value ? `${key}="${encodeEntity(value)}"` : ``
 function createBodyPackage(options: NewPackageOptions) {
   const responsible = `adtcore:responsible="${options.responsible}"`
   const compname = xmlAttribute(options.swcomp, `pak:name`)
@@ -158,18 +166,21 @@ ${pkgname} adtcore:type="DEVC/K" adtcore:version="active" ${responsible}>
 function createBodyFunc(options: NewObjectOptions, type: CreatableType) {
   const responsible = `adtcore:responsible="${options.responsible}"`
   return `<?xml version="1.0" encoding="UTF-8"?>
-        <${type.rootName} ${type.nameSpace}
-           xmlns:adtcore="http://www.sap.com/adt/core"
-           adtcore:description="${encodeEntity(options.description)}"
-           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
-           ${responsible}>
-             <adtcore:containerRef adtcore:name="${options.parentName}"
-               adtcore:type="FUGR/F"
-               adtcore:uri="${options.parentPath}"/>
-        </${type.rootName}>`
+  <${type.rootName} ${type.nameSpace} 
+  xmlns:adtcore="http://www.sap.com/adt/core"
+  adtcore:description="${encodeEntity(options.description)}"
+  adtcore:name="${options.name}" adtcore:type="${options.objtype}">
+  <adtcore:containerRef adtcore:name="${options.parentName}" 
+    adtcore:type="FUGR/F"
+    adtcore:uri="${options.parentPath}" />
+</${type.rootName}>`
 }
 
-function createBodySimple(options: NewObjectOptions, type: CreatableType, body = "") {
+function createBodySimple(
+  options: NewObjectOptions,
+  type: CreatableType,
+  body = ""
+) {
   const responsible = `adtcore:responsible="${options.responsible}"`
   body = body || `<adtcore:packageRef adtcore:name="${options.parentName}"/>`
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -198,16 +209,14 @@ function createBodyBinding(options: NewBindingOptions, type: CreatableType) {
 function createBody(options: NewObjectOptions, type: CreatableType) {
   switch (type.typeId) {
     case "DEVC/K":
-      if (isPackageOptions(options))
-        return createBodyPackage(options)
-      throw adtException("Can't create a Package with incomplete data");
+      if (isPackageOptions(options)) return createBodyPackage(options)
+      throw adtException("Can't create a Package with incomplete data")
     case "FUGR/FF":
     case "FUGR/I":
       return createBodyFunc(options, type)
     case "SRVB/SVB":
-      if (isBindingOptions(options))
-        return createBodyBinding(options, type)
-      throw adtException("Can't create service binding with incomplete data");
+      if (isBindingOptions(options)) return createBodyBinding(options, type)
+      throw adtException("Can't create service binding with incomplete data")
     default:
       return createBodySimple(options, type)
   }
@@ -261,7 +270,10 @@ export function objectPath(
 export async function validateNewObject(h: AdtHTTP, options: ValidateOptions) {
   const ot = CreatableTypes.get(options.objtype)
   if (!ot) throw adtException("Unsupported object type")
-  if (!ot.validationPath) throw adtException(`Validation not supported for object ${ot} ${options.objname}`)
+  if (!ot.validationPath)
+    throw adtException(
+      `Validation not supported for object ${ot} ${options.objname}`
+    )
   const response = await h.request("/sap/bc/adt/" + ot.validationPath, {
     method: "POST",
     qs: options
@@ -289,7 +301,10 @@ export async function createObject(
   if (!ot) throw adtException("Unsupported object type")
   const url =
     "/sap/bc/adt/" +
-    sprintf(ot.creationPath, encodeURIComponent(options.parentName))
+    sprintf(
+      ot.creationPath,
+      encodeURIComponent(options.parentName.toLowerCase())
+    )
   options.responsible = (options.responsible || h.username).toUpperCase()
   const body = createBody(options, ot)
   const qs: any = {}

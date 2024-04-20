@@ -2,6 +2,8 @@ import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr, xmlRoot } from "../utilities"
 
+export type ObjectVersion = "active" | "inactive" | "workingArea"
+
 export interface GenericMetaData {
   "abapsource:activeUnicodeCheck"?: boolean
   "abapsource:fixPointArithmetic"?: boolean
@@ -43,7 +45,7 @@ export interface Link {
   href: string
   rel: string
   type?: string
-  title?: string;
+  title?: string
 }
 export type classIncludes =
   | "definitions"
@@ -97,10 +99,12 @@ const convertIncludes = (i: any): ClassInclude => {
 
 export async function objectStructure(
   h: AdtHTTP,
-  objectUrl: string
+  objectUrl: string,
+  version?: ObjectVersion
 ): Promise<AbapObjectStructure> {
   ValidateObjectUrl(objectUrl)
-  const response = await h.request(objectUrl)
+  const qs = version ? { version } : {}
+  const response = await h.request(objectUrl, { qs })
   const res = fullParse(response.body)
   // return type depends on object type, but always have a single root
   const root = xmlRoot(res)

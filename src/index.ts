@@ -117,6 +117,7 @@ export {
   ObjectType,
   ObjectTypeDescriptor,
   ObjectValidateOptions,
+  ObjectVersion,
   PackageSpecificData,
   PackageTypeId,
   PackageTypes,
