@@ -108,6 +108,7 @@ import {
   NodeParents,
   NodeStructure,
   objectRegistrationInfo,
+  ObjectSourceOptions,
   objectStructure,
   ObjectType,
   ObjectTypeDescriptor,
@@ -538,10 +539,9 @@ export class ADTClient {
    */
   public getObjectSource(
     objectSourceUrl: string,
-    gitUser?: string,
-    gitPassword?: string
+    options?: ObjectSourceOptions
   ) {
-    return getObjectSource(this.h, objectSourceUrl, gitUser, gitPassword)
+    return getObjectSource(this.h, objectSourceUrl, options)
   }
 
   public setObjectSource(

@@ -114,6 +114,7 @@ export {
   NodeParents,
   NodeStructure,
   NonGroupTypeIds,
+  ObjectSourceOptions,
   ObjectType,
   ObjectTypeDescriptor,
   ObjectValidateOptions,

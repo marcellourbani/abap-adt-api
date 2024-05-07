@@ -1,7 +1,7 @@
-
 import { ValidateObjectUrl, ValidateStateful } from "../AdtException"
-import { AdtHTTP } from "../AdtHTTP"
+import { AdtHTTP, RequestOptions } from "../AdtHTTP"
 import { xmlArray, btoa, parse } from "../utilities"
+import { ObjectVersion } from "./objectstructure"
 
 export interface AdtLock {
   LOCK_HANDLE: string
@@ -12,18 +12,26 @@ export interface AdtLock {
   IS_LINK_UP: string
   MODIFICATION_SUPPORT: string
 }
-
+export interface ObjectSourceOptions {
+  version?: ObjectVersion
+  gitUser?: string
+  gitPassword?: string
+}
 export async function getObjectSource(
   h: AdtHTTP,
   objectSourceUrl: string,
-  gitUser?: string,
-  gitPassword?: string
+  options?: ObjectSourceOptions
 ) {
   ValidateObjectUrl(objectSourceUrl)
-  const headers: any = {}
-  if (gitUser) headers.Username = gitUser
-  if (gitPassword) headers.Password = btoa(gitPassword)
-  const response = await h.request(objectSourceUrl, { headers })
+  const config: RequestOptions = {}
+  const { gitPassword, gitUser, version } = options || {}
+  if (gitUser || gitPassword) {
+    config.headers = {}
+    if (gitUser) config.headers.Username = gitUser
+    if (gitPassword) config.headers.Password = btoa(gitPassword)
+  }
+  if (version) config.qs = { version }
+  const response = await h.request(objectSourceUrl, config)
   return response.body as string
 }
 
@@ -37,7 +45,9 @@ export async function setObjectSource(
   ValidateObjectUrl(objectSourceUrl)
   ValidateStateful(h)
   const qs: any = { lockHandle }
-  const ctype = source.match(/^<\?xml\s/i) ? "application/*" : "text/plain; charset=utf-8"
+  const ctype = source.match(/^<\?xml\s/i)
+    ? "application/*"
+    : "text/plain; charset=utf-8"
   if (transport) qs.corrNr = transport
   await h.request(objectSourceUrl, {
     body: source,
