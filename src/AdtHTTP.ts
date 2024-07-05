@@ -7,7 +7,9 @@ import axios, {
   Method,
   AxiosInstance,
   AxiosRequestHeaders,
-  AxiosResponseHeaders
+  AxiosResponseHeaders,
+  AxiosHeaders,
+  RawAxiosResponseHeaders
 } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
 import https from "https"
@@ -116,18 +118,27 @@ export interface HttpClient {
   request: (options: HttpClientOptions) => Promise<HttpClientResponse>
 }
 
+const convertheaders = (
+  raw: RawAxiosResponseHeaders | AxiosResponseHeaders
+): AxiosHeaders => {
+  if (raw instanceof AxiosHeaders) return raw
+  const headers = new AxiosHeaders()
+  for (const k in Object.keys(raw)) headers.set(k, raw[k])
+  return headers
+}
+
 export class AxiosHttpClient implements HttpClient {
   private axios: Axios
   constructor(private baseURL: string, config?: ClientOptions) {
     const conf = toAxiosConfig({ ...config })
     this.axios = axios.create({ ...conf, baseURL })
   }
-  async request(options: HttpClientOptions) {
+  async request(options: HttpClientOptions): Promise<HttpClientResponse> {
     try {
       const config = toAxiosConfig(options)
-      const { data, ...rest } = await this.axios.request(config)
+      const { data, headers, ...rest } = await this.axios.request(config)
       const body = data ? (isString(data) ? data : `${data}`) : ""
-      return { body, ...rest }
+      return { body, headers: convertheaders(headers), ...rest }
     } catch (error) {
       throw fromError(error)
     }

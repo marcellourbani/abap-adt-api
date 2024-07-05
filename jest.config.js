@@ -8,7 +8,9 @@ module.exports = {
             tsconfig: "tsconfig.json"
         }
     },
-
+    moduleNameMapper: {
+        "^axios$": "axios/dist/node/axios.cjs"
+    },
     // An array of file extensions your modules use
     moduleFileExtensions: ["ts", "tsx", "js"],
 

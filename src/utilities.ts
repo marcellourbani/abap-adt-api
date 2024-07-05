@@ -1,4 +1,4 @@
-import { XMLParser, X2jOptionsOptional, strnumOptions } from "fast-xml-parser"
+import { XMLParser, strnumOptions, X2jOptions } from "fast-xml-parser"
 import * as t from "io-ts"
 export { encode as encodeEntity } from "html-entities"
 import { encode } from "html-entities"
@@ -128,7 +128,7 @@ export const numberParseOptions: strnumOptions = {
   skipLike: new RegExp("")
 }
 
-export const fullParse = (xml: string, options: X2jOptionsOptional = {}) =>
+export const fullParse = (xml: string, options: X2jOptions = {}) =>
   new XMLParser({
     ignoreAttributes: false,
     trimValues: false,
@@ -136,7 +136,7 @@ export const fullParse = (xml: string, options: X2jOptionsOptional = {}) =>
     ...options
   }).parse(xml)
 
-export const parse = (xml: string, options: X2jOptionsOptional = {}) =>
+export const parse = (xml: string, options: X2jOptions = {}) =>
   new XMLParser(options).parse(xml)
 
 export function toInt(x?: string) {
