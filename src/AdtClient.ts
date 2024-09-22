@@ -898,9 +898,10 @@ export class ADTClient {
   public transportReference(
     pgmid: string,
     obj_wbtype: string,
-    obj_name: string
+    obj_name: string,
+    tr_number = ""
   ) {
-    return transportReference(this.h, pgmid, obj_wbtype, obj_name)
+    return transportReference(this.h, pgmid, obj_wbtype, obj_name, tr_number)
   }
 
   public revisions(

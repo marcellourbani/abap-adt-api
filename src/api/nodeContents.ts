@@ -1,4 +1,3 @@
-
 import { AdtHTTP, RequestOptions } from "../AdtHTTP"
 import { isObject, isString, parse, xmlArray } from "../utilities"
 export type NodeParents = "DEVC/K" | "PROG/P" | "FUGR/F" | "PROG/PI"
@@ -53,16 +52,18 @@ export interface NodeStructure {
   objectTypes: NodeObjectType[]
 }
 
-const decodeComponents = (keys: string[]) => <T>(x: T): T => {
-  if (isObject(x)) {
-    const o = keys.reduce((acc, key) => {
-      const v = (x as any)[key] || ""
-      return isString(v) ? { ...acc, [key]: v } : acc
-    }, {})
-    return { ...x, ...o }
+const decodeComponents =
+  (keys: string[]) =>
+  <T>(x: T): T => {
+    if (isObject(x)) {
+      const o = keys.reduce((acc, key) => {
+        const v = (x as any)[key] || ""
+        return isString(v) ? { ...acc, [key]: v } : acc
+      }, {})
+      return { ...x, ...o }
+    }
+    return x
   }
-  return x
-}
 
 const parsePackageResponse = (data: string): NodeStructure => {
   let nodes: Node[] = []
@@ -74,16 +75,20 @@ const parsePackageResponse = (data: string): NodeStructure => {
     nodes = xmlArray(root, "TREE_CONTENT", "SEU_ADT_REPOSITORY_OBJ_NODE")
     for (const node of nodes) {
       if (!isString(node.OBJECT_NAME)) {
-        node.OBJECT_NAME = (node.OBJECT_NAME as any || "").toString()
+        node.OBJECT_NAME = ((node.OBJECT_NAME as any) || "").toString()
         node.TECH_NAME = (node.TECH_NAME || "").toString()
       }
       node.DESCRIPTION = node.DESCRIPTION || ""
     }
     categories = xmlArray(root, "CATEGORIES", "SEU_ADT_OBJECT_CATEGORY_INFO")
     objectTypes = xmlArray(root, "OBJECT_TYPES", "SEU_ADT_OBJECT_TYPE_INFO")
-      .map(decodeComponents(["OBJECT_TYPE_LABEL"])).map(ot => {
+      .map(decodeComponents(["OBJECT_TYPE_LABEL"]))
+      .map(ot => {
         const o = ot as NodeObjectType
-        return o.OBJECT_TYPE_LABEL === "<no type text>" && o.OBJECT_TYPE === "FUGR/I" ? { ...o, OBJECT_TYPE_LABEL: "Includes" } : o
+        return o.OBJECT_TYPE_LABEL === "<no type text>" &&
+          o.OBJECT_TYPE === "FUGR/I"
+          ? { ...o, OBJECT_TYPE_LABEL: "Includes" }
+          : o
       })
   }
   return {
@@ -99,7 +104,8 @@ export async function nodeContents(
   parent_type: NodeParents,
   parent_name?: string,
   user_name?: string,
-  parent_tech_name?: string
+  parent_tech_name?: string,
+  rebuild_tree?: boolean
 ): Promise<NodeStructure> {
   const qs: NodeRequestOptions = {
     parent_type,
@@ -109,6 +115,9 @@ export async function nodeContents(
   if (parent_name) qs.parent_name = parent_name
   if (parent_tech_name) qs.parent_tech_name = parent_tech_name
   if (user_name) qs.user_name = user_name
-  const response = await h.request("/sap/bc/adt/repository/nodestructure", options)
+  const response = await h.request(
+    "/sap/bc/adt/repository/nodestructure",
+    options
+  )
   return parsePackageResponse(response.body)
 }
