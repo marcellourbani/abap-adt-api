@@ -1,6 +1,5 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import { execPath } from "process"
 import {
   ADTClient,
   isAdtError,
@@ -17,13 +16,7 @@ import {
   NewObjectOptions,
   parseUri
 } from "../api"
-import {
-  fullParse,
-  isArray,
-  isString,
-  xmlArray,
-  xmlNodeAttr
-} from "../utilities"
+import { fullParse, isArray, isString } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
 
 // tslint:disable: no-console
@@ -149,6 +142,33 @@ test(
     expect(resp).toBeDefined()
     expect(resp.nodes).toBeDefined()
     const known = resp.nodes.find(x => x.OBJECT_NAME === "ZAPIDUMMYFOOBAR")
+    expect(known).toBeDefined()
+  })
+)
+
+test(
+  "getNodeContents ZAPIDUMMYFOOBAR hierarchical",
+  runTest(async (c: ADTClient) => {
+    const resp = await c.nodeContents(
+      "FUGR/F",
+      "ZAPIDUMMYFOOBAR",
+      undefined,
+      undefined,
+      undefined,
+      [0]
+    )
+    expect(resp).toBeDefined()
+    expect(resp.nodes.length).toBe(0)
+    const nodeids = resp.objectTypes.map(c => Number.parseInt(c.NODE_ID))
+    const nested = await c.nodeContents(
+      "FUGR/F",
+      "ZAPIDUMMYFOOBAR",
+      undefined,
+      undefined,
+      undefined,
+      nodeids
+    )
+    const known = nested.nodes.find(x => x.OBJECT_NAME === "ZAPIDUMMYFOOFUNC")
     expect(known).toBeDefined()
   })
 )
@@ -1161,34 +1181,31 @@ test(
   runTest(async (c: ADTClient) => {
     const obj = "/sap/bc/adt/programs/programs/zapidummytestprog1"
     c.stateful = session_types.stateful
+
+    const clone = c.statelessClone
+    expect(clone.statelessClone).toBe(clone)
     try {
-      const clone = c.statelessClone
-      expect(clone.statelessClone).toBe(clone)
-      try {
-        clone.stateful = session_types.stateful
-        fail("Stateless clone must stay stateless")
-      } catch (e) {
-        // ignore
-      }
-      const lock = await c.lock(obj)
-      await clone.objectStructure(obj)
-      try {
-        const lock2 = await c.lock(obj)
-        fail("lock didn't survive read on stateless clone")
-      } catch (e) {
-        // ignore
-      }
-      expect(clone.stateful).toBe(session_types.stateless)
-      const hasregistration = await c.collectionFeatureDetails(
-        "/sap/bc/adt/sscr/registration/objects"
-      )
-      if (hasregistration) {
-        // removed in 1909
-        const result = await clone.objectRegistrationInfo(obj)
-        expect(result).toBeDefined()
-      }
-    } finally {
-      c.dropSession()
+      clone.stateful = session_types.stateful
+      fail("Stateless clone must stay stateless")
+    } catch (e) {
+      // ignore
+    }
+    const lock = await c.lock(obj)
+    await clone.objectStructure(obj)
+    try {
+      const lock2 = await c.lock(obj)
+      fail("lock didn't survive read on stateless clone")
+    } catch (e) {
+      // ignore
+    }
+    expect(clone.stateful).toBe(session_types.stateless)
+    const hasregistration = await c.collectionFeatureDetails(
+      "/sap/bc/adt/sscr/registration/objects"
+    )
+    if (hasregistration) {
+      // removed in 1909
+      const result = await clone.objectRegistrationInfo(obj)
+      expect(result).toBeDefined()
     }
   })
 )

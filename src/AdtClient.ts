@@ -436,14 +436,18 @@ export class ADTClient {
     parent_type: NodeParents,
     parent_name?: string,
     user_name?: string,
-    parent_tech_name?: string
+    parent_tech_name?: string,
+    rebuild_tree?: boolean,
+    parentnodes?: number[]
   ): Promise<NodeStructure> {
     return nodeContents(
       this.h,
       parent_type,
       parent_name,
       user_name,
-      parent_tech_name
+      parent_tech_name,
+      rebuild_tree,
+      parentnodes
     )
   }
 

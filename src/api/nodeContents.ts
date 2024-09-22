@@ -12,6 +12,7 @@ interface NodeRequestOptions {
   user_name?: string
   parent_tech_name?: string
   withShortDescriptions: boolean
+  rebuild_tree?: string
 }
 export interface Node {
   OBJECT_TYPE: string
@@ -105,7 +106,8 @@ export async function nodeContents(
   parent_name?: string,
   user_name?: string,
   parent_tech_name?: string,
-  rebuild_tree?: boolean
+  rebuild_tree?: boolean,
+  parentnodes?: number[]
 ): Promise<NodeStructure> {
   const qs: NodeRequestOptions = {
     parent_type,
@@ -115,6 +117,16 @@ export async function nodeContents(
   if (parent_name) qs.parent_name = parent_name
   if (parent_tech_name) qs.parent_tech_name = parent_tech_name
   if (user_name) qs.user_name = user_name
+  if (rebuild_tree) qs.rebuild_tree = "X"
+  if (parentnodes?.length)
+    options.body = `<?xml version="1.0" encoding="UTF-8" ?><asx:abap version="1.0" xmlns:asx="http://www.sap.com/abapxml">
+<asx:values><DATA>
+${parentnodes
+  .map(n => `<TV_NODEKEY>${n.toString().padStart(6, "0")}</TV_NODEKEY>`)
+  .join("")}
+<TV_NODEKEY>000000</TV_NODEKEY>
+</DATA></asx:values></asx:abap>
+`
   const response = await h.request(
     "/sap/bc/adt/repository/nodestructure",
     options
