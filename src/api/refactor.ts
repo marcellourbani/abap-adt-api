@@ -22,29 +22,28 @@ export interface FixProposal {
   userContent: string
 }
 interface TextReplaceDelta {
-  rangeFragment: Range,
-  contentOld: string,
+  rangeFragment: Range
+  contentOld: string
   contentNew: string
 }
 interface AffectedObjects {
-  uri: string,
-  type: string,
-  name: string,
-  parentUri: string,
-  userContent: string,
+  uri: string
+  type: string
+  name: string
+  parentUri: string
+  userContent: string
   textReplaceDeltas: TextReplaceDelta[]
-
 }
 
 export interface RenameRefactoringProposal {
   oldName: string
   newName: string
   transport?: string
-  title?: string,
-  rootUserContent?: string,
+  title?: string
+  rootUserContent?: string
   ignoreSyntaxErrorsAllowed: string
   ignoreSyntaxErrors: string
-  adtObjectUri: UriParts,
+  adtObjectUri: UriParts
   affectedObjects: AffectedObjects[]
   userContent: string
 }
@@ -104,8 +103,9 @@ export async function fixEdits(
      xmlns:adtcore="http://www.sap.com/adt/core">
     <input>
       <content>${encodeEntity(source)}</content>
-      <adtcore:objectReference adtcore:uri="${proposal.uri}#start=${proposal.line
-    },${proposal.column}"/>
+      <adtcore:objectReference adtcore:uri="${proposal.uri}#start=${
+    proposal.line
+  },${proposal.column}"/>
     </input>
     <userContent>${encodeEntity(proposal.userContent)}</userContent>
   </quickfixes:proposalRequest>`
@@ -165,7 +165,7 @@ function parseRenameRefactoring(body: string): RenameRefactoringProposal {
             contentNew: xmlNode(z, "contentNew")
           }
         }),
-        userContent: xmlNode(y, "affectedObject", "userContent") || "",
+        userContent: xmlNode(y, "userContent") || ""
       }
     }),
     userContent: userContent
@@ -189,33 +189,46 @@ export async function renameEvaluate(
   const response = await h.request("/sap/bc/adt/refactorings", {
     method: "POST",
     qs: qs,
-    headers: headers,
+    headers: headers
   })
 
   return parseRenameRefactoring(response.body)
 }
 
-const srializeRefactoring = (renameRefactoring: RenameRefactoringProposal, wrapped: boolean, transport: string = "") => {
-  const start = wrapped ? `<rename:renameRefactoring xmlns:adtcore="http://www.sap.com/adt/core" xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" 
+const srializeRefactoring = (
+  renameRefactoring: RenameRefactoringProposal,
+  wrapped: boolean,
+  transport: string = ""
+) => {
+  const start = wrapped
+    ? `<rename:renameRefactoring xmlns:adtcore="http://www.sap.com/adt/core" xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" 
   xmlns:rename="http://www.sap.com/adt/refactoring/renamerefactoring">
   <rename:oldName>${renameRefactoring.oldName}</rename:oldName>
   <rename:newName>${renameRefactoring.newName}</rename:newName>`
     : ""
   const end = wrapped ? `<rename:userContent/></rename:renameRefactoring>` : ""
-  const genns = wrapped ? "" : ` xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" xmlns:adtcore="http://www.sap.com/adt/core"`
+  const genns = wrapped
+    ? ""
+    : ` xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" xmlns:adtcore="http://www.sap.com/adt/core"`
 
   const addAffectedObjects = (affectedObject: AffectedObjects[]) =>
     affectedObject.map(z => {
       const pu = z.parentUri ? `adtcore:parentUri="${z.parentUri}"` : ""
-      return `<generic:affectedObject adtcore:name="${z.name}" ${pu} adtcore:type="${z.type}" adtcore:uri="${z.uri}">
+      return `<generic:affectedObject adtcore:name="${
+        z.name
+      }" ${pu} adtcore:type="${z.type}" adtcore:uri="${z.uri}">
         <generic:textReplaceDeltas>
-          ${z.textReplaceDeltas.map(y => {
-        return `<generic:textReplaceDelta>
-            <generic:rangeFragment>${rangeToString(y.rangeFragment)}</generic:rangeFragment>
+          ${z.textReplaceDeltas
+            .map(y => {
+              return `<generic:textReplaceDelta>
+            <generic:rangeFragment>${rangeToString(
+              y.rangeFragment
+            )}</generic:rangeFragment>
             <generic:contentOld>${y.contentOld}</generic:contentOld>
             <generic:contentNew>${y.contentNew}</generic:contentNew>
           </generic:textReplaceDelta>`
-      }).join('')}
+            })
+            .join("")}
           </generic:textReplaceDeltas>
         <generic:userContent>${z.userContent}</generic:userContent>
       </generic:affectedObject>`
@@ -224,13 +237,23 @@ const srializeRefactoring = (renameRefactoring: RenameRefactoringProposal, wrapp
   ${start}
     <generic:genericRefactoring ${genns}>
       <generic:title>Rename Field</generic:title>
-      <generic:adtObjectUri>${renameRefactoring.adtObjectUri.uri}${rangeToString(renameRefactoring.adtObjectUri.range)}</generic:adtObjectUri>
+      <generic:adtObjectUri>${
+        renameRefactoring.adtObjectUri.uri
+      }${rangeToString(
+    renameRefactoring.adtObjectUri.range
+  )}</generic:adtObjectUri>
       <generic:affectedObjects>
-        ${addAffectedObjects(renameRefactoring.affectedObjects).join('')}
+        ${addAffectedObjects(renameRefactoring.affectedObjects).join("")}
       </generic:affectedObjects>
-      <generic:transport>${renameRefactoring.transport || transport}</generic:transport>
-      <generic:ignoreSyntaxErrorsAllowed>${renameRefactoring.ignoreSyntaxErrorsAllowed}</generic:ignoreSyntaxErrorsAllowed>
-      <generic:ignoreSyntaxErrors>${renameRefactoring.ignoreSyntaxErrors}</generic:ignoreSyntaxErrors>
+      <generic:transport>${
+        renameRefactoring.transport || transport
+      }</generic:transport>
+      <generic:ignoreSyntaxErrorsAllowed>${
+        renameRefactoring.ignoreSyntaxErrorsAllowed
+      }</generic:ignoreSyntaxErrorsAllowed>
+      <generic:ignoreSyntaxErrors>${
+        renameRefactoring.ignoreSyntaxErrors
+      }</generic:ignoreSyntaxErrors>
       <generic:userContent/>
     </generic:genericRefactoring>
     ${end}`
@@ -244,7 +267,7 @@ export async function renamePreview(
 ): Promise<RenameRefactoring> {
   const qs = {
     step: `preview`,
-    rel: `http://www.sap.com/adt/relations/refactoring/rename`,
+    rel: `http://www.sap.com/adt/relations/refactoring/rename`
   }
   const bodyXml = srializeRefactoring(renameRefactoring, true, transport)
   const headers = { "Content-Type": "application/*", Accept: "application/*" }
@@ -253,7 +276,7 @@ export async function renamePreview(
     method: "POST",
     qs: qs,
     body: bodyXml,
-    headers: headers,
+    headers: headers
   })
   const parsed = parseRenameRefactoring(response.body)
   return { ...parsed, transport: parsed.transport || transport }
@@ -274,7 +297,7 @@ export async function renameExecute(
     method: "POST",
     qs: qs,
     body,
-    headers: headers,
+    headers: headers
   })
 
   const result = parseRenameRefactoring(response.body)
