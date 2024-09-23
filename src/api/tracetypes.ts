@@ -153,18 +153,21 @@ const dBAccess = mixed(
 const dBAccesses = t.type({
   link: baseLink,
   dbAccess: xmlArrayType(dBAccess),
-  tables: t.type({
-    table: xmlArrayType(
-      t.type({
-        "@_name": t.string,
-        "@_type": t.string,
-        "@_description": t.string,
-        "@_bufferMode": t.string,
-        "@_storageType": t.string,
-        "@_package": t.string
-      })
-    )
-  }),
+  tables: t.union([
+    t.type({
+      table: xmlArrayType(
+        t.type({
+          "@_name": t.string,
+          "@_type": t.string,
+          "@_description": t.string,
+          "@_bufferMode": t.string,
+          "@_storageType": t.string,
+          "@_package": t.string
+        })
+      )
+    }),
+    t.literal("")
+  ]),
   "@_totalDbTime": t.number
 })
 
@@ -700,16 +703,19 @@ export const parseTraceHitList = (xml: string): TraceHitList => {
 }
 
 export const parseTraceDbAccess = (xml: string): TraceDBAccessResponse => {
-  const raw = validateParseResult(
-    traceDBAccesResponse.decode(fullParse(xml, { removeNSPrefix: true }))
-  ).dbAccesses
+  const toParse = fullParse(xml, { removeNSPrefix: true })
+  const parsed = traceDBAccesResponse.decode(toParse)
+  const raw = validateParseResult(parsed).dbAccesses
   const parentLink = raw.link["@_href"]
   const dbaccesses = extractXmlArray(raw.dbAccess).map(a => {
     const callingProgram = a.callingProgram && typedNodeAttr(a.callingProgram)
     const accessTime = typedNodeAttr(a.accessTime)
     return { ...typedNodeAttr(a), accessTime, callingProgram }
   })
-  const tables = extractXmlArray(raw.tables.table).map(typedNodeAttr)
+  const tables =
+    raw.tables === ""
+      ? []
+      : extractXmlArray(raw.tables.table).map(typedNodeAttr)
   return { parentLink, dbaccesses, tables }
 }
 
@@ -745,8 +751,8 @@ export const parseTraceStatements = (xml: string) => {
 }
 
 export const parseTraceRequestList = (xml: string): TraceRequestList => {
-  const raw = fullParse(xml, { removeNSPrefix: true })
-  const parsed = validateParseResult(tracesListRequest.decode(raw)).feed
+  const raw = tracesListRequest.decode(fullParse(xml, { removeNSPrefix: true }))
+  const parsed = validateParseResult(raw).feed
   const {
     contributor: { name: contributorName, "@_role": contributorRole },
     title

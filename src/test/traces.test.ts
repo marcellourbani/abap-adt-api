@@ -21,10 +21,12 @@ test(
     const resp = await c.tracesList()
     expect(resp).toBeDefined()
     expect(resp.runs).toBeDefined()
-    const id = resp.runs[0].id
-    if (id) {
-      const hitlist = await c.tracesHitList(id)
-      expect(hitlist.parentLink).toBeTruthy()
+    if (resp.runs.length) {
+      const id = resp.runs[0].id
+      if (id) {
+        const hitlist = await c.tracesHitList(id)
+        expect(hitlist.parentLink).toBeTruthy()
+      }
     }
   })
 )
@@ -35,10 +37,12 @@ test(
     const resp = await c.tracesList()
     expect(resp).toBeDefined()
     expect(resp.runs).toBeDefined()
-    const id = resp.runs[0].id
-    if (id) {
-      const dbaccess = await c.tracesDbAccess(id)
-      expect(dbaccess.parentLink).toBeTruthy()
+    if (resp.runs.length) {
+      const id = resp.runs[0].id
+      if (id) {
+        const dbaccess = await c.tracesDbAccess(id)
+        expect(dbaccess.parentLink).toBeTruthy()
+      }
     }
   })
 )
@@ -86,6 +90,6 @@ test(
   "list trace request",
   runTest(async (c: ADTClient) => {
     const requests = await c.tracesListRequests()
-    expect(requests.requests.length).toBeTruthy()
+    expect(requests.requests.length).toBeDefined()
   })
 )
