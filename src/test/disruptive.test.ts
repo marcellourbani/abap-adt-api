@@ -538,16 +538,13 @@ test(
     expect(renameEvaluate).toBeDefined()
     expect(renameEvaluate["oldName"]).toBe("lv_test")
     renameEvaluate["newName"] = "lv_test3"
-    const renamePreview: RenameRefactoringProposal = Object.assign(
-      {},
-      renameEvaluate
-    )
+    const renamePreview: RenameRefactoringProposal = { ...renameEvaluate }
     renamePreview["affectedObjects"].forEach(obj =>
-      obj["textReplaceDeltas"].forEach(replaceRelta => {
-        replaceRelta["contentNew"] = "lv_test3"
-        replaceRelta["contentOld"] = "lv_test"
+      obj["textReplaceDeltas"].forEach(replaceDelta => {
+        replaceDelta["contentNew"] = "lv_test3"
+        replaceDelta["contentOld"] = "lv_test"
 
-        return replaceRelta
+        return replaceDelta
       })
     )
     const info = await c.transportInfo(

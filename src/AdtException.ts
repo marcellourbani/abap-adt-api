@@ -1,4 +1,9 @@
-import { AdtHTTP, HttpClientResponse } from "./AdtHTTP"
+import {
+  AdtHTTP,
+  HttpClientOptions,
+  HttpClientResponse,
+  RequestOptions
+} from "./AdtHTTP"
 import {
   fullParse,
   isNativeError,
@@ -7,7 +12,7 @@ import {
   isString,
   xmlArray
 } from "./utilities"
-import axios, { AxiosResponse, AxiosError } from "axios"
+import axios, { AxiosResponse, AxiosError, AxiosRequestConfig } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
@@ -34,7 +39,7 @@ export interface ExceptionProperties {
 const isResponse = (r: any): r is HttpClientResponse =>
   isObject(r) && !!r?.status && isString(r?.statusText)
 
-class AdtErrorException extends Error {
+export class AdtErrorException extends Error {
   get typeID(): symbol {
     return ADTEXTYPEID
   }
@@ -161,7 +166,8 @@ const isCsrfException = (r: HttpClientResponse) =>
 
 export const fromResponse = (
   data: string,
-  response: HttpClientResponse | AxiosResponse
+  response: HttpClientResponse | AxiosResponse,
+  request?: RequestOptions | AxiosRequestConfig
 ) => {
   if (!data) return simpleError(response)
   if (data.match(/CSRF/)) return new AdtCsrfException(data)
@@ -194,7 +200,7 @@ export const fromError = (error: unknown): AdtException => {
     if (isAdtError(error)) return error
 
     if (axios.isAxiosError(error) && error.response)
-      return fromResponse(axiosErrorBody(error), error.response)
+      return fromResponse(axiosErrorBody(error), error.response, error.response)
 
     if (isObject(error) && "message" in error && isString(error?.message))
       return new AdtErrorException(500, {}, "", error.message)
@@ -203,10 +209,12 @@ export const fromError = (error: unknown): AdtException => {
 }
 
 function fromExceptionOrResponse_int(
-  errOrResp: HttpClientResponse | unknown
+  errOrResp: HttpClientResponse | unknown,
+  config?: RequestOptions
 ): AdtException {
   try {
-    if (isResponse(errOrResp)) return fromResponse(errOrResp.body, errOrResp)
+    if (isResponse(errOrResp))
+      return fromResponse(errOrResp.body, errOrResp, config)
     else return fromError(errOrResp)
   } catch (e) {
     return isResponse(errOrResp)
@@ -215,7 +223,10 @@ function fromExceptionOrResponse_int(
   }
 }
 
-export function fromException(errOrResp: unknown): AdtException {
+export function fromException(
+  errOrResp: unknown,
+  config?: RequestOptions
+): AdtException {
   if (isAdtException(errOrResp)) return errOrResp
   if (
     !isResponse(errOrResp) &&
@@ -223,7 +234,7 @@ export function fromException(errOrResp: unknown): AdtException {
       (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp)))
   )
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
-  return fromExceptionOrResponse_int(errOrResp)
+  return fromExceptionOrResponse_int(errOrResp, config)
 }
 
 export function adtException(message: string, number = 0) {

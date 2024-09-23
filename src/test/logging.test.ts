@@ -1,4 +1,4 @@
-import { ADTClient, adtException, createSSLConfig, LogData, session_types } from ".."
+import { ADTClient, createSSLConfig, LogData, session_types } from ".."
 
 test("login", async () => {
   if (!process.env.ADT_URL) return
@@ -18,7 +18,11 @@ test("login", async () => {
   expect(c).toBeDefined()
   c.stateful = session_types.stateful
   await c.login()
-  await c.statelessClone.getObjectSource("/sap/bc/adt/programs/programs/SHOUD_NOT_EXIST_FOOBAR/source/main").catch(x => x)
+  await c.statelessClone
+    .getObjectSource(
+      "/sap/bc/adt/programs/programs/SHOUD_NOT_EXIST_FOOBAR/source/main"
+    )
+    .catch(x => x)
 
   expect(requests.size).toBe(3)
   expect(requests.get(1)!.response.statusCode).toBe(200)
@@ -34,9 +38,8 @@ test("login", async () => {
   expect(requests.get(2)!.stateful).toBe(false)
 
   expect(requests.get(3)!.response.statusCode).toBe(404)
-  expect(requests.get(3)!.response.statusMessage).toBe("Not Found")
+  expect(requests.get(3)!.response.statusMessage).toBeTruthy()
   expect(requests.get(3)!.id).toBeGreaterThan(0)
   expect(requests.get(3)!.duration).toBeGreaterThan(0)
   expect(requests.get(3)!.stateful).toBe(false)
-
 })

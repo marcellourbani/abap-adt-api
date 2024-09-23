@@ -271,7 +271,7 @@ export class AdtHTTP {
       }
       return await this._request(url, config || {})
     } catch (e) {
-      const adtErr = fromException(e)
+      const adtErr = fromException(e, config)
       // if the logon ticket expired try to logon again, unless in stateful mode
       // or already tried a login
       if (isLoginError(adtErr) && !autologin && !this.isStateful) {
@@ -280,7 +280,7 @@ export class AdtHTTP {
           await this.login()
           return await this._request(url, config || {})
         } catch (e2) {
-          throw fromException(e2)
+          throw fromException(e2, config)
         }
       } else throw adtErr
     }
@@ -310,7 +310,7 @@ export class AdtHTTP {
   ) {
     if (!this.debugCallback) return
     if (isAdtException(exceptionOrResponse))
-      logError(this.id, exceptionOrResponse, this.debugCallback)
+      logError(this.id, exceptionOrResponse, this.debugCallback, options)
     else logResponse(this.id, exceptionOrResponse, options, this.debugCallback)
   }
 
@@ -346,7 +346,7 @@ export class AdtHTTP {
       const response = await this.httpclient.request(config)
 
       this.updateCookies(response)
-      if (response.status >= 400) throw fromException(response)
+      if (response.status >= 400) throw fromException(response, config)
       if (
         this.csrfToken === FETCH_CSRF_TOKEN &&
         isString(response.headers[CSRF_TOKEN_HEADER])
@@ -355,7 +355,7 @@ export class AdtHTTP {
       this.logResponse(response, config)
       return response
     } catch (error) {
-      const exc = fromException(error)
+      const exc = fromException(error, config)
       this.logResponse(exc, config)
       throw exc
     }
