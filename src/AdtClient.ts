@@ -208,7 +208,13 @@ import {
   tracesDelete,
   UnitTestRunFlags,
   DefaultUnitTestRunFlags,
-  ObjectVersion
+  ObjectVersion,
+  extractMethodEvaluate,
+  Range,
+  ExtractMethodProposal,
+  extractMethodPreview,
+  extractMethodExecute,
+  GenericRefactoring
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -1445,5 +1451,18 @@ export class ADTClient {
   }
   public tracesDelete(id: string) {
     return tracesDelete(this.h, id)
+  }
+
+  public extractMethodEvaluate(
+    uri: string,
+    range: Range
+  ): Promise<ExtractMethodProposal> {
+    return extractMethodEvaluate(this.h, uri, range)
+  }
+  public extractMethodPreview(proposal: ExtractMethodProposal) {
+    return extractMethodPreview(this.h, proposal)
+  }
+  public extractMethodExecute(refactoring: GenericRefactoring) {
+    return extractMethodExecute(this.h, refactoring)
   }
 }

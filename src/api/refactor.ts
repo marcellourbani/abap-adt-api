@@ -9,7 +9,7 @@ import {
   xmlNode,
   xmlNodeAttr
 } from "../utilities"
-import { parseUri, Range } from "./urlparser"
+import { parseUri, Range, uriPartsToString } from "./urlparser"
 
 export interface FixProposal {
   "adtcore:uri": string
@@ -41,14 +41,54 @@ export interface RenameRefactoringProposal {
   transport?: string
   title?: string
   rootUserContent?: string
-  ignoreSyntaxErrorsAllowed: string
-  ignoreSyntaxErrors: string
+  ignoreSyntaxErrorsAllowed: boolean
+  ignoreSyntaxErrors: boolean
   adtObjectUri: UriParts
   affectedObjects: AffectedObjects[]
   userContent: string
 }
 export interface RenameRefactoring extends RenameRefactoringProposal {
   transport: string
+}
+interface Exception {
+  name: string
+  resumable: boolean
+  userContent: string
+}
+
+interface Parameter {
+  id: string
+  name: string
+  direction: string
+  byValue: boolean
+  typeType: string
+  type: string
+  userContent: string
+}
+
+export interface GenericRefactoring {
+  title: string
+  adtObjectUri: UriParts
+  transport: string
+  ignoreSyntaxErrorsAllowed: boolean
+  ignoreSyntaxErrors: boolean
+  userContent: string
+  affectedObjects: AffectedObjects[]
+}
+export interface ExtractMethodProposal {
+  name: string
+  isStatic: boolean
+  isForTesting: boolean
+  visibility: string
+  classBasedExceptions: boolean
+  genericRefactoring: GenericRefactoring
+  content: string
+  className: string
+  isEventAllowed: boolean
+  isEvent: boolean
+  userContent: string
+  parameters: Parameter[]
+  exceptions: Exception[]
 }
 
 export async function fixProposals(
@@ -135,39 +175,73 @@ export async function fixEdits(
   return deltas
 }
 
+const parseGeneric = (generic: any): GenericRefactoring => {
+  const affectedObjects = xmlArray(
+    generic,
+    "affectedObjects",
+    "affectedObject"
+  ).map(o => {
+    const { uri, type, name, parentUri } = xmlNodeAttr(o)
+    const textReplaceDeltas = xmlArray(
+      o,
+      "textReplaceDeltas",
+      "textReplaceDelta"
+    ).map(z => {
+      return {
+        rangeFragment: parseUri(xmlNode(z, "rangeFragment")).range,
+        contentOld: xmlNode(z, "contentOld"),
+        contentNew: xmlNode(z, "contentNew")
+      }
+    })
+
+    return {
+      uri,
+      type,
+      name,
+      parentUri,
+      userContent: (o as any).userContent,
+      textReplaceDeltas
+    }
+  })
+  const {
+    ignoreSyntaxErrorsAllowed,
+    ignoreSyntaxErrors,
+    transport,
+    userContent = "",
+    adtObjectUri = "",
+    title
+  } = generic
+  return {
+    title,
+    ignoreSyntaxErrorsAllowed,
+    ignoreSyntaxErrors,
+    transport,
+    adtObjectUri: parseUri(adtObjectUri),
+    userContent: decode(userContent),
+    affectedObjects
+  }
+}
+
 function parseRenameRefactoring(body: string): RenameRefactoringProposal {
   const raw = fullParse(body, { removeNSPrefix: true })
   const root = xmlNode(raw, "renameRefactoring")
-  const generic = xmlNode(root || raw, "genericRefactoring") // depending on the caller the generic refactoring might be wrapped or not
-  const affectedObjects = xmlArray(generic, "affectedObjects", "affectedObject")
-  const userContent = xmlNode(generic, "userContent") || ""
-  const adtObjectUri = parseUri(xmlNode(generic, "adtObjectUri") || "")
+  const {
+    ignoreSyntaxErrorsAllowed,
+    ignoreSyntaxErrors,
+    transport,
+    adtObjectUri,
+    affectedObjects,
+    userContent
+  } = parseGeneric(xmlNode(root || raw, "genericRefactoring")) // depending on the caller the generic refactoring might be wrapped or not
 
   return {
     oldName: xmlNode(root, "oldName") || "",
     newName: xmlNode(root, "newName") || "",
     adtObjectUri,
-    ignoreSyntaxErrorsAllowed: generic["ignoreSyntaxErrorsAllowed"],
-    ignoreSyntaxErrors: generic["ignoreSyntaxErrors"],
-    transport: "",
-    affectedObjects: affectedObjects.map(y => {
-      const replacedelta = xmlArray(y, "textReplaceDeltas", "textReplaceDelta")
-      const affectedObject = xmlNodeAttr(y)
-      return {
-        uri: xmlNode(affectedObject, "uri"),
-        type: xmlNode(affectedObject, "type"),
-        name: xmlNode(affectedObject, "name"),
-        parentUri: xmlNode(affectedObject, "parentUri"),
-        textReplaceDeltas: replacedelta.map(z => {
-          return {
-            rangeFragment: parseUri(xmlNode(z, "rangeFragment")).range,
-            contentOld: xmlNode(z, "contentOld"),
-            contentNew: xmlNode(z, "contentNew")
-          }
-        }),
-        userContent: xmlNode(y, "userContent") || ""
-      }
-    }),
+    ignoreSyntaxErrorsAllowed: !!ignoreSyntaxErrorsAllowed,
+    ignoreSyntaxErrors: !!ignoreSyntaxErrors,
+    transport,
+    affectedObjects,
     userContent: userContent
   }
 }
@@ -194,6 +268,52 @@ export async function renameEvaluate(
 
   return parseRenameRefactoring(response.body)
 }
+const serializeAffectedObject = (o: AffectedObjects) => {
+  const pu = o.parentUri ? `adtcore:parentUri="${o.parentUri}"` : ""
+  return `<generic:affectedObject adtcore:name="${
+    o.name
+  }" ${pu} adtcore:type="${o.type}" adtcore:uri="${o.uri}">
+        <generic:textReplaceDeltas>
+          ${o.textReplaceDeltas
+            .map(y => {
+              return `<generic:textReplaceDelta>
+            <generic:rangeFragment>${rangeToString(
+              y.rangeFragment
+            )}</generic:rangeFragment>
+            <generic:contentOld>${encodeEntity(
+              y.contentOld
+            )}</generic:contentOld>
+            <generic:contentNew>${encodeEntity(
+              y.contentNew
+            )}</generic:contentNew>
+          </generic:textReplaceDelta>`
+            })
+            .join("")}
+          </generic:textReplaceDeltas>
+        <generic:userContent>${o.userContent}</generic:userContent>
+      </generic:affectedObject>`
+}
+
+const serializeGenericRefactoring = (g: GenericRefactoring) => {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<generic:genericRefactoring xmlns:adtcore="http://www.sap.com/adt/core" xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring">
+  <generic:title>${g.title}</generic:title>
+  <generic:adtObjectUri>${uriPartsToString(
+    g.adtObjectUri
+  )}</generic:adtObjectUri>
+  <generic:affectedObjects>
+  ${g.affectedObjects.map(serializeAffectedObject).join("\n")}
+  </generic:affectedObjects>
+  <generic:transport>${g.transport}</generic:transport>
+  <generic:ignoreSyntaxErrorsAllowed>${
+    g.ignoreSyntaxErrorsAllowed
+  }</generic:ignoreSyntaxErrorsAllowed>
+  <generic:ignoreSyntaxErrors>${
+    g.ignoreSyntaxErrors
+  }</generic:ignoreSyntaxErrors>
+  <generic:userContent/>
+</generic:genericRefactoring>`
+}
 
 const srializeRefactoring = (
   renameRefactoring: RenameRefactoringProposal,
@@ -212,27 +332,7 @@ const srializeRefactoring = (
     : ` xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" xmlns:adtcore="http://www.sap.com/adt/core"`
 
   const addAffectedObjects = (affectedObject: AffectedObjects[]) =>
-    affectedObject.map(z => {
-      const pu = z.parentUri ? `adtcore:parentUri="${z.parentUri}"` : ""
-      return `<generic:affectedObject adtcore:name="${
-        z.name
-      }" ${pu} adtcore:type="${z.type}" adtcore:uri="${z.uri}">
-        <generic:textReplaceDeltas>
-          ${z.textReplaceDeltas
-            .map(y => {
-              return `<generic:textReplaceDelta>
-            <generic:rangeFragment>${rangeToString(
-              y.rangeFragment
-            )}</generic:rangeFragment>
-            <generic:contentOld>${y.contentOld}</generic:contentOld>
-            <generic:contentNew>${y.contentNew}</generic:contentNew>
-          </generic:textReplaceDelta>`
-            })
-            .join("")}
-          </generic:textReplaceDeltas>
-        <generic:userContent>${z.userContent}</generic:userContent>
-      </generic:affectedObject>`
-    })
+    affectedObject.map(serializeAffectedObject)
   const bodyXml = `<?xml version="1.0" encoding="ASCII"?>
   ${start}
     <generic:genericRefactoring ${genns}>
@@ -258,6 +358,142 @@ const srializeRefactoring = (
     </generic:genericRefactoring>
     ${end}`
   return bodyXml
+}
+const extractMethodBody = (proposal: ExtractMethodProposal) => {
+  const parameters = proposal.parameters
+    .map(
+      p => `<extractmethod:parameter>
+      <extractmethod:id>${encodeEntity(p.id)}</extractmethod:id>
+      <extractmethod:name>${p.name}</extractmethod:name>
+      <extractmethod:direction>${p.direction}</extractmethod:direction>
+      <extractmethod:byValue>${p.byValue}</extractmethod:byValue>
+      <extractmethod:typeType>${p.typeType}</extractmethod:typeType>
+      <extractmethod:type>${p.type}</extractmethod:type>
+      <extractmethod:userContent>${encodeEntity(
+        p.userContent
+      )}</extractmethod:userContent>
+    </extractmethod:parameter>`
+    )
+    .join("\n")
+  const exceptions = proposal.exceptions
+    .map(
+      e => `<extractmethod:exception>
+      <extractmethod:name>${e.name}</extractmethod:name>
+      <extractmethod:resumable>${e.resumable}</extractmethod:resumable>
+      <extractmethod:userContent>${e.userContent}</extractmethod:userContent>
+    </extractmethod:exception>`
+    )
+    .join("\n")
+  const exc = exceptions.length
+    ? `<extractmethod:exceptions>${exceptions}</extractmethod:exceptions>  `
+    : `<extractmethod:exceptions/>`
+  const gr = proposal.genericRefactoring
+  const affected = gr.affectedObjects
+    .map(o => {
+      const deltas =
+        o.textReplaceDeltas.length === 0
+          ? undefined
+          : o.textReplaceDeltas
+              .map(
+                d =>
+                  `<generic:textReplaceDelta> <generic:rangeFragment>${
+                    d.rangeFragment
+                  }</generic:rangeFragment> <generic:contentOld>${encodeEntity(
+                    d.contentOld
+                  )}</generic:contentOld> <generic:contentNew>${encodeEntity(
+                    d.contentNew
+                  )}</generic:contentNew> </generic:textReplaceDelta>`
+              )
+              .join("\n")
+      const delta = deltas
+        ? `<generic:textReplaceDeltas>${deltas}</generic:textReplaceDeltas>`
+        : ``
+      return `<generic:affectedObject adtcore:name="${o.name}" adtcore:parentUri="${o.parentUri}" adtcore:type="${o.type}" adtcore:uri="${o.uri}">
+        <generic:userContent>${o.userContent}</generic:userContent>
+        ${delta}
+      </generic:affectedObject>`
+    })
+    .join("\n")
+  return `<?xml version="1.0" encoding="ASCII"?>
+<extractmethod:extractMethodRefactoring xmlns:adtcore="http://www.sap.com/adt/core" xmlns:extractmethod="http://www.sap.com/adt/refactoring/extractmethodrefactoring" xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring">
+  <extractmethod:name>${proposal.name}</extractmethod:name>
+  <extractmethod:isStatic>${proposal.isStatic}</extractmethod:isStatic>
+  <extractmethod:visibility>${proposal.visibility}</extractmethod:visibility>
+  <extractmethod:classBasedExceptions>${
+    proposal.classBasedExceptions
+  }</extractmethod:classBasedExceptions>
+  <extractmethod:parameters>
+  ${parameters}
+  </extractmethod:parameters>
+  ${exc}
+  <extractmethod:content>${encodeEntity(
+    proposal.content
+  )}</extractmethod:content>
+  <generic:genericRefactoring>
+    <generic:title>${gr.title}</generic:title>
+    <generic:adtObjectUri>${uriPartsToString(
+      gr.adtObjectUri
+    )}</generic:adtObjectUri>
+    <generic:affectedObjects>
+    ${affected}
+    </generic:affectedObjects>
+    <generic:transport>${gr.transport}</generic:transport>
+    <generic:ignoreSyntaxErrorsAllowed>${
+      gr.ignoreSyntaxErrorsAllowed
+    }</generic:ignoreSyntaxErrorsAllowed>
+    <generic:ignoreSyntaxErrors>${
+      gr.ignoreSyntaxErrors
+    }</generic:ignoreSyntaxErrors>
+    <generic:userContent>${gr.userContent}</generic:userContent>
+  </generic:genericRefactoring>
+  <extractmethod:className>ZAPIADT_TESTCASE_CLASS1${proposal}</extractmethod:className>
+  <extractmethod:isEventAllowed>${
+    proposal.isEventAllowed
+  }</extractmethod:isEventAllowed>
+  <extractmethod:isEvent>${proposal.isEvent}</extractmethod:isEvent>
+  <extractmethod:userContent>${encodeEntity(
+    proposal.userContent
+  )}</extractmethod:userContent>
+  <extractmethod:isForTesting>${
+    proposal.isForTesting
+  }</extractmethod:isForTesting>
+</extractmethod:extractMethodRefactoring>`
+}
+
+const parseExtractMethodEval = (body: string): ExtractMethodProposal => {
+  const root = fullParse(body, {
+    removeNSPrefix: true
+  }).extractMethodRefactoring
+  const parameters = xmlArray(root, "parameters", "parameter") as Parameter[]
+  const exceptions = xmlArray(root, "exceptions", "exception") as Exception[]
+  const {
+    name,
+    isStatic,
+    visibility,
+    classBasedExceptions,
+    content,
+    className,
+    isEventAllowed,
+    isEvent,
+    userContent
+  } = root
+  const genericRefactoring = parseGeneric(root.genericRefactoring)
+  const resp = {
+    name,
+    isStatic,
+    visibility,
+    classBasedExceptions,
+    genericRefactoring,
+    content,
+    className,
+    isForTesting: false,
+    isEventAllowed,
+    isEvent,
+    userContent: decode(userContent),
+    parameters,
+    exceptions
+  }
+  return resp
 }
 
 export async function renamePreview(
@@ -302,4 +538,55 @@ export async function renameExecute(
 
   const result = parseRenameRefactoring(response.body)
   return { ...result, transport: result.transport || rename.transport }
+}
+
+export async function extractMethodEvaluate(
+  h: AdtHTTP,
+  uri: string,
+  range: Range
+): Promise<ExtractMethodProposal> {
+  const qs = {
+    step: `evaluate`,
+    rel: `http://www.sap.com/adt/relations/refactoring/extractmethod`,
+    uri: `${uri}#start=${range.start.line},${range.start.column};end=${range.end.line},${range.end.column}`
+  }
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+
+  const opts = { method: "POST", qs, headers } as const
+  const response = await h.request("/sap/bc/adt/refactorings", opts)
+
+  return parseExtractMethodEval(response.body)
+}
+
+export async function extractMethodPreview(
+  h: AdtHTTP,
+  proposal: ExtractMethodProposal
+): Promise<GenericRefactoring> {
+  const body = extractMethodBody(proposal)
+  const qs = {
+    step: `preview`,
+    rel: `http://www.sap.com/adt/relations/refactoring/extractmethod`
+  }
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const opts = { method: "POST", qs, headers, body } as const
+  const response = await h.request("/sap/bc/adt/refactorings", opts)
+  const raw = fullParse(response.body, {
+    removeNSPrefix: true
+  }).genericRefactoring
+  return parseGeneric(raw)
+}
+
+export async function extractMethodExecute(
+  h: AdtHTTP,
+  refactoring: GenericRefactoring
+) {
+  const body = serializeGenericRefactoring(refactoring)
+  const qs = { step: `execute` }
+  const headers = { "Content-Type": "application/*", Accept: "application/*" }
+  const opts = { method: "POST", qs, headers, body } as const
+  const response = await h.request("/sap/bc/adt/refactorings", opts)
+  const raw = fullParse(response.body, {
+    removeNSPrefix: true
+  }).genericRefactoring
+  return parseGeneric(raw)
 }

@@ -563,6 +563,25 @@ test(
   })
 )
 
+test(
+  "extract method",
+  runTest(async (c: ADTClient) => {
+    const proposal = await c.extractMethodEvaluate(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main",
+      { start: { line: 32, column: 0 }, end: { line: 33, column: 14 } }
+    )
+    expect(proposal.content).toBeDefined()
+    expect(proposal.className).toBe("ZAPIADT_TESTCASE_CLASS1")
+    proposal.name = "mymethod"
+    const preview = await c.extractMethodPreview(proposal)
+    expect(preview).toBeDefined()
+    if (!enableWrite(new Date())) return
+    preview.transport = process.env.ADT_TRANS ?? ""
+    const done = await c.extractMethodExecute(preview)
+    expect(done).toBeDefined()
+  })
+)
+
 const readAtcVariant = async (c: ADTClient) => {
   const cust = await c.atcCustomizing()
   const cv = cust.properties.find(x => x.name === "systemCheckVariant")
