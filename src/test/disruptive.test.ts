@@ -15,6 +15,7 @@ import {
   TracesCreationConfig,
   TransportsOfUser
 } from "../api"
+import { xmlNodeAttr } from "../utilities"
 import { ObjectValidateOptions } from "./../api"
 import { hasAbapGit, runTest } from "./login"
 const doRunTest = (f: (c: ADTClient) => Promise<void>) => runTest(f)()
@@ -69,6 +70,27 @@ async function createObj(
 }
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const ignore = () => {}
+const writeobject = async (
+  c: ADTClient,
+  path: string,
+  source: string,
+  transport = process.env.ADT_TRANS || ""
+) => {
+  const prevstate = c.stateful
+  try {
+    c.stateful = session_types.stateful
+    const handle = await c.lock(path)
+    await c.setObjectSource(path, source, handle.LOCK_HANDLE, transport)
+    await c.unLock(path, handle.LOCK_HANDLE)
+    const baseUrl = path.replace(/\/source|includes\/.*$/, "")
+    const objectName = path.replace(/.*\//, "")
+    await c.activate(objectName, baseUrl)
+  } finally {
+    c.stateful = prevstate
+  }
+}
+
 test("createTransport", async () => {
   if (!enableWrite(new Date())) return
   await doRunTest(async (c: ADTClient) => {
@@ -114,14 +136,8 @@ test("write_program", async () => {
     const name = "zadttest_temporary"
     const path = "/sap/bc/adt/programs/programs/" + name
     const main = path + "/source/main"
-    // const source = new TextEncoder().encode(
     const source = `Report ${name}.\nwrite:/ 'Hello,World!'.`
-    // )
-    try {
-      await deleteObj(path, c)
-    } catch (_) {
-      // ignore
-    }
+    await deleteObj(path, c).then(ignore)
     try {
       await c.createObject({
         description: "temporary test program",
@@ -141,25 +157,18 @@ test("write_program", async () => {
       await c.deleteObject(path, handle.LOCK_HANDLE)
       await c.unLock(path, handle.LOCK_HANDLE)
     } finally {
-      c.dropSession()
+      await c.dropSession()
     }
   })
 })
+
 test("save with transport", async () => {
   if (!enableWrite(new Date())) return
+  jest.setTimeout(18000)
   await doRunTest(async (c: ADTClient) => {
-    const path =
+    const url =
       "/sap/bc/adt/oo/classes/zapidummyfoobar/includes/implementations"
-    const contents = ""
-    c.stateful = session_types.stateful
-    const handle = await c.lock("/sap/bc/adt/oo/classes/zapidummyfoobar")
-    await c.setObjectSource(
-      path,
-      contents,
-      handle.LOCK_HANDLE,
-      process.env.ADT_TRANS
-    )
-    await c.unLock("/sap/bc/adt/oo/classes/zapidummyfoobar", handle.LOCK_HANDLE)
+    await writeobject(c, url, "")
   })
 })
 
@@ -308,8 +317,6 @@ test("Create CDS objects", async () => {
       await deleteObj(acconobj, c)
       await deleteObj(metaobj, c)
       await deleteObj(ddefobj, c)
-    } catch (e) {
-      throw e
     } finally {
       await c.dropSession()
       await deleteObj(acconobj, c)
@@ -341,8 +348,6 @@ test("Create and delete a package", async () => {
       expect(result).toBeDefined()
       expect(result!.objectUrl).toBeDefined()
       await deleteObj(TMPPACKAGEURL, c, true)
-    } catch (e) {
-      throw e
     } finally {
       await c.dropSession()
       await deleteObj(TMPPACKAGEURL, c)
@@ -376,6 +381,21 @@ const findTrans = (transports: TransportsOfUser, target: string) => {
 test("Delete a transport", async () => {
   if (!enableWrite(new Date())) return
   await doRunTest(async (c: ADTClient) => {
+    const gettrans = async () => {
+      const isNew = await c.hasTransportConfig()
+      if (isNew) {
+        const configs = await c.transportConfigurations()
+        const oldconfig = await c.getTransportConfiguration(configs[0].link)
+        await c.setTransportsConfig(configs[0].link, configs[0].etag, {
+          ...oldconfig,
+          WorkbenchRequests: true,
+          User: process.env.ADT_USER!
+        })
+        const transports = await c.transportsByConfig(configs[0].link)
+        return transports
+      }
+      return c.userTransports(process.env.ADT_USER!)
+    }
     const transp = await c.createTransport(
       "/sap/bc/adt/oo/classes/zapidummytestcreation/source/main",
       "transport delete test",
@@ -383,12 +403,12 @@ test("Delete a transport", async () => {
     )
     expect(transp).toBeDefined()
 
-    let result = await c.userTransports(process.env.ADT_USER!)
+    let result = await gettrans()
 
     expect(findTrans(result, transp)).toBeDefined()
 
     await c.statelessClone.transportDelete(transp)
-    result = await c.userTransports(process.env.ADT_USER!)
+    result = await gettrans()
 
     expect(findTrans(result, transp)).toBeUndefined()
   })
@@ -533,6 +553,7 @@ test(
   "rename",
   runTest(async (c: ADTClient) => {
     jest.setTimeout(8000) // this usually takes longer than the default 5000
+    if (!enableWrite(new Date())) return
     const uri = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
     const renameEvaluate = await c.renameEvaluate(uri, 22, 11, 11)
     expect(renameEvaluate).toBeDefined()
@@ -558,18 +579,25 @@ test(
     expect(preview).toBeDefined()
 
     if (!enableWrite(new Date())) return
-    const execute = await c.renameExecute(preview)
-    expect(execute).toBeDefined()
+    const prevsource = await c.getObjectSource(uri)
+    try {
+      const execute = await c.renameExecute(preview)
+      expect(execute).toBeDefined()
+    } finally {
+      await writeobject(c, uri, prevsource).catch(ignore)
+    }
   })
 )
 
 test(
   "extract method",
   runTest(async (c: ADTClient) => {
-    const proposal = await c.extractMethodEvaluate(
-      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main",
-      { start: { line: 32, column: 0 }, end: { line: 33, column: 14 } }
-    )
+    const classname =
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+    const proposal = await c.extractMethodEvaluate(classname, {
+      start: { line: 32, column: 0 },
+      end: { line: 33, column: 15 }
+    })
     expect(proposal.content).toBeDefined()
     expect(proposal.className).toBe("ZAPIADT_TESTCASE_CLASS1")
     proposal.name = "mymethod"
@@ -577,8 +605,13 @@ test(
     expect(preview).toBeDefined()
     if (!enableWrite(new Date())) return
     preview.transport = process.env.ADT_TRANS ?? ""
-    const done = await c.extractMethodExecute(preview)
-    expect(done).toBeDefined()
+    const prevsource = await c.getObjectSource(classname)
+    try {
+      const done = await c.extractMethodExecute(preview)
+      expect(done).toBeDefined()
+    } finally {
+      await writeobject(c, classname, prevsource).catch(ignore)
+    }
   })
 )
 
@@ -609,23 +642,33 @@ test(
   "request exemption",
   runTest(async (c: ADTClient) => {
     const variant = await readAtcVariant(c)
-    const run = await c.createAtcRun(
-      variant,
+    const sourceurl =
       "/sap/bc/adt/oo/classes/zapiadt_testcase_console/source/main"
-    )
+    const run = await c.createAtcRun(variant, sourceurl)
     const findings = await c.atcWorklists(run.id)
-    const proposal = await c.atcExemptProposal(
-      findings.objects[0].findings[0].quickfixInfo!
-    )
-    if (c.isProposalMessage(proposal)) fail("Exemption proposal expected")
-    proposal.justification = "Created by unit test"
-    proposal.reason = "FPOS"
-    proposal.restriction.enabled = true
-    proposal.restriction.singlefinding = true
-    proposal.approver = process.env.ADT_ATCAPPROVER || ""
-    if (!enableWrite(new Date())) return
-    const exemption = await c.atcRequestExemption(proposal)
-    if (exemption.type === "E") fail(exemption.message)
+    const firstfinding = findings.objects[0]?.findings[0]
+    if (!firstfinding?.quickfixInfo)
+      if (!firstfinding.exemptionApproval.match(/^\s*$/)) {
+        console.error("skipping exemption request because already exists")
+        return
+      } else
+        fail(
+          "no quickfix info, you might have existing findings for this class"
+        )
+    try {
+      const proposal = await c.atcExemptProposal(firstfinding.quickfixInfo)
+      if (c.isProposalMessage(proposal)) fail("Exemption proposal expected")
+      proposal.justification = "Created by unit test"
+      proposal.reason = "FPOS"
+      proposal.restriction.enabled = true
+      proposal.restriction.singlefinding = true
+      proposal.approver = process.env.ADT_ATCAPPROVER || ""
+      if (!enableWrite(new Date())) return
+      const exemption = await c.atcRequestExemption(proposal)
+      if (exemption.type === "E") fail(exemption.message)
+    } catch (error) {
+      fail(error)
+    }
   })
 )
 

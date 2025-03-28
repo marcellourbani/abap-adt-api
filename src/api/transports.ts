@@ -425,13 +425,14 @@ export async function transportSetOwner(
   targetuser: string
 ) {
   validateTransport(transportNumber)
-
+  const body = `<?xml version="1.0" encoding="ASCII"?><tm:root xmlns:tm="http://www.sap.com/cts/adt/tm" tm:number="${transportNumber}" tm:targetuser="${targetuser}" tm:useraction="changeowner"/>`
   const response = await h.request(
     "/sap/bc/adt/cts/transportrequests/" + transportNumber,
     {
       method: "PUT",
       headers: { Accept: "application/*" },
-      qs: { targetuser }
+      qs: { targetuser },
+      body
     }
   )
   const raw = fullParse(response.body)

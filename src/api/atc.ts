@@ -4,6 +4,7 @@ import {
   encodeEntity,
   fullParse,
   isString,
+  mixed,
   numberParseOptions,
   orUndefined,
   toInt,
@@ -14,24 +15,38 @@ import {
 import * as t from "io-ts"
 import { adtException, isErrorMessageType, validateParseResult } from ".."
 import { parseUri, uriParts } from "./urlparser"
-
-const proposalFinding = t.type({
-  uri: t.string,
-  type: t.string,
-  name: t.string,
-  location: t.string,
-  processor: t.string,
-  lastChangedBy: t.string,
-  priority: t.number,
-  checkId: t.string,
-  checkTitle: t.string,
-  messageId: t.string,
-  messageTitle: t.string,
-  exemptionApproval: t.string,
-  exemptionKind: t.string,
-  checksum: t.number,
-  quickfixInfo: t.string
-})
+const exemptionKind = t.union([
+  t.literal("A"),
+  t.literal("I"),
+  t.literal(""),
+  t.string
+]) // SATC_AC_RSLT_XMPT_KIND Atc based/Inline/none
+const proposalFinding = mixed(
+  {
+    uri: t.string,
+    type: t.string,
+    name: t.string,
+    location: t.string,
+    processor: t.string,
+    lastChangedBy: t.string,
+    priority: t.number,
+    checkId: t.string,
+    checkTitle: t.string,
+    messageId: t.string,
+    messageTitle: t.string,
+    exemptionApproval: t.string,
+    exemptionKind, // SATC_AC_RSLT_XMPT_KIND Atc based/Inline/none
+    checksum: t.number,
+    quickfixInfo: t.string
+  },
+  {
+    quickfixes: t.partial({
+      automatic: t.boolean,
+      manual: t.boolean,
+      pseudo: t.boolean
+    })
+  }
+)
 
 const restriction = t.type({
   enabled: t.boolean,
@@ -57,23 +72,30 @@ const restriction = t.type({
   })
 })
 
-const atcProposal = t.type({
-  finding: t.union([proposalFinding, t.string]),
-  package: t.string,
-  subObject: t.string,
-  subObjectType: t.string,
-  subObjectTypeDescr: t.string,
-  objectTypeDescr: t.string,
-  approver: t.string,
-  reason: t.union([t.literal("FPOS"), t.literal("OTHR"), t.literal("")]),
-  justification: t.string,
-  notify: t.union([
-    t.literal("never"),
-    t.literal("on_rejection"),
-    t.literal("always")
-  ]),
-  restriction: restriction
-})
+const atcProposal = mixed(
+  {
+    finding: t.union([proposalFinding, t.string]),
+    package: t.string,
+    subObject: t.string,
+    subObjectType: t.string,
+    subObjectTypeDescr: t.string,
+    objectTypeDescr: t.string,
+    approver: t.string,
+    reason: t.union([t.literal("FPOS"), t.literal("OTHR"), t.literal("")]),
+    justification: t.string,
+    notify: t.union([
+      t.literal("never"),
+      t.literal("on_rejection"),
+      t.literal("always")
+    ]),
+    restriction: restriction
+  },
+  {
+    apprIsArea: t.string,
+    checkClass: t.string,
+    validUntil: t.string
+  }
+)
 
 const atcProposalMessage = t.type({
   type: t.string,
@@ -134,7 +156,7 @@ const finding = t.type({
   messageId: t.string,
   messageTitle: t.string,
   exemptionApproval: t.string,
-  exemptionKind: t.string,
+  exemptionKind,
   quickfixInfo: orUndefined(t.string),
   link: link
 })
@@ -327,6 +349,12 @@ export async function atcExemptProposal(
   if (!isString(finding)) {
     finding.priority = toInt(finding.priority)
     finding.checksum = toInt(finding.checksum)
+    const qf = xmlNodeAttr(xmlNode(root, "finding", "quickfixes"))
+    finding.quickfixes = {
+      automatic: qf.automatic === "true",
+      manual: qf.manual === "true",
+      pseudo: qf.pseudo === "true"
+    }
   }
   const {
     package: pa,
@@ -337,7 +365,10 @@ export async function atcExemptProposal(
     approver,
     reason,
     justification,
-    notify
+    notify,
+    apprIsArea,
+    checkClass,
+    validUntil
   } = root
   const { thisFinding, rangeOfFindings } = xmlNode(root, "restriction")
   const { restrictByObject, restrictByCheck } = rangeOfFindings
@@ -350,8 +381,11 @@ export async function atcExemptProposal(
     objectTypeDescr,
     approver,
     reason,
-    justification: justification,
+    justification,
     notify,
+    apprIsArea,
+    checkClass,
+    validUntil,
     restriction: {
       enabled: thisFinding["@_enabled"] === "true",
       singlefinding: thisFinding["#text"] === "true",
@@ -407,7 +441,9 @@ export async function atcRequestExemption(
       }" atcfinding:messageTitle="${encodeEntity(finding.messageTitle)}" 
     atcfinding:priority="${finding.priority}" atcfinding:processor="${
         finding.processor
-      }" atcfinding:quickfixInfo="${finding.quickfixInfo}"/>`
+      }" atcfinding:quickfixInfo="${finding.quickfixInfo}">
+      <atcfinding:quickfixes atcfinding:automatic="false" atcfinding:manual="false" atcfinding:pseudo="false" />
+    </atcfinding:finding>`
   const body = `<?xml version="1.0" encoding="ASCII"?>
     <atcexmpt:exemptionProposal xmlns:adtcore="http://www.sap.com/adt/core" xmlns:atcexmpt="http://www.sap.com/adt/atc/exemption" xmlns:atcfinding="http://www.sap.com/adt/atc/finding">
       ${findingXml}
@@ -445,7 +481,10 @@ export async function atcRequestExemption(
         proposal.justification
       )}</atcexmpt:justification>
       <atcexmpt:notify>${proposal.notify}</atcexmpt:notify>
-    </atcexmpt:exemptionProposal>`
+      <atcexmpt:apprIsArea>${proposal.apprIsArea || ""}</atcexmpt:apprIsArea>
+      <atcexmpt:checkClass>${proposal.checkClass || ""}</atcexmpt:checkClass>
+      <atcexmpt:validUntil>${proposal.validUntil || ""}</atcexmpt:validUntil>
+      </atcexmpt:exemptionProposal>`
   const response = await h.request(`/sap/bc/adt/atc/exemptions/apply`, {
     headers,
     body,

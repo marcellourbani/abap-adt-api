@@ -45,6 +45,11 @@ If all goes right, the test suite will now be available
 
 ABAPGit API tests will also require the installation of the [eclipse abapgit plugin](https://github.com/abapGit/ADT_Backend) too
 
+### set up ATC
+
+- run transaction atc
+- in exemptions/maintain approvers, add BWDEVELOPER as an approver (you might have to create it with transaction su01)
+
 ## Configuration
 
 In order for the tests to run, you'll have to enter your connection details in setenv.js, like:

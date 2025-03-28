@@ -1,12 +1,8 @@
 import axios, {
   Axios,
   AxiosRequestConfig,
-  AxiosResponse,
-  AxiosError,
   AxiosBasicCredentials,
   Method,
-  AxiosInstance,
-  AxiosRequestHeaders,
   AxiosResponseHeaders,
   AxiosHeaders,
   RawAxiosResponseHeaders
@@ -19,6 +15,7 @@ import {
   fromError,
   isAdtException,
   isHttpError,
+  isLoginError,
   LogCallback
 } from "."
 import { logError, logResponse } from "./requestLogger"
@@ -81,9 +78,6 @@ const toAxiosConfig = (
   }
   return config
 }
-
-const isLoginError = (adtErr: AdtException) =>
-  (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
 
 export type BearerFetcher = () => Promise<string>
 let adtRequestNumber = 0

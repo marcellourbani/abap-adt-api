@@ -16,9 +16,9 @@ import axios, { AxiosResponse, AxiosError, AxiosRequestConfig } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
-const ADTEXTYPEID = Symbol()
-const CSRFEXTYPEID = Symbol()
-const HTTPEXTYPEID = Symbol()
+const ADTEXTYPEID = Symbol.for("ADT EXCEPTION")
+const CSRFEXTYPEID = Symbol.for("BAD CSRF")
+const HTTPEXTYPEID = Symbol.for("HTTP EXCEPTION")
 
 export enum SAPRC {
   Success = "S",
@@ -153,6 +153,8 @@ export function isHttpError(e: unknown): e is AdtHttpException {
 export function isAdtException(e: unknown): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
+export const isLoginError = (adtErr: AdtException) =>
+  (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
 
 const simpleError = (response: HttpClientResponse | AxiosResponse) =>
   adtException(
@@ -166,14 +168,13 @@ const isCsrfException = (r: HttpClientResponse) =>
 
 export const fromResponse = (
   data: string,
-  response: HttpClientResponse | AxiosResponse,
-  request?: RequestOptions | AxiosRequestConfig
+  response: HttpClientResponse | AxiosResponse
 ) => {
   if (!data) return simpleError(response)
   if (data.match(/CSRF/)) return new AdtCsrfException(data)
   const raw = fullParse(data as string)
   const root = raw["exc:exception"]
-  if (!root) return simpleError(response)
+  if (!root && response.status === 401) return simpleError(response)
   const getf = (base: any, idx: string) => (base ? base[idx] : "")
   const properties: Record<string, string> = {}
   xmlArray(root, "properties", "entry").forEach((p: any) => {
@@ -199,9 +200,10 @@ export const fromError = (error: unknown): AdtException => {
   try {
     if (isAdtError(error)) return error
 
-    if (axios.isAxiosError(error) && error.response)
-      return fromResponse(axiosErrorBody(error), error.response, error.response)
-
+    if (axios.isAxiosError(error) && error.response) {
+      if (error.status === 401) return new AdtHttpException(error)
+      return fromResponse(axiosErrorBody(error), error.response)
+    }
     if (isObject(error) && "message" in error && isString(error?.message))
       return new AdtErrorException(500, {}, "", error.message)
   } catch (error) {}
@@ -213,8 +215,7 @@ function fromExceptionOrResponse_int(
   config?: RequestOptions
 ): AdtException {
   try {
-    if (isResponse(errOrResp))
-      return fromResponse(errOrResp.body, errOrResp, config)
+    if (isResponse(errOrResp)) return fromResponse(errOrResp.body, errOrResp)
     else return fromError(errOrResp)
   } catch (e) {
     return isResponse(errOrResp)
