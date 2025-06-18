@@ -14,7 +14,6 @@ import {
   adtException,
   fromError,
   isAdtException,
-  isHttpError,
   isLoginError,
   LogCallback
 } from "."

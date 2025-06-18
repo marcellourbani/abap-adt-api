@@ -12,13 +12,19 @@ import {
   isString,
   xmlArray
 } from "./utilities"
-import axios, { AxiosResponse, AxiosError, AxiosRequestConfig } from "axios"
+import axios, {
+  AxiosResponse,
+  AxiosError,
+  AxiosRequestConfig,
+  isAxiosError
+} from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
 const ADTEXTYPEID = Symbol.for("ADT EXCEPTION")
 const CSRFEXTYPEID = Symbol.for("BAD CSRF")
 const HTTPEXTYPEID = Symbol.for("HTTP EXCEPTION")
+const BADSESSION = "ICMENOSESSION"
 
 export enum SAPRC {
   Success = "S",
@@ -131,6 +137,11 @@ class AdtHttpException extends Error {
   get name() {
     return this.parent.name
   }
+
+  get errorid() {
+    if (isAxiosError(this.parent))
+      return this.parent?.response?.headers?.["x-sap-icm-err-id"]
+  }
   constructor(public readonly parent: Error) {
     super()
   }
@@ -154,17 +165,15 @@ export function isAdtException(e: unknown): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 export const isLoginError = (adtErr: AdtException) =>
-  (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
+  (isHttpError(adtErr) && adtErr.code === 401) ||
+  (isHttpError(adtErr) && adtErr.errorid === BADSESSION) ||
+  isCsrfError(adtErr)
 
 const simpleError = (response: HttpClientResponse | AxiosResponse) =>
   adtException(
     `Error ${response.status}:${response.statusText}`,
     response.status
   )
-
-const isCsrfException = (r: HttpClientResponse) =>
-  (r.status === 403 && r.headers["x-csrf-token"] === "Required") ||
-  (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
 
 export const fromResponse = (
   data: string,
@@ -196,13 +205,18 @@ export const fromResponse = (
 const axiosErrorBody = (e: AxiosError): string =>
   e.response?.data ? `${e.response.data}` : ""
 
+const hasRoot = (e: AxiosError) =>
+  !!fullParse(axiosErrorBody(e))["exc:exception"]
+
 export const fromError = (error: unknown): AdtException => {
   try {
     if (isAdtError(error)) return error
 
     if (axios.isAxiosError(error) && error.response) {
       if (error.status === 401) return new AdtHttpException(error)
-      return fromResponse(axiosErrorBody(error), error.response)
+      if (hasRoot(error))
+        return fromResponse(axiosErrorBody(error), error.response)
+      return new AdtHttpException(error)
     }
     if (isObject(error) && "message" in error && isString(error?.message))
       return new AdtErrorException(500, {}, "", error.message)
