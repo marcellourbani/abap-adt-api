@@ -23,6 +23,10 @@ import {
   annotationDefinitions,
   bindingDetails,
   BindingServiceResult,
+  changePackageExecute,
+  changePackagePreview,
+  ChangePackageRefactoring,
+  ChangePackageRefactoringProposal,
   checkRepo,
   ClassComponent,
   classComponents,
@@ -1345,6 +1349,20 @@ export class ADTClient {
     value: string
   ): Promise<string> {
     return debuggerSetVariableValue(this.h, variableName, value)
+  }
+
+
+  public changePackagePreview(
+    changePackageRefactoring: ChangePackageRefactoring,
+    transport: string = ""
+  ): Promise<ChangePackageRefactoring> {
+    return changePackagePreview(this.h, changePackageRefactoring, transport)
+  }
+
+  public changePackageExecute(
+    refactoring: ChangePackageRefactoring
+  ): Promise<ChangePackageRefactoring> {
+    return changePackageExecute(this.h, refactoring)
   }
 
   public renameEvaluate(
