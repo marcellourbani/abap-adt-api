@@ -41,7 +41,6 @@ interface ChangePackageAffectedObject {
   oldPackage: string;
   newPackage: string;
   parentUri: string;
-  userContent: string;
 }
 export interface ChangePackageRefactoringProposal {
     oldPackage: string;
@@ -202,7 +201,9 @@ export async function fixEdits(
 const parsePackageGeneric = (generic: any): ChangePackageRefactoringProposal => {
     // Read the single affectedObject node directly (not as an array)
     const o = xmlNode(generic, "affectedObjects", "affectedObject");
-    if (!o) throw new Error("No affectedObject found in generic.affectedObjects");
+    if (!o) {
+        return {} as ChangePackageRefactoringProposal;
+    }
     const { uri, type, name, parentUri, packageName } = xmlNodeAttr(o);
     const newPackage = xmlNode(xmlNode(o, "changePackageDelta"), "newPackage");
     const affectedObjects: ChangePackageAffectedObject = {
@@ -211,8 +212,7 @@ const parsePackageGeneric = (generic: any): ChangePackageRefactoringProposal => 
       name,
       oldPackage: packageName,
       newPackage,
-      parentUri,
-      userContent: (o as any).userContent
+      parentUri
     };
     const { ignoreSyntaxErrorsAllowed, ignoreSyntaxErrors, transport, userContent = "", adtObjectUri = "", title } = generic;
     return {
@@ -288,8 +288,8 @@ function parseChangePackageRefactoring(body: string): ChangePackageRefactoring {
   } = parsePackageGeneric(xmlNode(root || raw, "genericRefactoring")) // depending on the caller the generic refactoring might be wrapped or not
 
   return {
-    oldPackage: xmlNode(root, "oldPackage") || "",
-    newPackage: xmlNode(root, "newPackage") || "",
+    oldPackage: affectedObjects.oldPackage || "",
+    newPackage: affectedObjects.newPackage || "",
     adtObjectUri: adtObjectUri,
     ignoreSyntaxErrorsAllowed: !!ignoreSyntaxErrorsAllowed,
     ignoreSyntaxErrors: !!ignoreSyntaxErrors,
@@ -617,14 +617,12 @@ export async function changePackagePreview(h: AdtHTTP, changePackageRefactoring:
     };
     const bodyXml = serializeChangePackageRefactoring(changePackageRefactoring, true, transport);
     const headers = { "Content-Type": "application/*", Accept: "application/*" };
-    console.log(" changePackagePreview bodyXml", bodyXml);
     const response = await h.request("/sap/bc/adt/refactorings", {
         method: "POST",
         qs: qs,
         body: bodyXml,
         headers: headers
     });
-    console.log(" changePackagePreview response.body", response.body);
     const parsed = parseChangePackageRefactoring(response.body);
     return { ...parsed, transport: parsed.transport || transport };
 }
@@ -636,15 +634,16 @@ export async function changePackageExecute(h: AdtHTTP, packagename: ChangePackag
     };
     const headers = { "Content-Type": "application/*", Accept: "application/*" };
     const body = serializeChangePackageRefactoring(packagename, false);
-    console.log(" changePackageExecute body", body);
     const response = await h.request("/sap/bc/adt/refactorings", {
         method: "POST",
         qs: qs,
         body,
         headers: headers
     });
-    console.log(" changePackageExecute response.body", response.body);
-    const result = parseChangePackageRefactoring(response.body);
+    if(response.statusText !== "OK"){
+        throw adtException(`Change Package failed: ${response.statusText}`);
+    }
+    const result = parseChangePackageRefactoring(body);
     return { ...result, transport: result.transport || packagename.transport };
 }
 

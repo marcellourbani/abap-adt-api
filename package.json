@@ -1,6 +1,6 @@
 {
-  "name": "abap-adt-api",
-  "version": "6.2.1",
+  "name": "@rayutek/abap-adt-api",
+  "version": "6.2.1-pkg-1.0.1",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "build",
   "main": "build/index.js",
