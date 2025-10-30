@@ -1,5 +1,6 @@
 import {
   AdtHTTP,
+  HttpClientException,
   HttpClientResponse,
   isHttpClientException,
   RequestOptions
@@ -13,7 +14,6 @@ import {
   isString,
   xmlArray
 } from "./utilities"
-import axios, { AxiosResponse } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
@@ -157,7 +157,7 @@ export function isAdtException(e: unknown): e is AdtException {
 export const isLoginError = (adtErr: AdtException) =>
   (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
 
-const simpleError = (response: HttpClientResponse | AxiosResponse) =>
+const simpleError = (response: HttpClientResponse) =>
   adtException(
     `Error ${response.status}:${response.statusText}`,
     response.status
@@ -167,10 +167,7 @@ const isCsrfException = (r: HttpClientResponse) =>
   (r.status === 403 && r.headers["x-csrf-token"] === "Required") ||
   (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
 
-export const fromResponse = (
-  data: string,
-  response: HttpClientResponse | AxiosResponse
-) => {
+export const fromResponse = (data: string, response: HttpClientResponse) => {
   if (!data) return simpleError(response)
   if (data.match(/CSRF/)) return new AdtCsrfException(data)
   const raw = fullParse(data as string)
@@ -209,7 +206,7 @@ export const fromError = (error: unknown): AdtException => {
 }
 
 function fromExceptionOrResponse_int(
-  errOrResp: HttpClientResponse | unknown,
+  errOrResp: HttpClientResponse | HttpClientException,
   config?: RequestOptions
 ): AdtException {
   try {
@@ -230,7 +227,7 @@ export function fromException(
   if (
     !isResponse(errOrResp) &&
     (!isNativeError(errOrResp) ||
-      (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp)))
+      (isNativeError(errOrResp) && !isHttpClientException(errOrResp)))
   )
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   return fromExceptionOrResponse_int(errOrResp, config)

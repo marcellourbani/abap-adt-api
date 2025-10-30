@@ -1,6 +1,5 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
-import { AxiosError, AxiosHeaders } from "axios"
 import {
   ADTClient,
   fromError,
@@ -11,7 +10,7 @@ import {
   objectPath,
   UnitTestAlertKind
 } from "../"
-import { session_types } from "../AdtHTTP"
+import { HttpClientException, session_types } from "../AdtHTTP"
 import {
   classIncludes,
   isBindingOptions,
@@ -1598,19 +1597,20 @@ test("parse uri range", () => {
 })
 
 test("detect login error", () => {
-  const badlogin = new AxiosError(
+  const badlogin = new HttpClientException(
     "Request failed with status code 401",
     "ERR_BAD_REQUEST",
+    401,
     undefined,
-    undefined,
+    { url: "" },
     {
       status: 401,
       statusText: "Unauthorized",
-      config: { headers: new AxiosHeaders() },
       headers: {},
-      data: "<html></html>"
+      body: "<html></html>"
     }
   )
+
   const ex = fromError(badlogin)
   expect(isHttpError(ex)).toBe(true)
   expect(isHttpError(ex) && ex.code).toBe(401)

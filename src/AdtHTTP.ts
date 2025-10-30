@@ -1,28 +1,37 @@
-import axios, {
-  Axios,
-  AxiosRequestConfig,
-  AxiosBasicCredentials,
-  Method,
-  AxiosResponseHeaders,
-  AxiosHeaders,
-  RawAxiosResponseHeaders,
-  isAxiosError,
-  AxiosResponse
-} from "axios"
 import { fromException, isCsrfError } from "./AdtException"
 import https from "https"
 import {
   AdtException,
   adtException,
-  fromError,
   isAdtException,
-  isHttpError,
   isLoginError,
   LogCallback
 } from "."
 import { logError, logResponse } from "./requestLogger"
-import { hasMessage, isString } from "./utilities"
-import { readonly } from "io-ts"
+import { isString } from "./utilities"
+import { AxiosHttpClient } from "./AxiosHttpClient"
+
+export type Method =
+  | "get"
+  | "GET"
+  | "delete"
+  | "DELETE"
+  | "head"
+  | "HEAD"
+  | "options"
+  | "OPTIONS"
+  | "post"
+  | "POST"
+  | "put"
+  | "PUT"
+  | "patch"
+  | "PATCH"
+  | "purge"
+  | "PURGE"
+  | "link"
+  | "LINK"
+  | "unlink"
+  | "UNLINK"
 
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
@@ -42,13 +51,18 @@ export interface HttpResponse {
   body: string
 }
 
+export interface BasicCredentials {
+  username: string
+  password: string
+}
+
 export interface ClientOptions {
   headers?: Record<string, string>
   httpsAgent?: https.Agent
   baseURL?: string
   debugCallback?: LogCallback
   timeout?: number
-  auth?: AxiosBasicCredentials
+  auth?: BasicCredentials
   keepAlive?: boolean
 }
 
@@ -59,28 +73,22 @@ export interface RequestOptions extends ClientOptions {
   qs?: Record<string, any>
   baseURL?: string
   timeout?: number
-  auth?: AxiosBasicCredentials
+  auth?: BasicCredentials
   body?: string
   url?: string
 }
 
-const toAxiosConfig = (
-  options: RequestOptions & RequestMetadata
-): AxiosRequestConfig & RequestMetadata => {
-  const config: AxiosRequestConfig & RequestMetadata = {
-    method: options.method || "GET",
-    url: options.url,
-    headers: options.headers || {},
-    params: options.qs,
-    httpsAgent: options.httpsAgent,
-    timeout: options.timeout,
-    auth: options.auth,
-    data: options.body,
-    adtRequestNumber: options.adtRequestNumber,
-    adtStartTime: options.adtStartTime
-  }
-  return config
-}
+export type HeaderValue = string | string[] | number | boolean | null
+
+export const isHeaderValue = (v: any): v is HeaderValue =>
+  v === null ||
+  typeof v === "string" ||
+  typeof v === "number" ||
+  typeof v === "boolean" ||
+  (Array.isArray(v) && v.every(item => typeof item === "string"))
+
+export type ResponseHeaders = Record<string, HeaderValue> &
+  Partial<{ "set-cookie": string[] }>
 
 export type BearerFetcher = () => Promise<string>
 let adtRequestNumber = 0
@@ -88,11 +96,11 @@ export interface HttpClientResponse {
   body: string
   status: number
   statusText: string
-  headers: AxiosResponseHeaders
+  headers: ResponseHeaders
   request?: any
 }
 
-interface RequestMetadata {
+export interface RequestMetadata {
   adtRequestNumber?: number
   adtStartTime?: Date
 }
@@ -115,15 +123,6 @@ export interface HttpClient {
   request: (options: HttpClientOptions) => Promise<HttpClientResponse>
 }
 
-const convertheaders = (
-  raw: RawAxiosResponseHeaders | AxiosResponseHeaders
-): AxiosHeaders => {
-  if (raw instanceof AxiosHeaders) return raw
-  const headers = new AxiosHeaders()
-  for (const k in Object.keys(raw)) headers.set(k, raw[k])
-  return headers
-}
-
 export class HttpClientException extends Error {
   constructor(
     message: string,
@@ -141,56 +140,6 @@ export const isHttpClientException = (
   error: unknown
 ): error is HttpClientException => error instanceof HttpClientException
 
-const axiosRespToHttp = (raw: AxiosResponse) => {
-  const { data, status, statusText, headers } = raw
-  const body = data ? (isString(data) ? data : `${data}`) : ""
-  return {
-    body,
-    status,
-    statusText,
-    headers: convertheaders(headers)
-  }
-}
-export class AxiosHttpClient implements HttpClient {
-  private axios: Axios
-  constructor(private baseURL: string, private config?: ClientOptions) {
-    const conf = toAxiosConfig({ ...config })
-    this.axios = axios.create({ ...conf, baseURL })
-  }
-  async request(options: HttpClientOptions): Promise<HttpClientResponse> {
-    try {
-      const config = toAxiosConfig(options)
-      const raw = await this.axios.request(config)
-      return axiosRespToHttp(raw)
-    } catch (error) {
-      if (!isAxiosError(error)) {
-        const message = hasMessage(error)
-          ? error.message
-          : "Unknown error in HTTP client"
-        throw new HttpClientException(
-          message,
-          undefined,
-          undefined,
-          this.config,
-          options,
-          undefined,
-          error
-        )
-      }
-      const response = error.response && axiosRespToHttp(error.response)
-      throw new HttpClientException(
-        error.message,
-        error.code,
-        error.status,
-        this.config,
-        options,
-        response,
-        error
-      )
-    }
-  }
-}
-
 export class AdtHTTP {
   readonly baseURL: string
   readonly id: number
@@ -203,7 +152,7 @@ export class AdtHTTP {
   private commonHeaders: Record<string, string>
   private bearer?: string
   private getToken?: BearerFetcher
-  private auth?: AxiosBasicCredentials
+  private auth?: BasicCredentials
   private httpclient: HttpClient
   private debugCallback?: LogCallback
   private loginPromise?: Promise<HttpClientResponse>
