@@ -187,6 +187,9 @@ export function formatQS(raw: any) {
     .join("&")
 }
 
+export const hasMessage = (error: unknown): error is { message: string } =>
+  isObject(error) && "message" in error && isString(error?.message)
+
 export const toXmlAttributes = (o: any, prefix: string) => {
   const sep = prefix ? ":" : ""
   return o

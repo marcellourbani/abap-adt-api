@@ -1,18 +1,19 @@
 import {
   AdtHTTP,
-  HttpClientOptions,
   HttpClientResponse,
+  isHttpClientException,
   RequestOptions
 } from "./AdtHTTP"
 import {
   fullParse,
+  hasMessage,
   isNativeError,
   isNumber,
   isObject,
   isString,
   xmlArray
 } from "./utilities"
-import axios, { AxiosResponse, AxiosError, AxiosRequestConfig } from "axios"
+import axios, { AxiosResponse } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
@@ -193,18 +194,15 @@ export const fromResponse = (
   )
 }
 
-const axiosErrorBody = (e: AxiosError): string =>
-  e.response?.data ? `${e.response.data}` : ""
-
 export const fromError = (error: unknown): AdtException => {
   try {
     if (isAdtError(error)) return error
 
-    if (axios.isAxiosError(error) && error.response) {
+    if (isHttpClientException(error) && error.response) {
       if (error.status === 401) return new AdtHttpException(error)
-      return fromResponse(axiosErrorBody(error), error.response)
+      return fromResponse(error.response.body, error.response)
     }
-    if (isObject(error) && "message" in error && isString(error?.message))
+    if (hasMessage(error))
       return new AdtErrorException(500, {}, "", error.message)
   } catch (error) {}
   return AdtErrorException.create(500, {}, "Unknown error", `${error}`) // hopefully will never happen

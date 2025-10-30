@@ -5,7 +5,9 @@ import axios, {
   Method,
   AxiosResponseHeaders,
   AxiosHeaders,
-  RawAxiosResponseHeaders
+  RawAxiosResponseHeaders,
+  isAxiosError,
+  AxiosResponse
 } from "axios"
 import { fromException, isCsrfError } from "./AdtException"
 import https from "https"
@@ -19,7 +21,8 @@ import {
   LogCallback
 } from "."
 import { logError, logResponse } from "./requestLogger"
-import { isString } from "./utilities"
+import { hasMessage, isString } from "./utilities"
+import { readonly } from "io-ts"
 
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
@@ -121,20 +124,69 @@ const convertheaders = (
   return headers
 }
 
+export class HttpClientException extends Error {
+  constructor(
+    message: string,
+    readonly code: string | undefined,
+    readonly status: number | undefined,
+    readonly config: ClientOptions | undefined,
+    readonly request: HttpClientOptions,
+    readonly response?: HttpClientResponse,
+    readonly parent?: unknown
+  ) {
+    super(message)
+  }
+}
+export const isHttpClientException = (
+  error: unknown
+): error is HttpClientException => error instanceof HttpClientException
+
+const axiosRespToHttp = (raw: AxiosResponse) => {
+  const { data, status, statusText, headers } = raw
+  const body = data ? (isString(data) ? data : `${data}`) : ""
+  return {
+    body,
+    status,
+    statusText,
+    headers: convertheaders(headers)
+  }
+}
 export class AxiosHttpClient implements HttpClient {
   private axios: Axios
-  constructor(private baseURL: string, config?: ClientOptions) {
+  constructor(private baseURL: string, private config?: ClientOptions) {
     const conf = toAxiosConfig({ ...config })
     this.axios = axios.create({ ...conf, baseURL })
   }
   async request(options: HttpClientOptions): Promise<HttpClientResponse> {
     try {
       const config = toAxiosConfig(options)
-      const { data, headers, ...rest } = await this.axios.request(config)
-      const body = data ? (isString(data) ? data : `${data}`) : ""
-      return { body, headers: convertheaders(headers), ...rest }
+      const raw = await this.axios.request(config)
+      return axiosRespToHttp(raw)
     } catch (error) {
-      throw fromError(error)
+      if (!isAxiosError(error)) {
+        const message = hasMessage(error)
+          ? error.message
+          : "Unknown error in HTTP client"
+        throw new HttpClientException(
+          message,
+          undefined,
+          undefined,
+          this.config,
+          options,
+          undefined,
+          error
+        )
+      }
+      const response = error.response && axiosRespToHttp(error.response)
+      throw new HttpClientException(
+        error.message,
+        error.code,
+        error.status,
+        this.config,
+        options,
+        response,
+        error
+      )
     }
   }
 }

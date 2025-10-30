@@ -9,3 +9,4 @@ pnpm-lock.yaml
 _noderfc.log
 dev_rfc.log
 *.tgz
+.env
