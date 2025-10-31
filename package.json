@@ -38,8 +38,8 @@
     "@types/tough-cookie": "^4.0.2",
     "client-oauth2": "^4.3.3",
     "eslint": "^8.14.0",
-    "jest": "^27.5.1",
-    "ts-jest": "^27.1.4",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
     "typescript": "^5.8.3"
   }
 }
