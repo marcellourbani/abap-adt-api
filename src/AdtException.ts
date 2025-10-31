@@ -1,18 +1,19 @@
 import {
   AdtHTTP,
-  HttpClientOptions,
+  HttpClientException,
   HttpClientResponse,
+  isHttpClientException,
   RequestOptions
 } from "./AdtHTTP"
 import {
   fullParse,
+  hasMessage,
   isNativeError,
   isNumber,
   isObject,
   isString,
   xmlArray
 } from "./utilities"
-import axios, { AxiosResponse, AxiosError, AxiosRequestConfig } from "axios"
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
@@ -156,7 +157,7 @@ export function isAdtException(e: unknown): e is AdtException {
 export const isLoginError = (adtErr: AdtException) =>
   (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
 
-const simpleError = (response: HttpClientResponse | AxiosResponse) =>
+const simpleError = (response: HttpClientResponse) =>
   adtException(
     `Error ${response.status}:${response.statusText}`,
     response.status
@@ -166,10 +167,7 @@ const isCsrfException = (r: HttpClientResponse) =>
   (r.status === 403 && r.headers["x-csrf-token"] === "Required") ||
   (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
 
-export const fromResponse = (
-  data: string,
-  response: HttpClientResponse | AxiosResponse
-) => {
+export const fromResponse = (data: string, response: HttpClientResponse) => {
   if (!data) return simpleError(response)
   if (data.match(/CSRF/)) return new AdtCsrfException(data)
   const raw = fullParse(data as string)
@@ -193,25 +191,22 @@ export const fromResponse = (
   )
 }
 
-const axiosErrorBody = (e: AxiosError): string =>
-  e.response?.data ? `${e.response.data}` : ""
-
 export const fromError = (error: unknown): AdtException => {
   try {
     if (isAdtError(error)) return error
 
-    if (axios.isAxiosError(error) && error.response) {
+    if (isHttpClientException(error) && error.response) {
       if (error.status === 401) return new AdtHttpException(error)
-      return fromResponse(axiosErrorBody(error), error.response)
+      return fromResponse(error.response.body, error.response)
     }
-    if (isObject(error) && "message" in error && isString(error?.message))
+    if (hasMessage(error))
       return new AdtErrorException(500, {}, "", error.message)
   } catch (error) {}
   return AdtErrorException.create(500, {}, "Unknown error", `${error}`) // hopefully will never happen
 }
 
 function fromExceptionOrResponse_int(
-  errOrResp: HttpClientResponse | unknown,
+  errOrResp: HttpClientResponse | HttpClientException,
   config?: RequestOptions
 ): AdtException {
   try {
@@ -232,7 +227,7 @@ export function fromException(
   if (
     !isResponse(errOrResp) &&
     (!isNativeError(errOrResp) ||
-      (isNativeError(errOrResp) && !axios.isAxiosError(errOrResp)))
+      (isNativeError(errOrResp) && !isHttpClientException(errOrResp)))
   )
     return AdtErrorException.create(500, {}, "Unknown error", `${errOrResp}`) // hopefully will never happen
   return fromExceptionOrResponse_int(errOrResp, config)

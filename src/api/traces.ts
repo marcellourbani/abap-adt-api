@@ -18,6 +18,7 @@ import {
 } from "./tracetypes"
 import { AdtHTTP, RequestOptions } from "../AdtHTTP"
 import { adtException } from ".."
+import { isString } from "../utilities"
 
 export {
   TraceResults,
@@ -120,7 +121,7 @@ export const tracesSetParameters = async (
     opts
   )
   const uri = response.headers["location"]
-  if (!uri) throw adtException("trace configuration not set")
+  if (!uri || !isString(uri)) throw adtException("trace configuration not set")
   return uri
 }
 

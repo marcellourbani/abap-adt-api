@@ -15,7 +15,6 @@ import {
   TracesCreationConfig,
   TransportsOfUser
 } from "../api"
-import { xmlNodeAttr } from "../utilities"
 import { ObjectValidateOptions } from "./../api"
 import { hasAbapGit, runTest } from "./login"
 const doRunTest = (f: (c: ADTClient) => Promise<void>) => runTest(f)()

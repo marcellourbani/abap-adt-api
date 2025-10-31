@@ -1,6 +1,6 @@
 {
   "name": "abap-adt-api",
-  "version": "6.2.1",
+  "version": "7.0.0",
   "description": "Interface to Abap Developer Tools webservice",
   "outDir": "build",
   "main": "build/index.js",
@@ -40,6 +40,6 @@
     "eslint": "^8.14.0",
     "jest": "^27.5.1",
     "ts-jest": "^27.1.4",
-    "typescript": "^4.6.3"
+    "typescript": "^5.8.3"
   }
 }
