@@ -198,6 +198,7 @@ import {
   atcChangeContact,
   AtcProposal,
   atcRequestExemption,
+  atcDocumentation,
   unitTestEvaluation,
   unitTestOccurrenceMarkers,
   tracesDbAccess,
@@ -1430,6 +1431,10 @@ export class ADTClient {
 
   public atcRequestExemption(proposal: AtcProposal) {
     return atcRequestExemption(this.h, proposal)
+  }
+
+  public atcDocumentation(docUri: string) {
+    return atcDocumentation(this.h,docUri)
   }
 
   public isProposalMessage = isProposalMessage

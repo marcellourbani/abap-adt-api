@@ -408,6 +408,26 @@ export async function atcExemptProposal(
   return validateParseResult(atcProposal.decode(result))
 }
 
+export async function atcDocumentation(h: AdtHTTP, docUri: string) {
+  const headers = {
+    "Content-Type": "application/atc.xmptprop.v1+xml",
+    Accept: "application/atc.xmpt.v1+xml, application/atc.xmptprop.v1+xml"
+  } 
+  const response = await h.request(docUri, {
+    headers,
+    method: "GET"
+  })
+
+  const raw = fullParse(response.body, {
+    removeNSPrefix: true,
+    parseTagValue: false,
+    parseAttributeValue: false
+  })
+
+  return raw;
+
+}
+
 export async function atcRequestExemption(
   h: AdtHTTP,
   proposal: AtcProposal
