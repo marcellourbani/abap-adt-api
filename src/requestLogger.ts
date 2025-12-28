@@ -1,15 +1,7 @@
 import axios, { AxiosResponse } from "axios"
-import {
-  AdtErrorException,
-  AdtException,
-  adtException,
-  HttpResponse,
-  isAdtError,
-  isAdtException,
-  session_types
-} from "."
+import { AdtException, isAdtError, isAdtException, session_types } from "."
 import { isNumber, isObject, isString, isUndefined } from "./utilities"
-import { HttpClientOptions, HttpClientResponse } from "./AdtHTTP"
+import { HeaderValue, HttpClientOptions, HttpClientResponse } from "./AdtHTTP"
 
 export interface RequestData {
   method: string
@@ -20,7 +12,7 @@ export interface RequestData {
 }
 
 export interface ResponseData {
-  headers: Record<string, string>
+  headers: Record<string, HeaderValue>
   statusCode: number
   statusMessage: string
   body?: string
