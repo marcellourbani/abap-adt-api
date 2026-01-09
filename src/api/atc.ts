@@ -409,23 +409,13 @@ export async function atcExemptProposal(
 }
 
 export async function atcDocumentation(h: AdtHTTP, docUri: string) {
-  const headers = {
-    "Content-Type": "application/atc.xmptprop.v1+xml",
-    Accept: "application/atc.xmpt.v1+xml, application/atc.xmptprop.v1+xml"
-  } 
+  const headers = { "Content-Type": "application/vnd.sap.adt.atc.items.v1+xml" }; 
   const response = await h.request(docUri, {
     headers,
     method: "GET"
   })
 
-  const raw = fullParse(response.body, {
-    removeNSPrefix: true,
-    parseTagValue: false,
-    parseAttributeValue: false
-  })
-
-  return raw;
-
+  return response;
 }
 
 export async function atcRequestExemption(
