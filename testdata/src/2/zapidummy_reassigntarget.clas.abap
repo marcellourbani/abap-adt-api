@@ -1,0 +1,13 @@
+class zapidummy_reassigntarget definition
+  public
+  create private .
+
+  public section.
+  protected section.
+  private section.
+endclass.
+
+
+
+class zapidummy_reassigntarget implementation.
+endclass.
