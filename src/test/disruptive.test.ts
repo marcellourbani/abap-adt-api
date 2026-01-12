@@ -7,6 +7,7 @@ import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
 import { ADTClient } from "../AdtClient"
 import {
+  ChangePackageRefactoring,
   hasPackageOptions,
   isGroupType,
   NewPackageOptions,
@@ -710,5 +711,42 @@ test(
     )
     await c.tracesDeleteConfiguration(resp.requests[0].id)
     expect(myreq).toBeTruthy()
+  })
+)
+
+test(
+  "package refactoring",
+  runTest(async (c: ADTClient) => {
+    const objurl = "/sap/bc/adt/oo/classes/zapidummy_reassigntarget"
+    const path = await c.findObjectPath(objurl)
+
+    const in2 = path.find(p => p["adtcore:name"] === "ZAPIDUMMY_2")
+    const from = in2 ? "ZAPIDUMMY_2" : "ZAPIDUMMY"
+    const to = in2 ? "ZAPIDUMMY" : "ZAPIDUMMY_2"
+    const changePackageInput: ChangePackageRefactoring = {
+      oldPackage: from,
+      newPackage: to,
+      transport: process.env.ADT_TRANS || "",
+      title: "",
+      rootUserContent: "",
+      ignoreSyntaxErrorsAllowed: false,
+      ignoreSyntaxErrors: false,
+      adtObjectUri: objurl,
+      affectedObjects: {
+        uri: objurl,
+        type: "CLAS/OC",
+        name: "zapidummy_reassigntarget",
+        oldPackage: from,
+        newPackage: to,
+        parentUri: ""
+      },
+      userContent: ""
+    }
+
+    const proposal = await c.changePackagePreview(changePackageInput)
+    expect(proposal).toBeDefined()
+    if (!enableWrite(new Date())) return
+    const result = await c.changePackageExecute(proposal)
+    expect(result).toBeDefined()
   })
 )
