@@ -34,6 +34,29 @@ interface AffectedObjects {
   userContent: string
   textReplaceDeltas: TextReplaceDelta[]
 }
+interface ChangePackageAffectedObject {
+  uri: string;
+  type: string;
+  name: string;
+  oldPackage: string;
+  newPackage: string;
+  parentUri: string;
+}
+export interface ChangePackageRefactoringProposal {
+    oldPackage: string;
+    newPackage: string;
+    transport?: string;
+    title?: string;
+    rootUserContent?: string;
+    ignoreSyntaxErrorsAllowed: boolean;
+    ignoreSyntaxErrors: boolean;
+    adtObjectUri: string;
+    affectedObjects: ChangePackageAffectedObject;
+    userContent: string;
+}
+export interface ChangePackageRefactoring extends ChangePackageRefactoringProposal {
+    transport: string;
+}
 
 export interface RenameRefactoringProposal {
   oldName: string
@@ -175,6 +198,36 @@ export async function fixEdits(
   return deltas
 }
 
+const parsePackageGeneric = (generic: any): ChangePackageRefactoringProposal => {
+    // Read the single affectedObject node directly (not as an array)
+    const o = xmlNode(generic, "affectedObjects", "affectedObject");
+    if (!o) {
+        return {} as ChangePackageRefactoringProposal;
+    }
+    const { uri, type, name, parentUri, packageName } = xmlNodeAttr(o);
+    const newPackage = xmlNode(xmlNode(o, "changePackageDelta"), "newPackage");
+    const affectedObjects: ChangePackageAffectedObject = {
+      uri,
+      type,
+      name,
+      oldPackage: packageName,
+      newPackage,
+      parentUri
+    };
+    const { ignoreSyntaxErrorsAllowed, ignoreSyntaxErrors, transport, userContent = "", adtObjectUri = "", title } = generic;
+    return {
+        title,
+        oldPackage: packageName,
+        newPackage,
+        ignoreSyntaxErrorsAllowed,
+        ignoreSyntaxErrors,
+        transport,
+        adtObjectUri: adtObjectUri,
+        userContent: decode(userContent),
+        affectedObjects: affectedObjects // only one affected object for change package
+    };
+}
+
 const parseGeneric = (generic: any): GenericRefactoring => {
   const affectedObjects = xmlArray(
     generic,
@@ -219,6 +272,30 @@ const parseGeneric = (generic: any): GenericRefactoring => {
     adtObjectUri: parseUri(adtObjectUri),
     userContent: decode(userContent),
     affectedObjects
+  }
+}
+
+function parseChangePackageRefactoring(body: string): ChangePackageRefactoring {
+  const raw = fullParse(body, { removeNSPrefix: true })
+  const root = xmlNode(raw, "changePackageRefactoring")
+  const {
+    ignoreSyntaxErrorsAllowed,
+    ignoreSyntaxErrors,
+    transport,
+    adtObjectUri,
+    affectedObjects,
+    userContent
+  } = parsePackageGeneric(xmlNode(root || raw, "genericRefactoring")) // depending on the caller the generic refactoring might be wrapped or not
+
+  return {
+    oldPackage: affectedObjects.oldPackage || "",
+    newPackage: affectedObjects.newPackage || "",
+    adtObjectUri: adtObjectUri,
+    ignoreSyntaxErrorsAllowed: !!ignoreSyntaxErrorsAllowed,
+    ignoreSyntaxErrors: !!ignoreSyntaxErrors,
+    transport: transport || "",
+    affectedObjects,
+    userContent: userContent
   }
 }
 
@@ -314,6 +391,42 @@ const serializeGenericRefactoring = (g: GenericRefactoring) => {
   <generic:userContent/>
 </generic:genericRefactoring>`
 }
+const addPackageAffectedObject = (o: ChangePackageAffectedObject) => {
+    return `<generic:affectedObject adtcore:description="Program" adtcore:name="${o.name}" adtcore:packageName="${o.oldPackage}" adtcore:type="${o.type}" adtcore:uri="${o.uri}">
+        <generic:userContent></generic:userContent>
+        <generic:changePackageDelta>
+          <generic:newPackage>${o.newPackage}</generic:newPackage>
+        </generic:changePackageDelta>
+      </generic:affectedObject>`;
+};
+
+const serializeChangePackageRefactoring = (changePackageRefactoring: ChangePackageRefactoring, wrapped: boolean , transport = "") => {
+    const start = wrapped
+        ? `<changepackage:changePackageRefactoring xmlns:adtcore="http://www.sap.com/adt/core" xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" 
+  xmlns:changepackage="http://www.sap.com/adt/refactoring/changepackagerefactoring">
+  <changepackage:oldPackage>${changePackageRefactoring.oldPackage}</changepackage:oldPackage>
+  <changepackage:newPackage>${changePackageRefactoring.newPackage}</changepackage:newPackage>`
+        : "";
+    const end = wrapped ? `<changepackage:userContent></changepackage:userContent> </changepackage:changePackageRefactoring>` : "";
+    const genns = wrapped
+        ? ""
+        : ` xmlns:generic="http://www.sap.com/adt/refactoring/genericrefactoring" xmlns:adtcore="http://www.sap.com/adt/core"`;
+    const bodyXml = `<?xml version="1.0" encoding="ASCII"?>
+  ${start}
+    <generic:genericRefactoring ${genns}>
+      <generic:title>Change Package</generic:title>
+      <generic:adtObjectUri>${changePackageRefactoring.adtObjectUri}</generic:adtObjectUri>
+      <generic:affectedObjects>
+        ${addPackageAffectedObject(changePackageRefactoring.affectedObjects)}
+      </generic:affectedObjects>
+      <generic:transport>${changePackageRefactoring.transport || transport}</generic:transport>
+      <generic:ignoreSyntaxErrorsAllowed>${changePackageRefactoring.ignoreSyntaxErrorsAllowed}</generic:ignoreSyntaxErrorsAllowed>
+      <generic:ignoreSyntaxErrors>${changePackageRefactoring.ignoreSyntaxErrors}</generic:ignoreSyntaxErrors>
+      <generic:userContent/>
+    </generic:genericRefactoring>
+    ${end}`;
+    return bodyXml;
+};
 
 const srializeRefactoring = (
   renameRefactoring: RenameRefactoringProposal,
@@ -494,6 +607,44 @@ const parseExtractMethodEval = (body: string): ExtractMethodProposal => {
     exceptions
   }
   return resp
+}
+
+export async function changePackagePreview(h: AdtHTTP, changePackageRefactoring: ChangePackageRefactoring, transport: string): Promise<ChangePackageRefactoring> {
+    console.log("changePackageRefactoring here", changePackageRefactoring);
+    const qs = {
+        step: `preview`,
+        rel: `http://www.sap.com/adt/relations/refactoring/changepackage`
+    };
+    const bodyXml = serializeChangePackageRefactoring(changePackageRefactoring, true, transport);
+    const headers = { "Content-Type": "application/*", Accept: "application/*" };
+    const response = await h.request("/sap/bc/adt/refactorings", {
+        method: "POST",
+        qs: qs,
+        body: bodyXml,
+        headers: headers
+    });
+    const parsed = parseChangePackageRefactoring(response.body);
+    return { ...parsed, transport: parsed.transport || transport };
+}
+
+export async function changePackageExecute(h: AdtHTTP, packagename: ChangePackageRefactoring): Promise<ChangePackageRefactoring> 
+{
+    const qs = {
+        step: `execute`
+    };
+    const headers = { "Content-Type": "application/*", Accept: "application/*" };
+    const body = serializeChangePackageRefactoring(packagename, false);
+    const response = await h.request("/sap/bc/adt/refactorings", {
+        method: "POST",
+        qs: qs,
+        body,
+        headers: headers
+    });
+    if(response.statusText !== "OK"){
+        throw adtException(`Change Package failed: ${response.statusText}`);
+    }
+    const result = parseChangePackageRefactoring(body);
+    return { ...result, transport: result.transport || packagename.transport };
 }
 
 export async function renamePreview(

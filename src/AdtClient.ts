@@ -23,6 +23,10 @@ import {
   annotationDefinitions,
   bindingDetails,
   BindingServiceResult,
+  changePackageExecute,
+  changePackagePreview,
+  ChangePackageRefactoring,
+  ChangePackageRefactoringProposal,
   checkRepo,
   ClassComponent,
   classComponents,
@@ -194,6 +198,7 @@ import {
   atcChangeContact,
   AtcProposal,
   atcRequestExemption,
+  atcDocumentation,
   unitTestEvaluation,
   unitTestOccurrenceMarkers,
   tracesDbAccess,
@@ -1347,6 +1352,20 @@ export class ADTClient {
     return debuggerSetVariableValue(this.h, variableName, value)
   }
 
+
+  public changePackagePreview(
+    changePackageRefactoring: ChangePackageRefactoring,
+    transport: string = ""
+  ): Promise<ChangePackageRefactoring> {
+    return changePackagePreview(this.h, changePackageRefactoring, transport)
+  }
+
+  public changePackageExecute(
+    refactoring: ChangePackageRefactoring
+  ): Promise<ChangePackageRefactoring> {
+    return changePackageExecute(this.h, refactoring)
+  }
+
   public renameEvaluate(
     uri: string,
     line: number,
@@ -1412,6 +1431,10 @@ export class ADTClient {
 
   public atcRequestExemption(proposal: AtcProposal) {
     return atcRequestExemption(this.h, proposal)
+  }
+
+  public atcDocumentation(docUri: string) {
+    return atcDocumentation(this.h,docUri)
   }
 
   public isProposalMessage = isProposalMessage

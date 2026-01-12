@@ -408,6 +408,16 @@ export async function atcExemptProposal(
   return validateParseResult(atcProposal.decode(result))
 }
 
+export async function atcDocumentation(h: AdtHTTP, docUri: string) {
+  const headers = { "Content-Type": "application/vnd.sap.adt.atc.items.v1+xml" }; 
+  const response = await h.request(docUri, {
+    headers,
+    method: "GET"
+  })
+
+  return response;
+}
+
 export async function atcRequestExemption(
   h: AdtHTTP,
   proposal: AtcProposal
