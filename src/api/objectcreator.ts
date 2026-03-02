@@ -82,6 +82,9 @@ export interface NewObjectOptions {
   parentPath: string
   responsible?: string
   transport?: string
+  language?: string
+  masterLanguage?: string
+  masterSystem?: string
 }
 export interface NewPackageOptions
   extends NewObjectOptions,
@@ -182,12 +185,16 @@ function createBodySimple(
   body = ""
 ) {
   const responsible = `adtcore:responsible="${options.responsible}"`
+  const language = options.language || "EN"
+  const masterLanguage = options.masterLanguage || language
+  const masterSystem = options.masterSystem || ""
   body = body || `<adtcore:packageRef adtcore:name="${options.parentName}"/>`
   return `<?xml version="1.0" encoding="UTF-8"?>
         <${type.rootName} ${type.nameSpace}
           xmlns:adtcore="http://www.sap.com/adt/core"
           adtcore:description="${encodeEntity(options.description)}"
           adtcore:name="${options.name}" adtcore:type="${options.objtype}"
+          adtcore:language="${language}" adtcore:masterLanguage="${masterLanguage}" ${masterSystem ? `adtcore:masterSystem="${masterSystem}"` : ""}
           ${responsible} ${type.extra || ""}>
           ${body}
         </${type.rootName}>`
