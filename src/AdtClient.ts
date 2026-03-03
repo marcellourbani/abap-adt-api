@@ -145,6 +145,12 @@ import {
   searchObject,
   SearchResult,
   ServiceBinding,
+  setDomainProperties,
+  DomainProperties,
+  DomainMetaData,
+  setDataElementProperties,
+  DataElementProperties,
+  DataElementMetaData,
   setObjectSource,
   setPrettyPrinterSetting,
   setTransportsConfig,
@@ -544,6 +550,40 @@ export class ADTClient {
   }
   public unLock(objectUrl: string, lockHandle: string) {
     return unLock(this.h, objectUrl, lockHandle)
+  }
+
+  public setDomainProperties(
+    domainUrl: string,
+    properties: DomainProperties,
+    metaData: DomainMetaData,
+    lockHandle: string,
+    transport?: string
+  ) {
+    return setDomainProperties(
+      this.h,
+      domainUrl,
+      properties,
+      metaData,
+      lockHandle,
+      transport
+    )
+  }
+
+  public setDataElementProperties(
+    dataElementUrl: string,
+    properties: DataElementProperties,
+    metaData: DataElementMetaData,
+    lockHandle: string,
+    transport?: string
+  ) {
+    return setDataElementProperties(
+      this.h,
+      dataElementUrl,
+      properties,
+      metaData,
+      lockHandle,
+      transport
+    )
   }
   /**
    * Retrieves a resource content (i.e. a program's source code)
