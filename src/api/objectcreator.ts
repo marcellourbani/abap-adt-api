@@ -18,9 +18,11 @@ export type NonGroupTypeIds =
   | "DDLX/EX"
   | "DDLA/ADF"
   | "TABL/DT"
+  | "TABL/DS"
   | "SRVD/SRV"
   | "AUTH"
   | "DTEL/DE"
+  | "DOMA/DD"
   | "SUSO/B"
   | "MSAG/N"
 
@@ -521,6 +523,24 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:blue="http://www.sap.com/wbobj/dictionary/dtel"',
     label: "Data Element",
     typeId: "DTEL/DE",
+    maxLen: 30
+  },
+  {
+    creationPath: "ddic/domains",
+    validationPath: "ddic/domains/validation",
+    rootName: "domain:domain",
+    nameSpace: 'xmlns:domain="http://www.sap.com/dictionary/domain"',
+    label: "Domain",
+    typeId: "DOMA/DD",
+    maxLen: 30
+  },
+  {
+    creationPath: "ddic/structures",
+    validationPath: "ddic/structures/validation",
+    rootName: "blue:blueSource",
+    nameSpace: 'xmlns:blue="http://www.sap.com/wbobj/blue"',
+    label: "Structure",
+    typeId: "TABL/DS",
     maxLen: 30
   },
   {
