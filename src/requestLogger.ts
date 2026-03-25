@@ -66,13 +66,13 @@ const createLogData = (
 const convertRequest = (original?: unknown): RequestData => {
   if (!isObject(original))
     return { headers: {}, method: "", uri: "", params: {} }
-  const { headers, data, method, uri, params } = original as any
+  const { headers, body, method, url, qs } = original as HttpClientOptions
   return {
     method: method || "GET",
-    uri: isString(uri) ? uri : "",
-    params: isObject(params) ? { ...params } : {},
+    uri: isString(url) ? url : "",
+    params: isObject(qs) ? { ...qs } : {},
     headers: isObject(headers) ? { ...headers } : {},
-    body: isString(data) || isUndefined(data) ? data : JSON.stringify(data)
+    body: isString(body) || isUndefined(body) ? body : JSON.stringify(body)
   }
 }
 const convertAxiosResponse = (original?: AxiosResponse): ResponseData => {
