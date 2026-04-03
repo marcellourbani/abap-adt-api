@@ -7,6 +7,10 @@
       "es2018",
       "dom"
     ],
+    "types": [
+      "jest",
+      "node"
+    ],
     "skipLibCheck": true,
     "declaration": true /* Generates corresponding '.d.ts' file. */,
     "declarationMap": true /* Generates a sourcemap for each corresponding '.d.ts' file. */,

@@ -23,6 +23,10 @@ If you start from a fresh ABAP trial system you will need to set up TMS. On a co
   ![image](https://user-images.githubusercontent.com/2453277/69159801-6617a880-0ae0-11ea-80a6-10391e4ba2f5.png)
 - click yes for distributing and activating the configuration ![image](https://user-images.githubusercontent.com/2453277/69159900-85aed100-0ae0-11ea-8092-fe40a01e6026.png)
 
+### Import the dev version of ABAPGit
+
+one of the tests require it
+
 ### Import this project in ABAPGit
 
 - in abapgit click on +Online

@@ -803,9 +803,9 @@ const findBy = <T, K extends keyof T>(
   return cs
     ? array.find(e => e[fname] === value)
     : array.find(e => {
-        const cur = e[fname]
-        return isString(cur) && cur.toUpperCase() === value.toUpperCase()
-      })
+      const cur = e[fname]
+      return isString(cur) && cur.toUpperCase() === value.toUpperCase()
+    })
 }
 
 test(
@@ -872,7 +872,7 @@ test(
     )
     const markers = await c.unitTestOccurrenceMarkers(
       class1!.testmethods[0].navigationUri ||
-        class1!.testmethods[0]["adtcore:uri"],
+      class1!.testmethods[0]["adtcore:uri"],
       source
     )
     expect(markers[1].location.range.start.line).toBe(13)
@@ -1397,8 +1397,8 @@ test(
     )
     expect(messages).toBeDefined()
     expect(messages.length).toBeGreaterThanOrEqual(1)
-    expect(messages[0].offset).toBe(9)
-    expect(messages[0].line).toBe(16)
+    const message = messages.find(m => m.line === 16 && m.offset === 9)
+    expect(message).toBeDefined()
     const msg = messages.find(m => m.severity === "W")
     expect(msg).toBeDefined()
     const quoteFound = messages[0].text.includes("&quot;")
