@@ -113,7 +113,10 @@ class AdtCsrfException extends Error {
   get typeID(): symbol {
     return CSRFEXTYPEID
   }
-  constructor(public readonly message: string, public readonly parent?: Error) {
+  constructor(
+    public readonly message: string,
+    public readonly parent?: Error
+  ) {
     super()
   }
 }
@@ -122,9 +125,16 @@ class AdtHttpException extends Error {
   get typeID(): symbol {
     return HTTPEXTYPEID
   }
+  get status(): number {
+    if (isHttpClientException(this.parent)) return this.parent.status || 0
+    const p: any = this.parent
+    const status = p?.response?.status
+    return isNumber(status) ? status : 0
+  }
   get code() {
     const p: any = this.parent
-    return (p.response && p.response.status) || 0
+    if (isHttpClientException(p)) return p.code
+    return undefined
   }
   get message() {
     return this.parent.message
@@ -155,7 +165,7 @@ export function isAdtException(e: unknown): e is AdtException {
   return isAdtError(e) || isCsrfError(e) || isHttpError(e)
 }
 export const isLoginError = (adtErr: AdtException) =>
-  (isHttpError(adtErr) && adtErr.code === 401) || isCsrfError(adtErr)
+  (isHttpError(adtErr) && adtErr.status === 401) || isCsrfError(adtErr)
 
 const simpleError = (response: HttpClientResponse) =>
   adtException(
@@ -195,9 +205,12 @@ export const fromError = (error: unknown): AdtException => {
   try {
     if (isAdtError(error)) return error
 
-    if (isHttpClientException(error) && error.response) {
-      if (error.status === 401) return new AdtHttpException(error)
-      return fromResponse(error.response.body, error.response)
+    if (isHttpClientException(error)) {
+      if (error.response) {
+        if (error.status === 401) return new AdtHttpException(error)
+        return fromResponse(error.response.body, error.response)
+      }
+      return new AdtHttpException(error)
     }
     if (hasMessage(error))
       return new AdtErrorException(500, {}, "", error.message)

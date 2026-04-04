@@ -25,7 +25,7 @@ import { createHttp, hasAbapGit, runTest } from "./login"
 
 // for older systems
 const eat404 = (e: any) => {
-  if (!(isHttpError(e) && e.code === 404)) throw e
+  if (!(isHttpError(e) && e.status === 404)) throw e
 }
 const eatResourceNotFound = (e: any) => {
   if (!(isAdtError(e) && e.type === "ExceptionResourceNotFound")) throw e
@@ -803,9 +803,9 @@ const findBy = <T, K extends keyof T>(
   return cs
     ? array.find(e => e[fname] === value)
     : array.find(e => {
-      const cur = e[fname]
-      return isString(cur) && cur.toUpperCase() === value.toUpperCase()
-    })
+        const cur = e[fname]
+        return isString(cur) && cur.toUpperCase() === value.toUpperCase()
+      })
 }
 
 test(
@@ -872,7 +872,7 @@ test(
     )
     const markers = await c.unitTestOccurrenceMarkers(
       class1!.testmethods[0].navigationUri ||
-      class1!.testmethods[0]["adtcore:uri"],
+        class1!.testmethods[0]["adtcore:uri"],
       source
     )
     expect(markers[1].location.range.start.line).toBe(13)
@@ -1613,6 +1613,22 @@ test("detect login error", () => {
 
   const ex = fromError(badlogin)
   expect(isHttpError(ex)).toBe(true)
-  expect(isHttpError(ex) && ex.code).toBe(401)
+  expect(isHttpError(ex) && ex.status).toBe(401)
   expect(isLoginError(ex)).toBe(true)
+})
+
+test("preserves HttpClientException status when no response is available", () => {
+  const noResponseError = new HttpClientException(
+    "Request failed without response",
+    "ERR_NETWORK",
+    404,
+    undefined,
+    { url: "" }
+  )
+
+  const ex = fromError(noResponseError)
+  expect(isHttpError(ex)).toBe(true)
+  expect(isHttpError(ex) && ex.status).toBe(404)
+  expect(isHttpError(ex) && ex.code).toBe("ERR_NETWORK")
+  expect(isHttpError(ex) && ex.message).toBe("Request failed without response")
 })
