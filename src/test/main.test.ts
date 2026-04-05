@@ -3,6 +3,7 @@
 import {
   ADTClient,
   fromError,
+  fromException,
   isAdtError,
   isClassStructure,
   isHttpError,
@@ -1627,6 +1628,58 @@ test("preserves HttpClientException status when no response is available", () =>
   )
 
   const ex = fromError(noResponseError)
+  expect(isHttpError(ex)).toBe(true)
+  expect(isHttpError(ex) && ex.status).toBe(404)
+  expect(isHttpError(ex) && ex.code).toBe("ERR_NETWORK")
+  expect(isHttpError(ex) && ex.message).toBe("Request failed without response")
+})
+
+test("fromException preserves HttpClientException status when a response is available", () => {
+  const responseError = new HttpClientException(
+    "Request failed without response",
+    "ERR_NETWORK",
+    404,
+    undefined,
+    { url: "" },
+    {
+      body: "<html></html>",
+      status: 400,
+      statusText: "Bad Request",
+      headers: {
+        "content-type": "text/html",
+        "sap-err-id": "ICMENOSESSION",
+        "x-sap-icm-err-id": "ICMENOSESSION"
+      }
+    }
+  )
+
+  const ex = fromException(responseError)
+  expect(isHttpError(ex)).toBe(true)
+  expect(isHttpError(ex) && ex.status).toBe(404)
+  expect(isHttpError(ex) && ex.code).toBe("ERR_NETWORK")
+  expect(isHttpError(ex) && ex.message).toBe("Request failed without response")
+})
+
+test("fromException preserves HttpClientException status when a response without body is available", () => {
+  const responseError = new HttpClientException(
+    "Request failed without response",
+    "ERR_NETWORK",
+    404,
+    undefined,
+    { url: "" },
+    {
+      body: "<html></html>",
+      status: 400,
+      statusText: "Bad Request",
+      headers: {
+        "content-type": "text/html",
+        "sap-err-id": "ICMENOSESSION",
+        "x-sap-icm-err-id": "ICMENOSESSION"
+      }
+    }
+  )
+
+  const ex = fromError(responseError)
   expect(isHttpError(ex)).toBe(true)
   expect(isHttpError(ex) && ex.status).toBe(404)
   expect(isHttpError(ex) && ex.code).toBe("ERR_NETWORK")

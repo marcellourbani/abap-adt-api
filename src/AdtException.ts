@@ -208,7 +208,9 @@ export const fromError = (error: unknown): AdtException => {
     if (isHttpClientException(error)) {
       if (error.response) {
         if (error.status === 401) return new AdtHttpException(error)
-        return fromResponse(error.response.body, error.response)
+        try {
+          return fromResponse(error.response.body, error.response)
+        } catch (e) {}
       }
       return new AdtHttpException(error)
     }

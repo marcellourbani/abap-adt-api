@@ -128,7 +128,7 @@ const parseFeeds = (body: string): Feed[] => {
 const parseDumps = (body: string): DumpsFeed => {
   const raw = fullParse(body, {
     removeNSPrefix: true,
-    processEntities: false
+    processEntities: { enabled: true }
   })?.feed
   const { href } = xmlNodeAttr(raw?.link)
   const { title, updated } = raw
