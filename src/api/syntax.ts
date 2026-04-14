@@ -471,6 +471,118 @@ export async function classComponents(h: AdtHTTP, url: string) {
   return header as ClassComponent
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// classStructureDetailed — richer outline for classes and interfaces
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Richer member descriptor emitted by classStructureDetailed. */
+export interface ObjectStructureElement {
+  name: string
+  /** ABAP type code, e.g. CLAS/OM (method), CLAS/OA (attribute), CLAS/OCL (local class),
+   *  CLAS/ON (interface impl), CLAS/OLT (type) */
+  type: string
+  description?: string
+  visibility?: string  // "public" | "protected" | "private"
+  level?: string       // "instance" | "class" (class = static)
+  constant?: boolean
+  constructor?: boolean
+  testmethod?: boolean
+  redefinition?: boolean
+  final?: boolean
+  links: Link[]
+  children: ObjectStructureElement[]
+}
+
+/** Return value of classStructureDetailed. */
+export interface AbapDetailedStructure {
+  objectUrl: string
+  metaData: Record<string, unknown>
+  links: Link[]
+  structureElements: ObjectStructureElement[]
+}
+
+function parseBool(val: unknown): boolean | undefined {
+  if (val === true || val === "true") return true
+  if (val === false || val === "false") return false
+  return undefined
+}
+
+function parseStructureElement(el: any): ObjectStructureElement {
+  const attr = xmlNodeAttr(el)
+  const links: Link[] = xmlArray(el, "atom:link").map(xmlNodeAttr)
+  const children: ObjectStructureElement[] = xmlArray(
+    el,
+    "abapsource:objectStructureElement"
+  ).map(parseStructureElement)
+  return {
+    name: attr["adtcore:name"] || "",
+    type: attr["adtcore:type"] || "",
+    description: attr["adtcore:description"],
+    visibility: attr.visibility,
+    level: attr.level,
+    constant: parseBool(attr.constant),
+    constructor: parseBool(attr.constructor),
+    testmethod: parseBool(attr.testmethod),
+    redefinition: parseBool(attr.redefinition),
+    final: parseBool(attr.final),
+    links,
+    children,
+  }
+}
+
+/**
+ * Fetch the `/objectstructure` outline for an ABAP class or interface.
+ *
+ * Only classes (`/sap/bc/adt/oo/classes/...`) and interfaces
+ * (`/sap/bc/adt/oo/interfaces/...`) expose this endpoint. Calling it on a
+ * function module, program, or include returns a 404 from the server. This
+ * function validates the path prefix and throws a clear error rather than
+ * letting the HTTP error bubble up unhandled.
+ *
+ * ADT endpoint: GET `<objectUrl>/objectstructure?version=active&withShortDescriptions=true`
+ * Content-Type: application/vnd.sap.adt.objectstructure+xml
+ */
+export async function classStructureDetailed(
+  h: AdtHTTP,
+  objectUrl: string,
+  version: "active" | "inactive" = "active"
+): Promise<AbapDetailedStructure> {
+  ValidateObjectUrl(objectUrl)
+
+  const lower = objectUrl.toLowerCase()
+  if (
+    !lower.includes("/oo/classes/") &&
+    !lower.includes("/oo/interfaces/")
+  ) {
+    throw adtException(
+      `classStructureDetailed only supports classes and interfaces. ` +
+      `Received: ${objectUrl}`
+    )
+  }
+
+  const qs = { version, withShortDescriptions: "true" }
+  const uri = `${objectUrl}/objectstructure`
+  const response = await h.request(uri, { qs })
+
+  const raw = fullParse(response.body)
+  // The root element is abapsource:objectStructureElement for classes
+  const rootEl = xmlNode(raw, "abapsource:objectStructureElement")
+  const topAttr = rootEl ? xmlNodeAttr(rootEl) : {}
+
+  const metaData: Record<string, unknown> = topAttr
+
+  // Elements are nested directly under the root element
+  const structureElements: ObjectStructureElement[] = rootEl
+    ? xmlArray(rootEl, "abapsource:objectStructureElement").map(parseStructureElement)
+    : []
+
+  const links: Link[] = rootEl
+    ? xmlArray(rootEl, "atom:link").map(xmlNodeAttr)
+    : []
+
+  return { objectUrl, metaData, links, structureElements }
+}
+
 export interface FragmentLocation {
   uri: string
   line: number

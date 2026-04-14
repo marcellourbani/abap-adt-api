@@ -114,6 +114,9 @@ import {
   objectRegistrationInfo,
   ObjectSourceOptions,
   objectStructure,
+  classStructureDetailed,
+  AbapDetailedStructure,
+  ObjectStructureElement,
   ObjectType,
   ObjectTypeDescriptor,
   objectTypes,
@@ -225,7 +228,9 @@ import {
   ExtractMethodProposal,
   extractMethodPreview,
   extractMethodExecute,
-  GenericRefactoring
+  GenericRefactoring,
+  objectEnhancements,
+  ObjectEnhancementsResult
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -504,6 +509,13 @@ export class ADTClient {
     version?: ObjectVersion
   ): Promise<AbapObjectStructure> {
     return objectStructure(this.h, objectUrl, version)
+  }
+
+  public classStructureDetailed(
+    objectUrl: string,
+    version: "active" | "inactive" = "active"
+  ): Promise<AbapDetailedStructure> {
+    return classStructureDetailed(this.h, objectUrl, version)
   }
   public activate(
     object: InactiveObject | InactiveObject[],
@@ -964,6 +976,14 @@ export class ADTClient {
     clsInclude?: classIncludes
   ) {
     return revisions(this.h, objectUrl, clsInclude)
+  }
+
+  public objectEnhancements(
+    sourceMainPath: string,
+    contextUri?: string,
+    includeSource = false
+  ): Promise<ObjectEnhancementsResult> {
+    return objectEnhancements(this.h, sourceMainPath, contextUri, includeSource)
   }
 
   public abapDocumentation(

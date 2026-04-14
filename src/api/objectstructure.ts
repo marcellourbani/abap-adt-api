@@ -97,6 +97,10 @@ const convertIncludes = (i: any): ClassInclude => {
   return { ...imeta, links }
 }
 
+// ObjectStructureElement and AbapDetailedStructure have moved to syntax.ts.
+// Re-exported here for backwards compatibility of any external type consumers.
+export type { ObjectStructureElement, AbapDetailedStructure } from "./syntax"
+
 export async function objectStructure(
   h: AdtHTTP,
   objectUrl: string,
