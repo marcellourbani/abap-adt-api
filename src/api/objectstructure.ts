@@ -2,6 +2,10 @@ import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlNodeAttr, xmlRoot } from "../utilities"
 
+// ObjectStructureElement and AbapDetailedStructure have moved to syntax.ts.
+// Re-exported here for backwards compatibility of any external type consumers.
+export type { ObjectStructureElement, AbapDetailedStructure } from "./syntax"
+
 export type ObjectVersion = "active" | "inactive" | "workingArea"
 
 export interface GenericMetaData {
@@ -96,10 +100,6 @@ const convertIncludes = (i: any): ClassInclude => {
   const links = i["atom:link"].map(xmlNodeAttr)
   return { ...imeta, links }
 }
-
-// ObjectStructureElement and AbapDetailedStructure have moved to syntax.ts.
-// Re-exported here for backwards compatibility of any external type consumers.
-export type { ObjectStructureElement, AbapDetailedStructure } from "./syntax"
 
 export async function objectStructure(
   h: AdtHTTP,
