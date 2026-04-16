@@ -1,6 +1,6 @@
 import { ValidateObjectUrl, ValidateStateful } from "../AdtException"
 import { AdtHTTP, RequestOptions } from "../AdtHTTP"
-import { xmlArray, btoa, parse, encodeEntity } from "../utilities"
+import { xmlArray, xmlNode, xmlNodeAttr, xmlRoot, fullParse, btoa, parse, encodeEntity } from "../utilities"
 import { ObjectVersion } from "./objectstructure"
 
 export interface AdtLock {
@@ -246,6 +246,75 @@ export async function setDomainProperties(
   })
 }
 
+export async function getDomainProperties(
+  h: AdtHTTP,
+  domainUrl: string,
+  version?: ObjectVersion
+): Promise<{ metaData: DomainMetaData; properties: DomainProperties }> {
+  ValidateObjectUrl(domainUrl)
+  const qs = version ? { version } : {}
+  const response = await h.request(domainUrl, { qs })
+  const res = fullParse(response.body)
+  const root = xmlRoot(res)
+  const attr = xmlNodeAttr(root) || {}
+
+  const packageAttr = xmlNodeAttr(xmlNode(root, "adtcore:packageRef")) || {}
+
+  const metaData: DomainMetaData = {
+    name: attr["adtcore:name"],
+    description: attr["adtcore:description"] || "",
+    language: attr["adtcore:language"],
+    masterLanguage: attr["adtcore:masterLanguage"] || "",
+    masterSystem: attr["adtcore:masterSystem"] || "",
+    responsible: attr["adtcore:responsible"],
+    packageName: packageAttr["adtcore:name"] || "",
+    packageDescription: packageAttr["adtcore:description"],
+    packageUri: packageAttr["adtcore:uri"]
+  }
+
+  const content = xmlNode(root, "doma:content")
+  const typeInfo = xmlNode(content, "doma:typeInformation") || {}
+  const outputInfo = xmlNode(content, "doma:outputInformation") || {}
+  const valueInfoNode = xmlNode(content, "doma:valueInformation")
+
+  const typeInformation: DomainTypeInformation = {
+    datatype: typeInfo["doma:datatype"] || "",
+    length: Number(typeInfo["doma:length"]) || 0,
+    decimals: Number(typeInfo["doma:decimals"]) || 0
+  }
+
+  const outputInformation: DomainOutputInformation = {
+    length: Number(outputInfo["doma:length"]) || 0,
+    style: outputInfo["doma:style"] || undefined,
+    conversionExit: outputInfo["doma:conversionExit"] || undefined,
+    signExists: outputInfo["doma:signExists"] === true,
+    lowercase: outputInfo["doma:lowercase"] === true,
+    ampmFormat: outputInfo["doma:ampmFormat"] === true
+  }
+
+  let valueInformation: DomainValueInformation | undefined
+  if (valueInfoNode) {
+    const valueTableRefAttr = xmlNodeAttr(xmlNode(valueInfoNode, "doma:valueTableRef")) || {}
+    const fixValueArr = xmlArray<any>(valueInfoNode, "doma:fixValues", "doma:fixValue")
+    const fixValues: DomainFixValue[] = fixValueArr.map(fv => ({
+      low: fv["doma:low"] || "",
+      high: fv["doma:high"] || undefined,
+      text: fv["doma:text"] || undefined
+    }))
+
+    valueInformation = {
+      valueTableRef: valueTableRefAttr["adtcore:name"] || "",
+      appendExists: valueInfoNode["doma:appendExists"] === true,
+      fixValues: fixValues.length > 0 ? fixValues : undefined
+    }
+  }
+
+  return {
+    metaData,
+    properties: { typeInformation, outputInformation, valueInformation }
+  }
+}
+
 // DDIC Data Element Properties
 export interface DataElementFieldLabels {
   shortFieldLabel: string
@@ -259,7 +328,6 @@ export interface DataElementFieldLabels {
 }
 
 export interface DataElementProperties {
-  typeKind: "domain" | "datatype"  // 使用域还是直接类型
   typeName: string                  // 域名或类型名
   dataType: string                  // 数据类型 (CHAR, NUMC, etc.)
   dataTypeLength: number            // 长度
@@ -308,7 +376,6 @@ export async function setDataElementProperties(
   ValidateStateful(h)
 
   const {
-    typeKind,
     typeName,
     dataType,
     dataTypeLength,
@@ -369,7 +436,7 @@ export async function setDataElementProperties(
     ${packageDescription ? `adtcore:description="${encodeEntity(packageDescription)}"` : ""}
     ${packageUri ? `adtcore:uri="${packageUri}"` : ""}/>
   <dtel:dataElement>
-    <dtel:typeKind>${typeKind}</dtel:typeKind>
+    <dtel:typeKind>${typeName ? "domain" : "predefinedAbapType"}</dtel:typeKind>
     <dtel:typeName>${typeName}</dtel:typeName>
     <dtel:dataType>${dataType}</dtel:dataType>
     <dtel:dataTypeLength>${dataTypeLength}</dtel:dataTypeLength>
@@ -406,4 +473,60 @@ export async function setDataElementProperties(
     method: "PUT",
     qs
   })
+}
+
+export async function getDataElementProperties(
+  h: AdtHTTP,
+  dataElementUrl: string,
+  version?: ObjectVersion
+): Promise<{ metaData: DataElementMetaData; properties: DataElementProperties }> {
+  ValidateObjectUrl(dataElementUrl)
+  const qs = version ? { version } : {}
+  const response = await h.request(dataElementUrl, { qs })
+  const res = fullParse(response.body)
+  const root = xmlRoot(res)
+  const attr = xmlNodeAttr(root)
+
+  const packageAttr = xmlNodeAttr(xmlNode(root, "adtcore:packageRef")) || {}
+
+  const metaData: DataElementMetaData = {
+    name: attr["adtcore:name"],
+    description: attr["adtcore:description"] || "",
+    language: attr["adtcore:language"],
+    masterLanguage: attr["adtcore:masterLanguage"] || "",
+    masterSystem: attr["adtcore:masterSystem"] || "",
+    responsible: attr["adtcore:responsible"],
+    packageName: packageAttr["adtcore:name"] || "",
+    packageDescription: packageAttr["adtcore:description"],
+    packageUri: packageAttr["adtcore:uri"]
+  }
+
+  const dtel = xmlNode(root, "dtel:dataElement")
+
+  const properties: DataElementProperties = {
+    typeName: dtel["dtel:typeName"] || "",
+    dataType: dtel["dtel:dataType"] || "",
+    dataTypeLength: Number(dtel["dtel:dataTypeLength"]) || 0,
+    dataTypeDecimals: Number(dtel["dtel:dataTypeDecimals"]) || 0,
+    fieldLabels: {
+      shortFieldLabel: dtel["dtel:shortFieldLabel"] || "",
+      shortFieldLength: Number(dtel["dtel:shortFieldLength"]) || undefined,
+      mediumFieldLabel: dtel["dtel:mediumFieldLabel"] || "",
+      mediumFieldLength: Number(dtel["dtel:mediumFieldLength"]) || undefined,
+      longFieldLabel: dtel["dtel:longFieldLabel"] || "",
+      longFieldLength: Number(dtel["dtel:longFieldLength"]) || undefined,
+      headingFieldLabel: dtel["dtel:headingFieldLabel"] || "",
+      headingFieldLength: Number(dtel["dtel:headingFieldLength"]) || undefined
+    },
+    searchHelp: dtel["dtel:searchHelp"] || undefined,
+    searchHelpParameter: dtel["dtel:searchHelpParameter"] || undefined,
+    setGetParameter: dtel["dtel:setGetParameter"] || undefined,
+    defaultComponentName: dtel["dtel:defaultComponentName"] || undefined,
+    deactivateInputHistory: dtel["dtel:deactivateInputHistory"] === true,
+    changeDocument: dtel["dtel:changeDocument"] === true,
+    leftToRightDirection: dtel["dtel:leftToRightDirection"] === true,
+    deactivateBIDIFiltering: dtel["dtel:deactivateBIDIFiltering"] === true
+  }
+
+  return { metaData, properties }
 }
