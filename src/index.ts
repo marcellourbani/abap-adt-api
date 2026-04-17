@@ -9,7 +9,6 @@ export * from "./AdtException"
 export { LogCallback, LogData } from "./requestLogger"
 export {
   AbapClassStructure,
-  AbapDetailedStructure,
   AbapObjectStructure,
   ActivationResult,
   ActivationResultMessage,
@@ -117,7 +116,10 @@ export {
   NodeStructure,
   NonGroupTypeIds,
   ObjectSourceOptions,
-  ObjectStructureElement,
+  isAbapDetailedStructure,
+  
+  // (ObjectStructureElement and AbapDetailedStructure removed — use runtime narrowing)
+  
   ObjectType,
   ObjectTypeDescriptor,
   ObjectValidateOptions,

@@ -114,9 +114,7 @@ import {
   objectRegistrationInfo,
   ObjectSourceOptions,
   objectStructure,
-  classStructureDetailed,
-  AbapDetailedStructure,
-  ObjectStructureElement,
+  
   ObjectType,
   ObjectTypeDescriptor,
   objectTypes,
@@ -287,6 +285,22 @@ export class ADTClient {
     return withDefault
       ? followUrl(object.objectUrl, "/source/main")
       : object.objectUrl
+  }
+
+  /**
+   * Returns true when `path` already refers to the main source of an object,
+   * so callers can skip appending `/source/main`.
+   *
+   * Recognised patterns:
+   *   - any path ending with `/source/main`  (programs, includes, FMs, …)
+   *   - class include paths: `/oo/classes/<name>/includes/<include>`
+   */
+  public static isMainInclude(path: string): boolean {
+    const stripped = path.replace(/\/+$/, '')
+    if (stripped.endsWith('/source/main')) return true
+    // Class includes: .../oo/classes/<name>/includes/<includeType>
+    if (/\/oo\/classes\/[^/]+\/includes\/[^/]+$/.test(stripped)) return true
+    return false
   }
 
   public static classIncludes(clas: AbapClassStructure) {
@@ -506,16 +520,10 @@ export class ADTClient {
 
   public objectStructure(
     objectUrl: string,
-    version?: ObjectVersion
+    version?: ObjectVersion,
+    opts?: { withStructureElements?: boolean }
   ): Promise<AbapObjectStructure> {
-    return objectStructure(this.h, objectUrl, version)
-  }
-
-  public classStructureDetailed(
-    objectUrl: string,
-    version: "active" | "inactive" = "active"
-  ): Promise<AbapDetailedStructure> {
-    return classStructureDetailed(this.h, objectUrl, version)
+    return objectStructure(this.h, objectUrl, version, opts)
   }
   public activate(
     object: InactiveObject | InactiveObject[],

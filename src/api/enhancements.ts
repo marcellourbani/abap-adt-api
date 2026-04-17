@@ -1,4 +1,6 @@
 import { AdtHTTP } from '../AdtHTTP';
+import { ADTClient } from '../AdtClient';
+import { AbapObjectStructure } from './objectstructure';
 import { fullParse, xmlArray, xmlNode, xmlNodeAttr } from '../utilities';
 
 /**
@@ -139,12 +141,20 @@ function parsePlugin(
  *   Accept: application/vnd.sap.adt.enhancements.v3+xml
  *
  * @param h               ADT HTTP client (stateless is fine – read-only)
- * @param sourceMainPath  The /source/main path of the base object.
- *                        Examples:
- *                          /sap/bc/adt/programs/includes/mv45afzz/source/main
- *                          /sap/bc/adt/programs/includes/mv45afzz   (normalised automatically)
- * @param contextUri      ADT path of the containing program (optional but
- *                        recommended – Eclipse always sends it).
+ * @param sourceMainPathOrObject
+ *   Either a plain ADT path string or an AbapObjectStructure.
+ *   - String forms accepted:
+ *       /sap/bc/adt/programs/includes/mv45afzz/source/main
+ *       /sap/bc/adt/programs/includes/mv45afzz   (normalised automatically)
+ *       /sap/bc/adt/oo/classes/myclas/includes/main  (class include path)
+ *   - When an AbapObjectStructure is supplied, the correct source path is
+ *     derived via ADTClient.mainInclude(object) so class includes and CDS
+ *     views are resolved from object metadata rather than by string heuristics.
+ * @param contextUri      ADT path of the *containing program* (PROG/P or FUGR).
+ *                        Only needed – and only sent by Eclipse – for program
+ *                        includes (PROG/I), because a single include can belong
+ *                        to more than one program. Not required for classes,
+ *                        function modules, function groups, or interfaces.
  *                        Example: /sap/bc/adt/programs/programs/sapmv45a
  * @param includeSource   When true, decode and return the full ABAP source of
  *                        each enhancement element (Base64 decoded).
@@ -152,15 +162,17 @@ function parsePlugin(
  */
 export async function objectEnhancements(
   h: AdtHTTP,
-  sourceMainPath: string,
+  sourceMainPathOrObject: string | AbapObjectStructure,
   contextUri?: string,
   includeSource = false
 ): Promise<ObjectEnhancementsResult> {
-  // Normalise path: strip trailing slash, ensure we have the /source/main base.
-  const base = sourceMainPath.replace(/\/+$/, '');
-  const sourceMain = base.endsWith('/source/main')
-    ? base
-    : `${base}/source/main`;
+  // Resolve path: when caller supplies an AbapObjectStructure use mainInclude()
+  // so class includes and CDS views are derived from metadata. For plain strings,
+  // use isMainInclude() to detect if the path already points at a main source.
+  const resolved = typeof sourceMainPathOrObject === 'string'
+    ? sourceMainPathOrObject.replace(/\/+$/, '')
+    : ADTClient.mainInclude(sourceMainPathOrObject);
+  const sourceMain = ADTClient.isMainInclude(resolved) ? resolved : `${resolved}/source/main`;
 
   const qs: Record<string, string> = {};
   if (contextUri) qs.context = contextUri;
