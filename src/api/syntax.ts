@@ -471,6 +471,11 @@ export async function classComponents(h: AdtHTTP, url: string) {
   return header as ClassComponent
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// classStructureDetailed — richer outline for classes and interfaces
+// ─────────────────────────────────────────────────────────────────────────────
+
+
 export interface FragmentLocation {
   uri: string
   line: number

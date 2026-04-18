@@ -1,6 +1,6 @@
 import { ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, xmlArray, xmlNodeAttr, xmlRoot } from "../utilities"
+import { fullParse, xmlArray, xmlNodeAttr, xmlRoot, xmlNode } from "../utilities"
 
 export type ObjectVersion = "active" | "inactive" | "workingArea"
 
@@ -75,6 +75,8 @@ export interface AbapSimpleStructure {
   objectUrl: string
   metaData: AbapMetaData
   links: Link[]
+  // Optional enriched outline emitted when callers request structure elements
+  structureElements?: any[]
 }
 export interface AbapClassStructure {
   objectUrl: string
@@ -100,7 +102,8 @@ const convertIncludes = (i: any): ClassInclude => {
 export async function objectStructure(
   h: AdtHTTP,
   objectUrl: string,
-  version?: ObjectVersion
+  version?: ObjectVersion,
+  opts?: { withStructureElements?: boolean }
 ): Promise<AbapObjectStructure> {
   ValidateObjectUrl(objectUrl)
   const qs = version ? { version } : {}
@@ -115,9 +118,63 @@ export async function objectStructure(
   const links: Link[] = xmlArray(root, "atom:link").map(xmlNodeAttr)
 
   const metaData: AbapMetaData = attr
+  let result: AbapObjectStructure
   if (isClassMetaData(metaData)) {
     const includes = xmlArray(root, "class:include").map(convertIncludes)
-    return { objectUrl, metaData, includes, links } as AbapClassStructure
+    result = { objectUrl, metaData, includes, links } as AbapClassStructure
+  } else result = { objectUrl, metaData, links }
+
+  // Optionally fetch the richer `/objectstructure` outline for classes/interfaces
+  if (opts && opts.withStructureElements) {
+    const lower = objectUrl.toLowerCase()
+    if (lower.includes("/oo/classes/") || lower.includes("/oo/interfaces/")) {
+      try {
+        const qs2: any = { version: version || "active", withShortDescriptions: "true" }
+        const uri = `${objectUrl}/objectstructure`
+        const r2 = await h.request(uri, { qs: qs2 })
+        const raw = fullParse(r2.body)
+        const rootEl = xmlNode(raw, "abapsource:objectStructureElement")
+
+        function parseBool(val: unknown): boolean | undefined {
+          if (val === true || val === "true") return true
+          if (val === false || val === "false") return false
+          return undefined
+        }
+
+        function parseStructureElement(el: any): any {
+          const attr = xmlNodeAttr(el)
+          const links: Link[] = xmlArray(el, "atom:link").map(xmlNodeAttr)
+          const children: any[] = xmlArray(el, "abapsource:objectStructureElement").map(parseStructureElement)
+          return {
+            name: attr["adtcore:name"] || "",
+            type: attr["adtcore:type"] || "",
+            description: attr["adtcore:description"],
+            visibility: attr.visibility,
+            level: attr.level,
+            constant: parseBool(attr.constant),
+            constructor: parseBool(attr.constructor),
+            testmethod: parseBool(attr.testmethod),
+            redefinition: parseBool(attr.redefinition),
+            final: parseBool(attr.final),
+            links,
+            children
+          }
+        }
+
+        const structureElements: any[] = rootEl
+          ? xmlArray(rootEl, "abapsource:objectStructureElement").map(parseStructureElement)
+          : []
+
+        ;(result as any).structureElements = structureElements
+      } catch (e) {
+        // Ignore errors fetching /objectstructure (older servers or non-class objects)
+      }
+    }
   }
-  return { objectUrl, metaData, links }
+
+  return result
+}
+
+export function isAbapDetailedStructure(obj: any): obj is AbapSimpleStructure & { structureElements: any[] } {
+  return !!obj && Array.isArray((obj as any).structureElements)
 }

@@ -1256,6 +1256,24 @@ test(
 )
 
 test(
+  "objectEnhancements",
+  runTest(async (c: ADTClient) => {
+    // zapidummyfoobar is always present in the test system
+    const result = await c
+      .objectEnhancements("/sap/bc/adt/functions/groups/zapidummyfoobar")
+      .catch(eat404)
+    if (!result) return // endpoint not supported on this system
+    expect(result).toBeDefined()
+    expect(Array.isArray(result.implementations)).toBeTruthy()
+    if (result.implementations.length > 0) {
+      const impl = result.implementations[0]
+      expect(typeof impl.name).toBe("string")
+      expect(Array.isArray(impl.elements)).toBeTruthy()
+    }
+  })
+)
+
+test(
   "code references in include",
   runTest(async (c: ADTClient) => {
     const s = `data:foo type REF TO cl_salv_table.`
@@ -1544,6 +1562,36 @@ test(
     const distance = elements.find(d => d.name === "distance")
     expect(distance?.uri).toBe("not_used")
     expect(distance?.type).toBe("TABL/DTF")
+  })
+)
+
+// --- Enhancements API test ---
+test(
+  "objectEnhancements API integration",
+  runTest(async (c: ADTClient) => {
+    // Use a known include with enhancements in the test system, or fallback to a safe one
+    const includePath =
+      "/sap/bc/adt/programs/includes/zapidummytestinclude1/source/main"
+    // Should not throw, should always return a result object
+    const result = await c
+      .objectEnhancements(includePath)
+      .catch(() => undefined)
+    expect(result).toBeDefined()
+    if (result && result.implementations.length > 0) {
+      const impl = result.implementations[0]
+      expect(impl.name).toBe("ZAPIDUMMYENHANCEMENT")
+      expect(Array.isArray(impl.elements)).toBeTruthy()
+      if (impl.elements.length > 0) {
+        const el = impl.elements[0]
+        expect(el.uri).toBe(
+          "/sap/bc/adt/enhancements/enhoxhh/zapidummyenhancement/source/main#start=1,0"
+        )
+        expect(el.id).toBe("1")
+        expect(el.fullname).toBe(
+          "\\PR:ZAPIDUMMYTESTINCLUDE1\\IC:ZAPIDUMMYTESTINCLUDE1\\SE:END\\EI"
+        )
+      }
+    }
   })
 )
 
