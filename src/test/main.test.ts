@@ -14,6 +14,7 @@ import {
 import { HttpClientException, session_types } from "../AdtHTTP"
 import {
   classIncludes,
+  hasElements,
   isBindingOptions,
   NewBindingOptions,
   NewObjectOptions,
@@ -375,6 +376,23 @@ test(
     } catch (e) {
       eat404(e) // not supported in older systems
     }
+  })
+)
+test(
+  "objectStructure with structure elements",
+  runTest(async (c: ADTClient) => {
+    const structure = await c.objectStructure(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1",
+      undefined,
+      { withStructureElements: true }
+    )
+    expect(structure.links).toBeDefined()
+    expect(structure.links!.length).toBeGreaterThan(0)
+    expect(ADTClient.mainInclude(structure)).toBe(
+      "/sap/bc/adt/oo/classes/zapiadt_testcase_class1/source/main"
+    )
+    const elements = hasElements(structure) ? structure.structureElements : []
+    expect(elements).toBeTruthy()
   })
 )
 
