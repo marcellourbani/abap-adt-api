@@ -116,6 +116,9 @@ export {
   NodeStructure,
   NonGroupTypeIds,
   ObjectSourceOptions,
+  objectStructureElements,
+
+  // (ObjectStructureElement and AbapDetailedStructure removed — use runtime narrowing)
   ObjectType,
   ObjectTypeDescriptor,
   ObjectValidateOptions,

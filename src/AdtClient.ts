@@ -114,6 +114,7 @@ import {
   objectRegistrationInfo,
   ObjectSourceOptions,
   objectStructure,
+  objectStructureElements,
   ObjectType,
   ObjectTypeDescriptor,
   objectTypes,
@@ -225,7 +226,9 @@ import {
   ExtractMethodProposal,
   extractMethodPreview,
   extractMethodExecute,
-  GenericRefactoring
+  GenericRefactoring,
+  objectEnhancements,
+  ObjectEnhancementsResult
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -282,6 +285,22 @@ export class ADTClient {
     return withDefault
       ? followUrl(object.objectUrl, "/source/main")
       : object.objectUrl
+  }
+
+  /**
+   * Returns true when `path` already refers to the main source of an object,
+   * so callers can skip appending `/source/main`.
+   *
+   * Recognised patterns:
+   *   - any path ending with `/source/main`  (programs, includes, FMs, …)
+   *   - class include paths: `/oo/classes/<name>/includes/<include>`
+   */
+  public static isMainInclude(path: string): boolean {
+    const stripped = path.replace(/\/+$/, "")
+    if (stripped.endsWith("/source/main")) return true
+    // Class includes: .../oo/classes/<name>/includes/<includeType>
+    if (/\/oo\/classes\/[^/]+\/includes\/[^/]+$/.test(stripped)) return true
+    return false
   }
 
   public static classIncludes(clas: AbapClassStructure) {
@@ -504,6 +523,9 @@ export class ADTClient {
     version?: ObjectVersion
   ): Promise<AbapObjectStructure> {
     return objectStructure(this.h, objectUrl, version)
+  }
+  public objectStructureElements(objectUrl: string, version?: ObjectVersion) {
+    return objectStructureElements(this.h, objectUrl, version)
   }
   public activate(
     object: InactiveObject | InactiveObject[],
@@ -966,6 +988,14 @@ export class ADTClient {
     return revisions(this.h, objectUrl, clsInclude)
   }
 
+  public objectEnhancements(
+    sourceMainPath: string,
+    contextUri?: string,
+    includeSource = false
+  ): Promise<ObjectEnhancementsResult> {
+    return objectEnhancements(this.h, sourceMainPath, contextUri, includeSource)
+  }
+
   public abapDocumentation(
     objectUri: string,
     body: string,
@@ -1392,7 +1422,6 @@ export class ADTClient {
     return debuggerSetVariableValue(this.h, variableName, value)
   }
 
-
   public changePackagePreview(
     changePackageRefactoring: ChangePackageRefactoring,
     transport: string = ""
@@ -1474,7 +1503,7 @@ export class ADTClient {
   }
 
   public atcDocumentation(docUri: string) {
-    return atcDocumentation(this.h,docUri)
+    return atcDocumentation(this.h, docUri)
   }
 
   public isProposalMessage = isProposalMessage
