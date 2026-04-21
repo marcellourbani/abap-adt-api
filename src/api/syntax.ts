@@ -1,4 +1,3 @@
-
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
@@ -470,11 +469,6 @@ export async function classComponents(h: AdtHTTP, url: string) {
   const header = parseElement(xmlNode(raw, "abapsource:objectStructureElement"))
   return header as ClassComponent
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// classStructureDetailed — richer outline for classes and interfaces
-// ─────────────────────────────────────────────────────────────────────────────
-
 
 export interface FragmentLocation {
   uri: string

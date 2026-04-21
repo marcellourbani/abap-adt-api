@@ -114,7 +114,7 @@ import {
   objectRegistrationInfo,
   ObjectSourceOptions,
   objectStructure,
-  
+  objectStructureElements,
   ObjectType,
   ObjectTypeDescriptor,
   objectTypes,
@@ -296,8 +296,8 @@ export class ADTClient {
    *   - class include paths: `/oo/classes/<name>/includes/<include>`
    */
   public static isMainInclude(path: string): boolean {
-    const stripped = path.replace(/\/+$/, '')
-    if (stripped.endsWith('/source/main')) return true
+    const stripped = path.replace(/\/+$/, "")
+    if (stripped.endsWith("/source/main")) return true
     // Class includes: .../oo/classes/<name>/includes/<includeType>
     if (/\/oo\/classes\/[^/]+\/includes\/[^/]+$/.test(stripped)) return true
     return false
@@ -520,10 +520,12 @@ export class ADTClient {
 
   public objectStructure(
     objectUrl: string,
-    version?: ObjectVersion,
-    opts?: { withStructureElements?: boolean }
+    version?: ObjectVersion
   ): Promise<AbapObjectStructure> {
-    return objectStructure(this.h, objectUrl, version, opts)
+    return objectStructure(this.h, objectUrl, version)
+  }
+  public objectStructureElements(objectUrl: string, version?: ObjectVersion) {
+    return objectStructureElements(this.h, objectUrl, version)
   }
   public activate(
     object: InactiveObject | InactiveObject[],
@@ -1420,7 +1422,6 @@ export class ADTClient {
     return debuggerSetVariableValue(this.h, variableName, value)
   }
 
-
   public changePackagePreview(
     changePackageRefactoring: ChangePackageRefactoring,
     transport: string = ""
@@ -1502,7 +1503,7 @@ export class ADTClient {
   }
 
   public atcDocumentation(docUri: string) {
-    return atcDocumentation(this.h,docUri)
+    return atcDocumentation(this.h, docUri)
   }
 
   public isProposalMessage = isProposalMessage

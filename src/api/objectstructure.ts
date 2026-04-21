@@ -101,25 +101,11 @@ export interface AbapClassStructure {
   metaData: ClassMetaData
   links?: Link[]
   includes: ClassInclude[]
-  // Optional enriched outline emitted when callers request structure elements
-  structureElements?: StructureElement[]
-}
-export interface AbapClassStructureWithElements extends AbapClassStructure {
-  structureElements: StructureElement[]
 }
 
 export type AbapObjectStructure = AbapSimpleStructure | AbapClassStructure
 export function isClassMetaData(meta: AbapMetaData): meta is ClassMetaData {
   return (meta as ClassMetaData)["class:visibility"] !== undefined
-}
-export function hasElements(
-  obj: AbapObjectStructure
-): obj is AbapClassStructureWithElements {
-  return (
-    isClassStructure(obj) &&
-    !!obj.structureElements &&
-    Array.isArray(obj.structureElements)
-  )
 }
 
 export function isClassStructure(
@@ -195,8 +181,7 @@ export async function objectStructureElements(
 export async function objectStructure(
   h: AdtHTTP,
   objectUrl: string,
-  version?: ObjectVersion,
-  opts?: { withStructureElements?: boolean }
+  version?: ObjectVersion
 ): Promise<AbapObjectStructure> {
   ValidateObjectUrl(objectUrl)
   const qs = version ? { version } : {}
@@ -216,17 +201,6 @@ export async function objectStructure(
     const includes = xmlArray(root, "class:include").map(convertIncludes)
     result = { objectUrl, metaData, includes, links } as AbapClassStructure
   } else result = { objectUrl, metaData, links }
-
-  // Optionally fetch the richer `/objectstructure` outline for classes/interfaces
-  if (opts?.withStructureElements && isClassStructure(result)) {
-    const lower = objectUrl.toLowerCase()
-    if (lower.includes("/oo/classes/") || lower.includes("/oo/interfaces/"))
-      result.structureElements = await objectStructureElements(
-        h,
-        objectUrl,
-        version
-      )
-  }
 
   return result
 }
