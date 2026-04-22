@@ -1,5 +1,11 @@
 # Change Log
 
+## [Unreleased]
+
+### Added
+
+- `revisionContent(contentUri)`: fetches the ABAP source of a specific historical revision via the ADT versioned content endpoint
+
 ## 5.2.0 [2023-11-06]
 
 ### Added

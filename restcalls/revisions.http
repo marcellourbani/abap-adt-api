@@ -1,3 +1,14 @@
+### Enhancement version history investigation (April 2026)
+# CL_SEEF_ADT_RES_ENHANCEMENTS only exposes a single GET handler with no /versions
+# sub-path and no version= query param support.  The endpoint below will 404 on
+# all known systems — documented here so future agents don't re-investigate.
+#
+# GET {{baseUrl}}/sap/bc/adt/programs/includes/{{include}}/source/main/enhancements/versions
+#
+# Workaround: ENHO objects DO have standard ADT version history via their own source:
+#   GET /sap/bc/adt/enhancements/implementations/{{enho_name}}/source/main/versions
+# and individual content via the standard revisionContent() API added in this branch.
+
 ### abapgit_old
 GET {{baseUrl}}/sap/bc/adt/programs/programs/zabapgit_old/source/main/versions
 Authorization: Basic {{user}}:{{password}}

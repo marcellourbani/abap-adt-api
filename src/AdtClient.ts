@@ -135,6 +135,7 @@ import {
   RegistrationInfo,
   remoteRepoInfo,
   Revision,
+  revisionContent,
   renameEvaluate,
   renamePreview,
   renameExecute,
@@ -986,6 +987,10 @@ export class ADTClient {
     clsInclude?: classIncludes
   ) {
     return revisions(this.h, objectUrl, clsInclude)
+  }
+
+  public revisionContent(contentUri: string) {
+    return revisionContent(this.h, contentUri)
   }
 
   public objectEnhancements(

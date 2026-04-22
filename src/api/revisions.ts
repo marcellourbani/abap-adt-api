@@ -88,3 +88,24 @@ export async function revisions(
   )
   return versions
 }
+
+/**
+ * Fetches the ABAP source code of a specific historical revision.
+ *
+ * The `contentUri` should be the `uri` field from a `Revision` object returned
+ * by `revisions()` — it points to the ADT versioned content endpoint:
+ *   GET .../versions/<timestamp>/<seq>/content
+ *
+ * @param h           ADT HTTP client
+ * @param contentUri  The `Revision.uri` value from a prior `revisions()` call
+ * @returns           The ABAP source at that historical revision as a plain string
+ */
+export async function revisionContent(
+  h: AdtHTTP,
+  contentUri: string
+): Promise<string> {
+  const response = await h.request(contentUri, {
+    headers: { Accept: "text/plain" }
+  })
+  return response.body as string
+}

@@ -1267,6 +1267,38 @@ test(
 )
 
 test(
+  "revision content for func",
+  runTest(async (c: ADTClient) => {
+    jest.setTimeout(15000) // versioned content fetch can be slow
+    const obj =
+      "/sap/bc/adt/functions/groups/zapidummyfoobar/fmodules/zapidummyfoofunc"
+    const revs = await c.revisions(obj)
+    expect(revs).toBeTruthy()
+    if (!revs[0]?.uri) return // no versions on this system
+    const source = await c.revisionContent(revs[0].uri).catch(eat404)
+    if (!source) return // endpoint not supported on this system
+    expect(typeof source).toBe("string")
+    expect(source.length).toBeGreaterThan(0)
+  })
+)
+
+test(
+  "revision content for class include",
+  runTest(async (c: ADTClient) => {
+    jest.setTimeout(15000) // versioned content fetch can be slow
+    const obj = "/sap/bc/adt/oo/classes/zapiadt_testcase_class1"
+    const revs = await c.revisions(obj, "main")
+    expect(revs).toBeTruthy()
+    const firstWithUri = revs.find(r => !!r.uri)
+    if (!firstWithUri) return // no versions on this system
+    const source = await c.revisionContent(firstWithUri.uri).catch(eat404)
+    if (!source) return // endpoint not supported on this system
+    expect(typeof source).toBe("string")
+    expect(source.length).toBeGreaterThan(0)
+  })
+)
+
+test(
   "objectEnhancements",
   runTest(async (c: ADTClient) => {
     // zapidummyfoobar is always present in the test system
