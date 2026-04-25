@@ -146,10 +146,12 @@ import {
   searchObject,
   SearchResult,
   ServiceBinding,
+  getDomainProperties,
   setDomainProperties,
   DomainProperties,
   DomainMetaData,
   setDataElementProperties,
+  getDataElementProperties,
   DataElementProperties,
   DataElementMetaData,
   setObjectSource,
@@ -591,6 +593,13 @@ export class ADTClient {
     )
   }
 
+  public getDomainProperties(
+    domainUrl: string,
+    version?: ObjectVersion
+  ) {
+    return getDomainProperties(this.h, domainUrl, version)
+  }
+
   public setDataElementProperties(
     dataElementUrl: string,
     properties: DataElementProperties,
@@ -607,6 +616,14 @@ export class ADTClient {
       transport
     )
   }
+
+  public getDataElementProperties(
+    dataElementUrl: string,
+    version?: ObjectVersion
+  ) {
+    return getDataElementProperties(this.h, dataElementUrl, version)
+  }
+
   /**
    * Retrieves a resource content (i.e. a program's source code)
    *
