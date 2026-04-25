@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/marcellourbani/abap-adt-api"
+    "url": "git+https://github.com/marcellourbani/abap-adt-api.git"
   },
   "dependencies": {
     "axios": "^1.14.0",
