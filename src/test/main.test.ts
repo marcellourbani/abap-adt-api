@@ -1,5 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
+import exp from "constants"
 import {
   ADTClient,
   fromError,
@@ -1685,3 +1686,26 @@ test("fromException preserves HttpClientException status when a response without
   expect(isHttpError(ex) && ex.code).toBe("ERR_NETWORK")
   expect(isHttpError(ex) && ex.message).toBe("Request failed without response")
 })
+
+test(
+  "dataelement details",
+  runTest(async (c: ADTClient) => {
+    const result = await c.searchObject("TRKORR", "DTEL")
+    const trkorr = await c.getDataElementProperties(result[0]["adtcore:uri"])
+    expect(trkorr).toBeDefined()
+    expect(trkorr.properties.dataType).toBe("CHAR")
+    expect(trkorr.properties.dataTypeLength).toBe(20)
+    expect(trkorr.properties.typeName).toBe("TRKORR") // domain name or blank
+  })
+)
+
+test(
+  "domain details",
+  runTest(async (c: ADTClient) => {
+    const result = await c.searchObject("TRKORR", "DOMA")
+    const trkorr = await c.getDomainProperties(result[0]["adtcore:uri"])
+    expect(trkorr).toBeDefined()
+    expect(trkorr.properties.typeInformation.datatype).toBe("CHAR")
+    expect(trkorr.properties.typeInformation.length).toBe(20)
+  })
+)
