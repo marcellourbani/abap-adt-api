@@ -230,7 +230,13 @@ import {
   extractMethodExecute,
   GenericRefactoring,
   objectEnhancements,
-  ObjectEnhancementsResult
+  ObjectEnhancementsResult,
+  getTextElements,
+  setTextElements,
+  TextElement,
+  TextElementsResult,
+  textElementsUrl,
+  TextElementCategory
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -593,10 +599,7 @@ export class ADTClient {
     )
   }
 
-  public getDomainProperties(
-    domainUrl: string,
-    version?: ObjectVersion
-  ) {
+  public getDomainProperties(domainUrl: string, version?: ObjectVersion) {
     return getDomainProperties(this.h, domainUrl, version)
   }
 
@@ -1573,5 +1576,58 @@ export class ADTClient {
   }
   public extractMethodExecute(refactoring: GenericRefactoring) {
     return extractMethodExecute(this.h, refactoring)
+  }
+
+  /**
+   * Builds the text elements base URL for an object.
+   * The returned URL is used as the `url` argument for the text element methods.
+   *
+   * @param objectType ADT type string, e.g. "PROG/P", "CLAS/OC", "FUGR/F"
+   * @param objectName Object name
+   */
+  public static textElementsUrl(
+    objectType: string,
+    objectName: string
+  ): string {
+    return textElementsUrl(objectType, objectName)
+  }
+
+  /**
+   * Retrieves text elements (selection texts) for an ABAP object.
+   * Returns an empty array when the object has no text elements (404).
+   *
+   * @param url Text elements base URL — use {@link ADTClient.textElementsUrl} to build it
+   */
+  public getTextElements(
+    url: string,
+    category?: TextElementCategory
+  ): Promise<TextElementsResult> {
+    return getTextElements(this.h, url, category)
+  }
+
+  /**
+   * Writes text elements for an ABAP object.
+   * The caller is responsible for calling `lock()` before and `unLock()` after.
+   *
+   * @param url        Text elements base URL
+   * @param elements   Text elements to write
+   * @param lockHandle Lock handle from `lock()`
+   * @param transport  Optional transport/correction number
+   */
+  public setTextElements(
+    url: string,
+    category: TextElementCategory,
+    elements: TextElement[],
+    lockHandle: string,
+    transport?: string
+  ): Promise<void> {
+    return setTextElements(
+      this.h,
+      url,
+      category,
+      elements,
+      lockHandle,
+      transport
+    )
   }
 }

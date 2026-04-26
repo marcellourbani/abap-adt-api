@@ -147,6 +147,7 @@ test("write_program", async () => {
         parentPath: "/sap/bc/adt/packages/$TMP"
       })
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       const handle = await c.lock(path)
       // write the program
       await c.setObjectSource(main, source, handle.LOCK_HANDLE)
@@ -188,6 +189,7 @@ test("Create and delete interface", async () => {
     // locks only work in stateful sessions
     try {
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       const handle = await c.lock(newobject)
       expect(handle.LOCK_HANDLE).not.toBe("")
       await c.deleteObject(newobject, handle.LOCK_HANDLE)
@@ -216,6 +218,7 @@ test("Create inactive and try to activate", async () => {
     let handle: AdtLock | undefined
     try {
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       handle = await c.lock(newobject)
       await c.deleteObject(newobject, handle.LOCK_HANDLE)
     } catch (e) {
@@ -229,6 +232,7 @@ test("Create inactive and try to activate", async () => {
       // use a stateless clone as regular calls leave the backend in a weird state
       await c.statelessClone.createObject(options)
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       handle = await c.lock(newobject)
       expect(handle.LOCK_HANDLE).not.toBe("")
       // WRITE CONTENTS
@@ -464,6 +468,7 @@ test("Create a test classes", async () => {
     try {
       // preventive cleanup
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       const lock = await c.lock(clasurl)
       await c.deleteObject(clasurl, lock.LOCK_HANDLE)
       await c.dropSession()
@@ -480,6 +485,7 @@ test("Create a test classes", async () => {
     // I got there => class created
     try {
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       const lock = await c.lock(clasurl)
       await c.createTestInclude(clas, lock.LOCK_HANDLE)
       await c.dropSession()
@@ -489,6 +495,7 @@ test("Create a test classes", async () => {
       // cleanup
       await c.dropSession()
       c.stateful = session_types.stateful
+      statefulClients.add(c)
       const lock = await c.lock(clasurl)
       await c.deleteObject(clasurl, lock.LOCK_HANDLE)
       await c.dropSession()
@@ -748,5 +755,52 @@ test(
     if (!enableWrite(new Date())) return
     const result = await c.changePackageExecute(proposal)
     expect(result).toBeDefined()
+  })
+)
+const statefulClients = new Set<ADTClient>()
+afterAll(async () => {
+  for (const c of statefulClients) {
+    try { await c.dropSession() } catch { /* ignore */ }
+  }
+})
+test(
+  "write text elements",
+  runTest(async (c: ADTClient) => {
+    if (!enableWrite(new Date())) return
+    const url = ADTClient.textElementsUrl("PROG/P", "ZAPIDUMMYTESTPROG1")
+    c.stateful = session_types.stateful
+    statefulClients.add(c)
+    const handle = await c.lock(url)
+    expect(handle).toBeDefined()
+    expect(typeof handle.LOCK_HANDLE).toBe("string")
+    expect(handle.LOCK_HANDLE.length).toBeGreaterThan(0)
+    const result = await c.getTextElements(url)
+    // expect(result.textElements.length).toBe(0)
+    result.textElements = [
+      {
+        id: "TST",
+        maxLength: 15,
+        text: "This is a test"
+      }
+    ]
+    await c.setTextElements(
+      url,
+      "symbols",
+      result.textElements,
+      handle.LOCK_HANDLE,
+      process.env.ADT_TRANS || ""
+    )
+    const modified = await c.getTextElements(url)
+    expect(modified.textElements.length).toBe(1)
+    result.textElements = []
+    await c.setTextElements(
+      url,
+      "symbols",
+      result.textElements,
+      handle.LOCK_HANDLE,
+      process.env.ADT_TRANS || ""
+    )
+    const cleared = await c.getTextElements(url)
+    expect(cleared.textElements.length).toBe(0)
   })
 )

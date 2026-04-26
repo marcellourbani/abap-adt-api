@@ -22,6 +22,7 @@ import {
 } from "../api"
 import { fullParse, isArray, isString } from "../utilities"
 import { createHttp, hasAbapGit, runTest } from "./login"
+import { parseTextElements, formatTextElements } from "../api/textelements"
 
 // tslint:disable: no-console
 
@@ -1768,3 +1769,288 @@ test(
     expect(trkorr.properties.typeInformation.length).toBe(20)
   })
 )
+
+test("textElementsUrl builds correct URL for program", () => {
+  const url = ADTClient.textElementsUrl("PROG/P", "ZAPIDUMMYTESTPROG1")
+  expect(url).toBe("/sap/bc/adt/textelements/programs/zapidummytestprog1")
+})
+
+test("textElementsUrl builds correct URL for class", () => {
+  const url = ADTClient.textElementsUrl("CLAS/OC", "ZAPIADT_TESTCASE_CLASS1")
+  expect(url).toBe("/sap/bc/adt/textelements/classes/zapiadt_testcase_class1")
+})
+
+test("textElementsUrl builds correct URL for function group", () => {
+  const url = ADTClient.textElementsUrl("FUGR/F", "ZAPIDUMMYFOOBAR")
+  expect(url).toBe("/sap/bc/adt/textelements/functiongroups/zapidummyfoobar")
+})
+
+test("textElementsUrl encodes namespace objects", () => {
+  const url = ADTClient.textElementsUrl("PROG/P", "/MYNS/MYPROG")
+  expect(url).toBe(
+    `/sap/bc/adt/textelements/programs/${encodeURIComponent("/myns/myprog")}`
+  )
+})
+
+test(
+  "getTextElements for program",
+  runTest(async (c: ADTClient) => {
+    const url = ADTClient.textElementsUrl("PROG/P", "rddm0001")
+    const result = await c.getTextElements(url, "symbols")
+    expect(result).toBeDefined()
+    expect(result.programName).toBe("rddm0001")
+    expect(Array.isArray(result.textElements)).toBe(true)
+    // if the program has text elements, verify their shape
+    if (result.textElements.length > 0) {
+      const first = result.textElements[0]
+      expect(typeof first.id).toBe("string")
+      expect(typeof first.text).toBe("string")
+    }
+  })
+)
+
+test(
+  "getTextElements for function group",
+  runTest(async (c: ADTClient) => {
+    const url = ADTClient.textElementsUrl("FUGR/F", "ZAPIDUMMYFOOBAR")
+    const result = await c.getTextElements(url)
+    expect(result).toBeDefined()
+    expect(result.programName).toBe("zapidummyfoobar")
+    expect(Array.isArray(result.textElements)).toBe(true)
+  })
+)
+
+test(
+  "getTextElements symbols category",
+  runTest(async (c: ADTClient) => {
+    const url = ADTClient.textElementsUrl("PROG/P", "ZAPIDUMMYTESTPROG1")
+    const result = await c.getTextElements(url, "symbols")
+    expect(result).toBeDefined()
+    expect(result.programName).toBe("zapidummytestprog1")
+    expect(Array.isArray(result.textElements)).toBe(true)
+  })
+)
+
+test(
+  "getTextElements selections category",
+  runTest(async (c: ADTClient) => {
+    const url = ADTClient.textElementsUrl("PROG/P", "ZAPIDUMMYTESTPROG1")
+    const result = await c.getTextElements(url, "selections")
+    expect(result).toBeDefined()
+    expect(result.programName).toBe("zapidummytestprog1")
+    expect(Array.isArray(result.textElements)).toBe(true)
+  })
+)
+
+test(
+  "getTextElements headings category",
+  runTest(async (c: ADTClient) => {
+    const url = ADTClient.textElementsUrl("PROG/P", "ZAPIDUMMYTESTPROG1")
+    const result = await c.getTextElements(url, "headings")
+    expect(result).toBeDefined()
+    expect(result.programName).toBe("zapidummytestprog1")
+    expect(Array.isArray(result.textElements)).toBe(true)
+  })
+)
+
+// ─── parseTextElements unit tests ────────────────────────────────────────────
+
+test("parseTextElements parses simple id=text lines", () => {
+  const body = "ABC=hello\n\nXYZ=world\n"
+  const result = parseTextElements(body)
+  expect(result).toHaveLength(2)
+  expect(result[0]).toMatchObject({ id: "ABC", text: "hello" })
+  expect(result[1]).toMatchObject({ id: "XYZ", text: "world" })
+})
+
+test("parseTextElements attaches @MaxLength to following element", () => {
+  const body = "@MaxLength:20\nABC=some text\n\nXYZ=other\n"
+  const result = parseTextElements(body)
+  expect(result[0].maxLength).toBe(20)
+  expect(result[1].maxLength).toBeUndefined()
+})
+
+test("parseTextElements attaches @DDICReference to following element", () => {
+  const body = "@DDICReference:MATNR\nP_MAT=Material\n\nP_VK=Sales org\n"
+  const result = parseTextElements(body)
+  expect(result[0].ddicReference).toBe("MATNR")
+  expect(result[1].ddicReference).toBeUndefined()
+})
+
+test("parseTextElements handles text containing '='", () => {
+  const body = "ABC=a=b=c\n"
+  const result = parseTextElements(body)
+  expect(result[0].text).toBe("a=b=c")
+})
+
+test("parseTextElements skips blank lines and lines without '='", () => {
+  const body = "\n  \nABC=text\n"
+  const result = parseTextElements(body)
+  expect(result).toHaveLength(1)
+})
+
+// ─── formatTextElements unit tests ───────────────────────────────────────────
+
+test("formatTextElements renders @MaxLength for symbols", () => {
+  const out = formatTextElements(
+    [{ id: "ABC", text: "hello", maxLength: 10 }],
+    "symbols"
+  )
+  expect(out).toContain("@MaxLength:10")
+  expect(out).toContain("ABC=hello")
+})
+
+test("formatTextElements does not render @MaxLength for selections", () => {
+  const out = formatTextElements(
+    [{ id: "P_MAT", text: "Material", maxLength: 10 }],
+    "selections"
+  )
+  expect(out).not.toContain("@MaxLength:")
+  expect(out).toContain("P_MAT=Material")
+})
+
+test("formatTextElements renders @DDICReference only for selections", () => {
+  const el = { id: "P_MAT", text: "Material", ddicReference: "MATNR" }
+  const selOut = formatTextElements([el], "selections")
+  expect(selOut).toContain("@DDICReference:MATNR")
+
+  const symEl = { id: "ABC", text: "hi", ddicReference: "MATNR" }
+  const symOut = formatTextElements([symEl], "symbols")
+  expect(symOut).not.toContain("@DDICReference:")
+})
+
+test("formatTextElements does not add blank lines for headings", () => {
+  const out = formatTextElements(
+    [{ id: "LISTHEADER", text: "My list" }],
+    "headings"
+  )
+  expect(out).toBe("LISTHEADER=My list")
+})
+
+test("formatTextElements adds blank lines between symbols", () => {
+  const out = formatTextElements(
+    [
+      { id: "ABC", text: "first" },
+      { id: "DEF", text: "second" }
+    ],
+    "symbols"
+  )
+  expect(out).toBe("ABC=first\n\nDEF=second\n")
+})
+
+// ─── validateTextElements (via formatTextElements) unit tests ─────────────────
+
+describe("validation: symbols", () => {
+  test("throws when key is not exactly 3 characters", () => {
+    expect(() =>
+      formatTextElements([{ id: "AB", text: "hi" }], "symbols")
+    ).toThrow(/exactly 3 characters/)
+    expect(() =>
+      formatTextElements([{ id: "ABCD", text: "hi" }], "symbols")
+    ).toThrow(/exactly 3 characters/)
+  })
+
+  test("throws when key contains a blank", () => {
+    expect(() =>
+      formatTextElements([{ id: "A B", text: "hi" }], "symbols")
+    ).toThrow(/blanks/)
+  })
+
+  test("throws when text exceeds maxLength", () => {
+    expect(() =>
+      formatTextElements(
+        [{ id: "ABC", text: "toolongtext", maxLength: 5 }],
+        "symbols"
+      )
+    ).toThrow(/maxLength 5/)
+  })
+
+  test("accepts valid symbol", () => {
+    expect(() =>
+      formatTextElements([{ id: "ABC", text: "ok", maxLength: 10 }], "symbols")
+    ).not.toThrow()
+  })
+})
+
+describe("validation: headings", () => {
+  test("throws for unknown heading key", () => {
+    expect(() =>
+      formatTextElements([{ id: "UNKNOWN", text: "x" }], "headings")
+    ).toThrow(/Invalid heading key/)
+  })
+
+  test("accepts all valid heading keys", () => {
+    const keys = [
+      "LISTHEADER",
+      "COLUMNHEADER_1",
+      "COLUMNHEADER_2",
+      "COLUMNHEADER_3",
+      "COLUMNHEADER_4"
+    ]
+    for (const id of keys) {
+      expect(() =>
+        formatTextElements([{ id, text: "x" }], "headings")
+      ).not.toThrow()
+    }
+  })
+
+  test("throws when LISTHEADER text exceeds 71 characters", () => {
+    expect(() =>
+      formatTextElements(
+        [{ id: "LISTHEADER", text: "x".repeat(72) }],
+        "headings"
+      )
+    ).toThrow(/maximum length of 71/)
+  })
+
+  test("accepts LISTHEADER text of exactly 71 characters", () => {
+    expect(() =>
+      formatTextElements(
+        [{ id: "LISTHEADER", text: "x".repeat(71) }],
+        "headings"
+      )
+    ).not.toThrow()
+  })
+
+  test("throws when COLUMNHEADER_* text exceeds 255 characters", () => {
+    expect(() =>
+      formatTextElements(
+        [{ id: "COLUMNHEADER_1", text: "x".repeat(256) }],
+        "headings"
+      )
+    ).toThrow(/maximum length of 255/)
+  })
+
+  test("accepts COLUMNHEADER_* text of exactly 255 characters", () => {
+    expect(() =>
+      formatTextElements(
+        [{ id: "COLUMNHEADER_2", text: "x".repeat(255) }],
+        "headings"
+      )
+    ).not.toThrow()
+  })
+
+  test("ignores maxLength field for headings", () => {
+    // Should not throw even though text.length > maxLength
+    expect(() =>
+      formatTextElements(
+        [{ id: "LISTHEADER", text: "short", maxLength: 1 }],
+        "headings"
+      )
+    ).not.toThrow()
+  })
+})
+
+describe("validation: selections", () => {
+  test("throws when text exceeds 30 characters", () => {
+    expect(() =>
+      formatTextElements([{ id: "P_MAT", text: "x".repeat(31) }], "selections")
+    ).toThrow(/maximum length of 30/)
+  })
+
+  test("accepts selection text of exactly 30 characters", () => {
+    expect(() =>
+      formatTextElements([{ id: "P_MAT", text: "x".repeat(30) }], "selections")
+    ).not.toThrow()
+  })
+})

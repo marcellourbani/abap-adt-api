@@ -206,5 +206,9 @@ export {
   TraceParameters,
   traceProcessObjects,
   TraceRequestList,
-  UnitTestRunFlags
+  UnitTestRunFlags,
+  TextElement,
+  TextElementsResult,
+  TextElementCategory,
+  textElementsUrl
 } from "./api"
