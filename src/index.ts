@@ -28,6 +28,8 @@ export {
   BindingServiceNavigation,
   BindingServiceResult,
   BindinTypes,
+  BindingTypes,
+  BindingVersion,
   BindingValidationOptions,
   ClassComponent,
   ClassInclude,

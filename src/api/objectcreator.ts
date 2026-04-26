@@ -95,15 +95,20 @@ export interface NewPackageOptions
 }
 
 export type BindingCategory = "0" | "1"
+export type BindingVersion = "V2" | "V4"
 export const BindinTypes = [
-  { description: "Odata V2 - Web API", bindingtype: "ODATA", category: "0" },
-  { description: "Odata V2 - UI", bindingtype: "ODATA", category: "1" }
+  { description: "Odata V2 - Web API", bindingtype: "ODATA", category: "0", version: "V2" },
+  { description: "Odata V2 - UI", bindingtype: "ODATA", category: "1", version: "V2" },
+  { description: "Odata V4 - Web API", bindingtype: "ODATA", category: "0", version: "V4" },
+  { description: "Odata V4 - UI", bindingtype: "ODATA", category: "1", version: "V4" }
 ]
+export const BindingTypes = BindinTypes
 export interface NewBindingOptions extends NewObjectOptions {
   objtype: BindingTypeId
   service: string
   bindingtype: "ODATA"
   category: BindingCategory
+  bindingVersion?: BindingVersion
 }
 
 export const hasPackageOptions = (o: any): o is PackageSpecificData =>
@@ -203,13 +208,15 @@ function createBodySimple(
 }
 
 function createBodyBinding(options: NewBindingOptions, type: CreatableType) {
+  const category = options.category ?? "0"
+  const bindingVersion = options.bindingVersion ?? "V2"
   const body = `<adtcore:packageRef adtcore:name="${options.parentName}"/>
       <srvb:services srvb:name="${options.name}">
           <srvb:content srvb:version="0001">
               <srvb:serviceDefinition adtcore:name="${options.service}"/>
           </srvb:content>
       </srvb:services>
-      <srvb:binding srvb:category="0" srvb:type="${options.bindingtype}" srvb:version="V2">
+      <srvb:binding srvb:category="${category}" srvb:type="${options.bindingtype}" srvb:version="${bindingVersion}">
           <srvb:implementation adtcore:name=""/>
       </srvb:binding>`
   return createBodySimple(options, type, body)

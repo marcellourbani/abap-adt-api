@@ -1623,6 +1623,22 @@ test("type validation for service binding options", () => {
   expect(isBindingOptions(testdata)).toBe(true)
 })
 
+test("type validation for V4 UI service binding options", () => {
+  const testdata: NewObjectOptions | NewBindingOptions = {
+    description: "f",
+    name: "YMU_BFOO",
+    objtype: "SRVB/SVB",
+    parentName: "YMU_RAP_TRAVEL",
+    parentPath: "/sap/bc/adt/packages/YMU_RAP_TRAVEL",
+    responsible: "CB0000000083",
+    bindingtype: "ODATA",
+    category: "1",
+    bindingVersion: "V4",
+    service: "YMU_RAP_UI_TRAVEL"
+  }
+  expect(isBindingOptions(testdata)).toBe(true)
+})
+
 test(
   "feed list",
   runTest(async (c: ADTClient) => {
