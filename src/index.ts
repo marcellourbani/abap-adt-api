@@ -210,5 +210,20 @@ export {
   TextElement,
   TextElementsResult,
   TextElementCategory,
-  textElementsUrl
+  textElementsUrl,
+  RapGeneratorMetadata,
+  RapGeneratorGeneral,
+  RapGeneratorDataModelEntity,
+  RapGeneratorBehavior,
+  RapGeneratorBusinessObject,
+  RapGeneratorServiceProjection,
+  RapGeneratorServiceDefinition,
+  RapGeneratorServiceBinding,
+  RapGeneratorBusinessService,
+  RapGeneratorContent,
+  RapGeneratorValidationResult,
+  RapGeneratorPreviewObject,
+  RapGeneratorBindingType,
+  RapGeneratorId,
+  BINDING_TYPES
 } from "./api"

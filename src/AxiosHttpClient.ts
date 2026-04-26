@@ -59,7 +59,7 @@ const convertheaders = (
 
 const axiosRespToHttp = (raw: AxiosResponse): HttpClientResponse => {
   const { data, status, statusText, headers } = raw
-  const body = data ? (isString(data) ? data : `${data}`) : ""
+  const body = !data ? "" : isString(data) ? data : JSON.stringify(data)
   return {
     body,
     status,
@@ -70,7 +70,10 @@ const axiosRespToHttp = (raw: AxiosResponse): HttpClientResponse => {
 
 export class AxiosHttpClient implements HttpClient {
   private axios: Axios
-  constructor(private baseURL: string, private config?: ClientOptions) {
+  constructor(
+    private baseURL: string,
+    private config?: ClientOptions
+  ) {
     const conf = toAxiosConfig({ ...config })
     this.axios = axios.create({ ...conf, baseURL })
   }

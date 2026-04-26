@@ -236,7 +236,20 @@ import {
   TextElement,
   TextElementsResult,
   textElementsUrl,
-  TextElementCategory
+  TextElementCategory,
+  rapGenValidateInitial,
+  rapGenGetSchema,
+  rapGenGetContent,
+  rapGenGetUiConfig,
+  rapGenValidateContent,
+  rapGenPreview,
+  rapGenGenerate,
+  rapGenIsAvailable,
+  rapGenPublishService,
+  RapGeneratorId,
+  RapGeneratorContent,
+  RapGeneratorValidationResult,
+  RapGeneratorPreviewObject
 } from "./api"
 import { followUrl, isString } from "./utilities"
 import https from "https"
@@ -1629,5 +1642,79 @@ export class ADTClient {
       lockHandle,
       transport
     )
+  }
+
+  public rapGenValidateInitial(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    packageName: string,
+    checks?: string[]
+  ): Promise<RapGeneratorValidationResult> {
+    return rapGenValidateInitial(
+      this.h,
+      genId,
+      refObjectUri,
+      packageName,
+      checks
+    )
+  }
+
+  public rapGenGetSchema(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    packageName: string
+  ): Promise<string> {
+    return rapGenGetSchema(this.h, genId, refObjectUri, packageName)
+  }
+
+  public rapGenGetContent(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    packageName: string
+  ): Promise<RapGeneratorContent> {
+    return rapGenGetContent(this.h, genId, refObjectUri, packageName)
+  }
+
+  public rapGenGetUiConfig(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    packageName: string
+  ): Promise<string> {
+    return rapGenGetUiConfig(this.h, genId, refObjectUri, packageName)
+  }
+
+  public rapGenValidateContent(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    content: RapGeneratorContent
+  ): Promise<RapGeneratorValidationResult> {
+    return rapGenValidateContent(this.h, genId, refObjectUri, content)
+  }
+
+  public rapGenPreview(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    content: RapGeneratorContent
+  ): Promise<RapGeneratorPreviewObject[]> {
+    return rapGenPreview(this.h, genId, refObjectUri, content)
+  }
+
+  public rapGenGenerate(
+    genId: RapGeneratorId,
+    refObjectUri: string,
+    transport: string,
+    content: RapGeneratorContent
+  ): Promise<RapGeneratorPreviewObject[]> {
+    return rapGenGenerate(this.h, genId, refObjectUri, transport, content)
+  }
+
+  public rapGenIsAvailable(genId?: RapGeneratorId): Promise<boolean> {
+    return rapGenIsAvailable(this.h, genId)
+  }
+
+  public rapGenPublishService(
+    srvbName: string
+  ): Promise<RapGeneratorValidationResult> {
+    return rapGenPublishService(this.h, srvbName)
   }
 }
