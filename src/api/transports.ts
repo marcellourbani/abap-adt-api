@@ -255,6 +255,14 @@ const parseTargets = (s: any) => ({
   released: xmlArray(s, "tm:released", "tm:request").map(parseRequest)
 })
 
+export async function transportDetails(h: AdtHTTP, transportNumber: string) {
+  const Accept = "application/vnd.sap.adt.transportorganizer.v1+xml"
+  const url = `/sap/bc/adt/cts/transportrequests/${transportNumber}`
+  const raw = await h.request(url, { headers: { Accept } })
+  const parsed = fullParse(raw.body)
+  return parseRequest(xmlNode(parsed, "tm:root", "tm:request"))
+}
+
 export async function userTransports(h: AdtHTTP, user: string, targets = true) {
   const response = await h.request("/sap/bc/adt/cts/transportrequests", {
     qs: { user, targets }
@@ -387,8 +395,8 @@ export async function transportRelease(
   const action = IgnoreATC
     ? "relObjigchkatc"
     : ignoreLocks
-    ? "relwithignlock"
-    : "newreleasejobs"
+      ? "relwithignlock"
+      : "newreleasejobs"
   const response = await h.request(
     `/sap/bc/adt/cts/transportrequests/${transportNumber}/${action}`,
     {

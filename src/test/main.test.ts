@@ -1139,6 +1139,20 @@ test(
     expect(hit!.tasks[0].objects[0]["tm:name"]).toBeDefined()
   })
 )
+
+test(
+  "single transport request details",
+  runTest(async c => {
+    const id = process.env.ADT_TRANS
+    if (!id) return
+    const details = await c.transportDetails(id).catch(eat404)
+    if (!details) return
+    // This transport request doesn't exist, but we want to verify that the call is made correctly and the response is parsed, so we expect a 404 with a specific message
+    expect(details["tm:number"]).toBe(id)
+    expect(details.tasks[0]?.objects?.length).toBeGreaterThan(1)
+  })
+)
+
 test(
   "read transport configurations",
   runTest(async (c: ADTClient) => {

@@ -173,6 +173,7 @@ import {
   TransportConfigurationEntry,
   transportConfigurations,
   transportDelete,
+  transportDetails,
   transportInfo,
   TransportInfo,
   TransportOwnerResponse,
@@ -972,6 +973,9 @@ export class ADTClient {
 
   public createTransportsConfig() {
     return createTransportsConfig(this.h)
+  }
+  public transportDetails(transportNumber: string) {
+    return transportDetails(this.h, transportNumber)
   }
 
   public userTransports(user: string, targets = true) {
