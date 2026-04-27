@@ -1,6 +1,13 @@
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
-import { fullParse, isArray, isString, xmlArray, xmlNode, xmlNodeAttr } from "../utilities"
+import {
+  fullParse,
+  isArray,
+  isString,
+  xmlArray,
+  xmlNode,
+  xmlNodeAttr
+} from "../utilities"
 
 export interface InactiveObject {
   "adtcore:uri": string
@@ -11,6 +18,7 @@ export interface InactiveObject {
 export interface InactiveObjectElement extends InactiveObject {
   user: string
   deleted: boolean
+  "adtcore:description"?: string
 }
 export interface InactiveObjectRecord {
   object?: InactiveObjectElement
@@ -155,11 +163,11 @@ export function inactiveObjectsInResults(
   })
 }
 
-export async function inactiveObjects(h: AdtHTTP) {
-  const headers = {
-    Accept:
-      "application/vnd.sap.adt.inactivectsobjects.v1+xml, application/xml;q=0.8"
-  }
+export async function inactiveObjects(h: AdtHTTP, Accept?: string) {
+  Accept =
+    Accept ||
+    "application/vnd.sap.adt.inactivectsobjects.v1+xml, application/xml;q=0.8"
+  const headers = { Accept }
 
   const response = await h.request("/sap/bc/adt/activation/inactiveobjects", {
     headers

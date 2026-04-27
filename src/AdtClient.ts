@@ -580,8 +580,8 @@ export class ADTClient {
       )
   }
 
-  public inactiveObjects() {
-    return inactiveObjects(this.h)
+  public inactiveObjects(accept?: string) {
+    return inactiveObjects(this.h, accept)
   }
 
   public mainPrograms(includeUrl: string) {
