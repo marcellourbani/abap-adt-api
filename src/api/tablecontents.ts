@@ -265,9 +265,10 @@ export async function tableContents(
     sqlQuery = ""
 ) {
     const qs = { rowNumber, ddicEntityName }
+    const headers = { Accept: "application/*" , "Content-Type": "text/plain" }
     const response = await h.request(
         `/sap/bc/adt/datapreview/ddic`,
-        { qs, headers: { Accept: "application/*" }, method: "POST", body: sqlQuery }
+        { qs, headers, method: "POST", body: sqlQuery }
     )
     const queryResult = parseQueryResponse(response.body)
     if (decode) return decodeQueryResult(queryResult)
@@ -281,9 +282,11 @@ export async function runQuery(
     decode = true
 ) {
     const qs = { rowNumber }
+    const headers = { Accept: "application/*" , "Content-Type": "text/plain" }
+
     const response = await h.request(
         `/sap/bc/adt/datapreview/freestyle`,
-        { qs, headers: { Accept: "application/*" }, method: "POST", body: sqlQuery }
+        { qs, headers, method: "POST", body: sqlQuery }
     )
     const queryResult = parseQueryResponse(response.body)
     if (decode) return decodeQueryResult(queryResult)

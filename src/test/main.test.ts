@@ -2068,3 +2068,29 @@ describe("validation: selections", () => {
     ).not.toThrow()
   })
 })
+
+test(
+  "Run SQL freestyle",
+  runTest(async (c: ADTClient) => {
+    const data = await c.runQuery(
+      `SELECT TRKORR,AS4USER FROM E070 WHERE TRKORR LIKE '${process.env.ADT_SYSTEMID}K9%'`,
+      2
+    )
+
+    expect(data.values.length).toBeGreaterThan(0)
+    expect(data.columns.length).toBe(2)
+    expect(data.columns[0].name).toBe("TRKORR")
+    expect(data.values[0].TRKORR).toBeTruthy()
+  })
+)
+test(
+  "Read table",
+  runTest(async (c: ADTClient) => {
+    const data = await c.tableContents("E070", 2)
+
+    expect(data.values.length).toBeGreaterThan(1)
+    expect(data.columns.length).toBeGreaterThan(3)
+    expect(data.columns[0].name).toBe("TRKORR")
+    expect(data.values[0].TRKORR).toBeTruthy()
+  })
+)
