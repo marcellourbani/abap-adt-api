@@ -1431,12 +1431,7 @@ export class ADTClient {
     url: string
   ): Promise<DebugStep>
   public debuggerStep(
-    steptype:
-      | "stepInto"
-      | "stepOver"
-      | "stepReturn"
-      | "stepContinue"
-      | "terminateDebuggee"
+    steptype: Exclude<DebugStepType, "stepRunToLine" | "stepJumpToLine">
   ): Promise<DebugStep>
   public debuggerStep(steptype: DebugStepType, url?: string) {
     return debuggerStep(this.h, steptype, url)
