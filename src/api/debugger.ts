@@ -237,7 +237,7 @@ export interface DebugVariable {
 interface DebugError extends Error {
     extra?: DebugListenerError
 }
-export type DebugStepType = "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "stepRunToLine" | "stepJumpToLine" | "terminateDebuggee"
+export type DebugStepType = "stepInto" | "stepOver" | "stepReturn" | "stepContinue" | "stepRunToLine" | "stepJumpToLine" | "terminateDebuggee" | "detachDebugger"
 
 export const debugMetaIsComplex = (m: DebugMetaType): m is DebugMetaTypeComplex =>
     !["simple", "string", "boxedcomp", "anonymcomp", "unknown"].find(e => e === m)
