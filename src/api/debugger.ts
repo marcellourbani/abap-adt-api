@@ -105,6 +105,11 @@ export interface DebugStatementBreakpoint {
   skipCount?: number
   statement: string
 }
+export interface DebugStatement {
+  name: string
+  description: string
+  group: string
+}
 export type DebugBreakpoint =
   | DebugLineBreakpoint
   | DebugMessageBreakpoint
@@ -421,6 +426,11 @@ const parseBreakpoints = (
     })
 }
 
+const parseDebugStatements = (body: string): DebugStatement[] => {
+  const raw = fullParse(body, { removeNSPrefix: true })
+  return xmlArray(raw, "statements", "statement").map(xmlNodeAttr)
+}
+
 const parseDebugError = (raw: any): DebugListenerError | undefined => {
   if (raw.exception) {
     const {
@@ -689,6 +699,15 @@ export async function simpleDebuggerStack(h: AdtHTTP, semanticURIs = true) {
     qs
   })
   return parseStack(response.body)
+}
+
+export async function debuggerStatements(h: AdtHTTP) {
+  const headers = { Accept: "application/xml" }
+  const response = await h.request(
+    "/sap/bc/adt/debugger/breakpoints/statements",
+    { headers }
+  )
+  return parseDebugStatements(response.body)
 }
 
 export async function debuggerChildVariables(

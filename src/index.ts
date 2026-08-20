@@ -66,6 +66,7 @@ export {
   DebugMetaTypeSimple,
   DebugReachedBreakpoint,
   DebugSettings,
+  DebugStatement,
   DebugStack,
   DebugStackAbap,
   DebugStackInfo,

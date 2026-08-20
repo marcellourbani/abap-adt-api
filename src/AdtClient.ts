@@ -60,6 +60,7 @@ import {
   debuggerListen,
   debuggerListeners,
   debuggerSaveSettings,
+  debuggerStatements,
   DebuggerScope,
   debuggerSetBreakpoints,
   debuggerSetVariableValue,
@@ -69,6 +70,7 @@ import {
   DebuggingMode,
   DebugListenerError,
   DebugSettings,
+  DebugStatement,
   DebugStackInfo,
   DebugStep,
   DebugStepType,
@@ -1408,6 +1410,10 @@ export class ADTClient {
 
   public debuggerSaveSettings(settings: Partial<DebugSettings>) {
     return debuggerSaveSettings(this.h, settings)
+  }
+
+  public debuggerStatements(): Promise<DebugStatement[]> {
+    return debuggerStatements(this.h)
   }
 
   public async debuggerStackTrace(semanticURIs = true) {
