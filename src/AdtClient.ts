@@ -107,6 +107,9 @@ import {
   isPackageType,
   loadTypes,
   Logpoint,
+  createLogpoint,
+  deleteLogpoint,
+  LogpointCreate,
   logpoints,
   lock,
   MainInclude,
@@ -1420,6 +1423,14 @@ export class ADTClient {
 
   public logpoints(user: string): Promise<Logpoint[]> {
     return logpoints(this.h, user)
+  }
+
+  public createLogpoint(logpoint: LogpointCreate) {
+    return createLogpoint(this.h, logpoint)
+  }
+
+  public deleteLogpoint(location: string) {
+    return deleteLogpoint(this.h, location)
   }
 
   public async debuggerStackTrace(semanticURIs = true) {
