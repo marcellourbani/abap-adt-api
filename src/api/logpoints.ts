@@ -55,6 +55,29 @@ export interface LogpointLink {
   rel: string
 }
 
+export interface LogpointKey {
+  value: string
+  calls: number
+  lastCall: string
+  generatedAt: string
+  links: LogpointLink[]
+}
+
+export interface LogpointLogValue {
+  value: string
+  links: LogpointLink[]
+}
+
+export interface LogpointLogField {
+  kind: string
+  name: string
+  values: LogpointLogValue[]
+}
+
+export interface LogpointLogs {
+  fields: LogpointLogField[]
+}
+
 export interface Logpoint {
   location: LogpointLocation
   summary: LogpointSummary
@@ -65,9 +88,17 @@ export interface Logpoint {
 
 export interface LogpointCreateDefinition {
   description?: string
+  // Simple variable values: activityType "F", subKey contains the variable.
   subKey?: string
+  // User-defined fields: provide the field expressions and use activityType "C".
   fields?: string
   condition?: string
+  // Stack trace: activityType "T", subKey "STACK_HASH( )", fields "STACK( )".
+  // SQL trace: activityType "S", subKey "SYSTEM_INFO( AppServName ) SQL_TRACE( StackOff )".
+  // Use "StackOn" to include the call stack.
+  // Table-buffer trace: activityType "B", subKey "SYSTEM_INFO( AppServName ) TABLEBUF_TRACE ( StackOff )".
+  // Use "StackOn" instead of "StackOff" in TABLEBUF_TRACE to include the call stack.
+  // For all servers, leave activation.servers empty.
   rollareaCounter?: number
   usageType?: string
   createdBy?: string
@@ -77,6 +108,92 @@ export interface LogpointCreateDefinition {
   activityType?: string
   retentionTimeInDays?: number
   [attribute: string]: string | number | undefined
+}
+
+export interface LogpointDefinitionCommon {
+  description?: string
+  condition?: string
+  rollareaCounter?: number
+  usageType?: string
+  createdBy?: string
+  changedBy?: string
+  changedAt?: string
+  expiresAt?: string
+  retentionTimeInDays?: number
+}
+
+export type LogpointDefinitionInput = LogpointDefinitionCommon &
+  (
+    | { type: "SimpleVariable"; subKey: string }
+    | { type: "StackTrace" }
+    | { type: "SqlTrace"; stack?: "On" | "Off" }
+    | { type: "TableBufferTrace"; stack?: "On" | "Off" }
+    | { type: "UserDefined"; subKey: string; fields: string }
+  )
+
+export const createLogPointDefinition = (
+  definition: LogpointDefinitionInput
+): LogpointCreateDefinition => {
+  const {
+    type,
+    condition,
+    description,
+    rollareaCounter,
+    usageType,
+    createdBy,
+    changedBy,
+    changedAt,
+    expiresAt,
+    retentionTimeInDays
+  } = definition
+  const common = {
+    description,
+    condition,
+    rollareaCounter,
+    usageType,
+    createdBy,
+    changedBy,
+    changedAt,
+    expiresAt,
+    retentionTimeInDays
+  }
+
+  switch (type) {
+    case "SimpleVariable":
+      return { ...common, activityType: "F", subKey: definition.subKey }
+    case "StackTrace":
+      return {
+        ...common,
+        activityType: "T",
+        subKey: "STACK_HASH( )",
+        fields: "STACK( )"
+      }
+    case "SqlTrace":
+      return {
+        ...common,
+        activityType: "S",
+        subKey: `SYSTEM_INFO( AppServName ) SQL_TRACE( Stack${
+          definition.stack || "Off"
+        } )`,
+        fields: ""
+      }
+    case "TableBufferTrace":
+      return {
+        ...common,
+        activityType: "B",
+        subKey: `SYSTEM_INFO( AppServName ) TABLEBUF_TRACE( Stack${
+          definition.stack || "Off"
+        } )`,
+        fields: ""
+      }
+    case "UserDefined":
+      return {
+        ...common,
+        activityType: "C",
+        subKey: definition.subKey,
+        fields: definition.fields
+      }
+  }
 }
 
 export interface LogpointCreateActivation {
@@ -169,6 +286,31 @@ const parseLogpoints = (body: string): Logpoint[] => {
   return xmlArray(raw, "logpointList", "logpoint").map(parseLogpoint)
 }
 
+const logpointsPath = "/sap/bc/adt/dlp/logpoints/"
+
+const normalizeLogpointLocation = (location: string) => {
+  const id = location.startsWith(logpointsPath)
+    ? location.slice(logpointsPath.length)
+    : location
+  return decodeURIComponent(id)
+}
+
+const encodeLogpointId = (location: string) =>
+  normalizeLogpointLocation(location)
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")
+
+const parseLogpointValues = (field: any): LogpointLogValue[] =>
+  xmlArray(field, "value").flatMap((value: any) => {
+    if (value.e) return [{ value: xmlNodeAttr(value.e).v, links: [] }]
+
+    return xmlArray(value, "t", "c").map((cell: any) => ({
+      value: xmlNodeAttr(cell.e).v,
+      links: xmlArray(cell, "link").map(xmlNodeAttr)
+    }))
+  })
+
 export async function logpoints(h: AdtHTTP, user: string): Promise<Logpoint[]> {
   const response = await h.request("/sap/bc/adt/dlp/logpoints", {
     headers: {
@@ -177,6 +319,74 @@ export async function logpoints(h: AdtHTTP, user: string): Promise<Logpoint[]> {
     qs: { user }
   })
   return parseLogpoints(response.body)
+}
+
+export async function getLogServers(h: AdtHTTP): Promise<string[]> {
+  const response = await h.request("/sap/bc/adt/dlp/logs/servers", {
+    method: "POST",
+    headers: {
+      Accept: "application/xml"
+      // SAP-specific value: application/vnd.sap.adt.dlp.logservers+xml
+    }
+  })
+  const raw = fullParse(response.body, { removeNSPrefix: true })
+  return xmlArray(raw, "collectionSummary", "success", "server").map(
+    server => xmlNodeAttr(server).name
+  )
+}
+
+export async function getLogKeys(
+  h: AdtHTTP,
+  location: string,
+  maxCount = 500
+): Promise<LogpointKey[]> {
+  const response = await h.request(
+    `${logpointsPath}${encodeLogpointId(location)}/logs/keys`,
+    {
+      headers: {
+        Accept: "application/xml"
+        // SAP-specific value: application/vnd.sap.adt.dlp.logkeys+xml
+      },
+      qs: { maxCount }
+    }
+  )
+  const raw = fullParse(response.body, { removeNSPrefix: true })
+  return xmlArray(raw, "logKeys", "progVersion").flatMap((version: any) =>
+    xmlArray(version, "key").map((key: any) => ({
+      ...xmlNodeAttr(key),
+      generatedAt: xmlNodeAttr(version).generatedAt,
+      links: xmlArray(key, "link").map(xmlNodeAttr)
+    }))
+  )
+}
+
+export async function getLogPointLogs(
+  h: AdtHTTP,
+  location: string,
+  key: LogpointKey
+): Promise<LogpointLogs> {
+  const logFieldsLink = key.links.find(link =>
+    link.rel.includes("/dlp/logfields")
+  )
+  if (!logFieldsLink) throw new Error("Logpoint key has no log fields link")
+
+  const response = await h.request(
+    `${logpointsPath}${encodeLogpointId(location)}${logFieldsLink.href}`,
+    {
+      headers: {
+        Accept: "application/xml"
+        // SAP-specific value: application/vnd.sap.adt.dlp.logfields+xml
+      }
+    }
+  )
+  const raw = fullParse(response.body, { removeNSPrefix: true })
+  const fields = xmlArray(raw, "logEntry", "fieldList", "field").map(
+    (field: any) => ({
+      ...xmlNodeAttr(field),
+      values: parseLogpointValues(field)
+    })
+  )
+  return { fields }
 }
 
 export async function createLogpoint(
@@ -193,11 +403,12 @@ export async function createLogpoint(
     body: logpointBody(logpoint)
   })
   const location = response.headers.location || response.headers.Location
-  return Array.isArray(location) ? location[0] : location?.toString()
+  const value = Array.isArray(location) ? location[0] : location?.toString()
+  return value ? normalizeLogpointLocation(value) : undefined
 }
 
 export async function deleteLogpoint(h: AdtHTTP, location: string) {
-  await h.request(location, {
+  await h.request(`${logpointsPath}${encodeLogpointId(location)}`, {
     method: "DELETE",
     headers: {
       Accept: "application/xml"

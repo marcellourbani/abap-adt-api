@@ -110,6 +110,13 @@ import {
   createLogpoint,
   deleteLogpoint,
   LogpointCreate,
+  LogpointDefinitionInput,
+  createLogPointDefinition,
+  getLogServers,
+  getLogKeys,
+  getLogPointLogs,
+  LogpointKey,
+  LogpointLogs,
   logpoints,
   lock,
   MainInclude,
@@ -1425,8 +1432,27 @@ export class ADTClient {
     return logpoints(this.h, user)
   }
 
+  public getLogServers(): Promise<string[]> {
+    return getLogServers(this.h)
+  }
+
+  public getLogKeys(location: string, maxCount = 500): Promise<LogpointKey[]> {
+    return getLogKeys(this.h, location, maxCount)
+  }
+
+  public getLogPointLogs(
+    location: string,
+    key: LogpointKey
+  ): Promise<LogpointLogs> {
+    return getLogPointLogs(this.h, location, key)
+  }
+
   public createLogpoint(logpoint: LogpointCreate) {
     return createLogpoint(this.h, logpoint)
+  }
+
+  public createLogPointDefinition(definition: LogpointDefinitionInput) {
+    return createLogPointDefinition(definition)
   }
 
   public deleteLogpoint(location: string) {
