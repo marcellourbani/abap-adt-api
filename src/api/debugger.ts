@@ -105,6 +105,23 @@ export interface DebugStatementBreakpoint {
   skipCount?: number
   statement: string
 }
+/**
+ * Previous and current values can be retrieved with debuggerChildVariables
+ * using `@WATCHPOINTS./sap/bc/adt/debugger/watchpoints/{id}` as the parent ID.
+ */
+export interface DebugWatchpoint {
+  id: string
+  variableName: string
+  kind: string
+  active: boolean
+  expired: boolean
+  procedure: string
+  condition: string
+  oldVariable: string
+  currentVariable: string
+  oldValue: string
+  currentValue: string
+}
 export interface DebugStatement {
   name: string
   description: string
@@ -431,6 +448,27 @@ const parseDebugStatements = (body: string): DebugStatement[] => {
   return xmlArray(raw, "statements", "statement").map(xmlNodeAttr)
 }
 
+const parseWatchpoints = (body: string): DebugWatchpoint[] => {
+  const raw = fullParse(body, { removeNSPrefix: true })
+  const text = (value: any) =>
+    typeof value === "string" ? value : value?.["#text"] ?? ""
+  return xmlArray(raw, "watchpoints", "watchpoint").map(
+    (watchpoint: any) => {
+      const attrs = xmlNodeAttr(watchpoint)
+      return {
+        ...attrs,
+        active: attrs.active === true || attrs.active === "true",
+        expired: attrs.expired === true || attrs.expired === "true",
+        condition: text(watchpoint.condition),
+        oldVariable: text(watchpoint.oldVariable),
+        currentVariable: text(watchpoint.currentVariable),
+        oldValue: text(watchpoint.oldValue),
+        currentValue: text(watchpoint.currentValue)
+      }
+    }
+  ) as DebugWatchpoint[]
+}
+
 const parseDebugError = (raw: any): DebugListenerError | undefined => {
   if (raw.exception) {
     const {
@@ -621,6 +659,44 @@ export async function debuggerDeleteBreakpoints(
       qs
     }
   )
+}
+
+export async function debuggerCreateWatchpoint(
+  h: AdtHTTP,
+  variableName: string,
+  condition: string,
+  active = true
+) {
+  const response = await h.request("/sap/bc/adt/debugger/watchpoints", {
+    method: "POST",
+    headers: { Accept: "application/xml" },
+    qs: { variableName, condition, active }
+  })
+  return parseWatchpoints(response.body)
+}
+
+export async function debuggerDeleteWatchpoint(h: AdtHTTP, id: string) {
+  await h.request(
+    `/sap/bc/adt/debugger/watchpoints/${encodeURIComponent(id)}`,
+    { method: "DELETE" }
+  )
+}
+
+export async function debuggerChangeWatchpoint(
+  h: AdtHTTP,
+  id: string,
+  condition?: string,
+  active?: boolean
+) {
+  const response = await h.request(
+    `/sap/bc/adt/debugger/watchpoints/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: { Accept: "application/xml" },
+      qs: { condition, active }
+    }
+  )
+  return parseWatchpoints(response.body)
 }
 
 export async function debuggerAttach(

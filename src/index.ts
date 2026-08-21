@@ -78,6 +78,7 @@ export {
   DebugStep,
   DebugStepType,
   DebugVariable,
+  DebugWatchpoint,
   DefinitionLocation,
   Delta,
   Dump,

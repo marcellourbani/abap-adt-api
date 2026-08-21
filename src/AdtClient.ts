@@ -53,7 +53,10 @@ import {
   Debuggee,
   debuggerAttach,
   debuggerChildVariables,
+  debuggerChangeWatchpoint,
+  debuggerCreateWatchpoint,
   debuggerDeleteBreakpoints,
+  debuggerDeleteWatchpoint,
   debuggerDeleteListener,
   debuggerGoToStack,
   debuggerGoToStackOld,
@@ -75,6 +78,7 @@ import {
   DebugStep,
   DebugStepType,
   DebugVariable,
+  DebugWatchpoint,
   DefinitionLocation,
   deleteObject,
   Delta,
@@ -1391,6 +1395,26 @@ export class ADTClient {
       requestUser,
       scope
     )
+  }
+
+  public debuggerCreateWatchpoint(
+    variableName: string,
+    condition: string,
+    active = true
+  ): Promise<DebugWatchpoint[]> {
+    return debuggerCreateWatchpoint(this.h, variableName, condition, active)
+  }
+
+  public debuggerDeleteWatchpoint(id: string): Promise<void> {
+    return debuggerDeleteWatchpoint(this.h, id)
+  }
+
+  public debuggerChangeWatchpoint(
+    id: string,
+    condition?: string,
+    active?: boolean
+  ): Promise<DebugWatchpoint[]> {
+    return debuggerChangeWatchpoint(this.h, id, condition, active)
   }
 
   public debuggerAttach(
