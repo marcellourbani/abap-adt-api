@@ -1,5 +1,5 @@
 import { URL } from "url"
-import { BindingService, BindingServiceResult, decodeQueryResult, extractBindingLinks, parseBindingDetails, parseQueryResponse, parseServiceBinding, servicePreviewUrl } from "../api/tablecontents"
+import { BindingService, BindingServiceResult, decodeQueryResult, extractBindingLinks, parseBindingDetails, parseQueryResponse, parseServiceBinding, servicePreviewUrl, TypeKinds } from "../api/tablecontents"
 import { fullParse, xmlArray, xmlNodeAttr } from "../utilities"
 
 test("parse table data", () => {
@@ -25,6 +25,28 @@ test("longer table data", () => {
     expect(data.values[0].BOOKING_ID).toBe(5)
     expect(data.values[0].BOOKING_DATE).toStrictEqual(new Date("2021-05-24"))// "20210524"
     expect(data.values[0].FLIGHT_PRICE).toBe(438.00)
+})
+test("decode trailing minus in packed query values", () => {
+    const columns = [{
+        name: "KBETR", type: TypeKinds.PACKED, description: "", keyAttribute: false,
+        colType: "", isKeyFigure: false, length: 8
+    }]
+    const values = [{ KBETR: "12.34-" }, { KBETR: "-12.34" }, { KBETR: "12.34" }]
+
+    expect(decodeQueryResult({ columns, values }).values).toEqual([
+        { KBETR: -12.34 }, { KBETR: -12.34 }, { KBETR: 12.34 }
+    ])
+})
+test("decode trailing minus in integer query values", () => {
+    const columns = [{
+        name: "COUNT", type: TypeKinds.INT, description: "", keyAttribute: false,
+        colType: "", isKeyFigure: false, length: 4
+    }]
+    const values = [{ COUNT: "42-" }, { COUNT: "-42" }, { COUNT: "42" }]
+
+    expect(decodeQueryResult({ columns, values }).values).toEqual([
+        { COUNT: -42 }, { COUNT: -42 }, { COUNT: 42 }
+    ])
 })
 test("parse service binding", () => {
     const raw = `<?xml version="1.0" encoding="utf-8"?><srvb:serviceBinding srvb:releaseSupported="false" srvb:published="true" srvb:repair="false" srvb:bindingCreated="true" adtcore:responsible="CB0000000083" adtcore:masterLanguage="EN" adtcore:masterSystem="TRL" adtcore:name="YMU_RAP_UI_TRAVEL_O2" adtcore:type="SRVB/SVB" adtcore:changedAt="2020-11-10T07:27:29Z" adtcore:version="active" adtcore:createdAt="2020-11-02T00:00:00Z" adtcore:changedBy="CB0000000083" adtcore:createdBy="CB0000000083" adtcore:description="binding" adtcore:language="EN" xmlns:srvb="http://www.sap.com/adt/ddic/ServiceBindings" xmlns:adtcore="http://www.sap.com/adt/core"><atom:link href="/sap/bc/adt/businessservices/odatav2/YMU_RAP_UI_TRAVEL_O2" rel="http://www.sap.com/categories/odatav2" type="application/vnd.sap.adt.businessservices.odatav2.v2+xml" title="ODATAV2" xmlns:atom="http://www.w3.org/2005/Atom"/><atom:link href="/sap/bc/adt/businessservices/testclass" rel="http://www.sap.com/categories/testclass" type="application/vnd.sap.adt.businessservices.testclass.v1+xml" title="TESTCLASS" xmlns:atom="http://www.w3.org/2005/Atom"/><adtcore:packageRef adtcore:uri="/sap/bc/adt/packages/ymu_rap_travel" adtcore:type="DEVC/K" adtcore:name="YMU_RAP_TRAVEL" adtcore:description="travel app"/><srvb:serviceDefinition/><srvb:services srvb:name="YMU_RAP_UI_TRAVEL_O2"><srvb:content srvb:version="0001" srvb:releaseState=""><srvb:serviceDefinition adtcore:uri="/sap/bc/adt/ddic/srvd/sources/ymu_rap_ui_travel" adtcore:type="SRVD/SRV" adtcore:name="YMU_RAP_UI_TRAVEL"/></srvb:content></srvb:services><srvb:binding srvb:type="ODATA" srvb:version="V2" srvb:category="0"><srvb:implementation adtcore:name="YMU_RAP_UI_TRAVEL_O2"/></srvb:binding></srvb:serviceBinding>`
