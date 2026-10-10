@@ -53,13 +53,17 @@ import {
   Debuggee,
   debuggerAttach,
   debuggerChildVariables,
+  debuggerChangeWatchpoint,
+  debuggerCreateWatchpoint,
   debuggerDeleteBreakpoints,
+  debuggerDeleteWatchpoint,
   debuggerDeleteListener,
   debuggerGoToStack,
   debuggerGoToStackOld,
   debuggerListen,
   debuggerListeners,
   debuggerSaveSettings,
+  debuggerStatements,
   DebuggerScope,
   debuggerSetBreakpoints,
   debuggerSetVariableValue,
@@ -69,10 +73,12 @@ import {
   DebuggingMode,
   DebugListenerError,
   DebugSettings,
+  DebugStatement,
   DebugStackInfo,
   DebugStep,
   DebugStepType,
   DebugVariable,
+  DebugWatchpoint,
   DefinitionLocation,
   deleteObject,
   Delta,
@@ -104,6 +110,18 @@ import {
   isCreatableTypeId,
   isPackageType,
   loadTypes,
+  Logpoint,
+  createLogpoint,
+  deleteLogpoint,
+  LogpointCreate,
+  LogpointDefinitionInput,
+  createLogPointDefinition,
+  getLogServers,
+  getLogKeys,
+  getLogPointLogs,
+  LogpointKey,
+  LogpointLogs,
+  logpoints,
   lock,
   MainInclude,
   mainPrograms,
@@ -1379,6 +1397,26 @@ export class ADTClient {
     )
   }
 
+  public debuggerCreateWatchpoint(
+    variableName: string,
+    condition: string,
+    active = true
+  ): Promise<DebugWatchpoint[]> {
+    return debuggerCreateWatchpoint(this.h, variableName, condition, active)
+  }
+
+  public debuggerDeleteWatchpoint(id: string): Promise<void> {
+    return debuggerDeleteWatchpoint(this.h, id)
+  }
+
+  public debuggerChangeWatchpoint(
+    id: string,
+    condition?: string,
+    active?: boolean
+  ): Promise<DebugWatchpoint[]> {
+    return debuggerChangeWatchpoint(this.h, id, condition, active)
+  }
+
   public debuggerAttach(
     debuggingMode: "user",
     debuggeeId: string,
@@ -1408,6 +1446,41 @@ export class ADTClient {
 
   public debuggerSaveSettings(settings: Partial<DebugSettings>) {
     return debuggerSaveSettings(this.h, settings)
+  }
+
+  public debuggerStatements(): Promise<DebugStatement[]> {
+    return debuggerStatements(this.h)
+  }
+
+  public logpoints(user: string): Promise<Logpoint[]> {
+    return logpoints(this.h, user)
+  }
+
+  public getLogServers(): Promise<string[]> {
+    return getLogServers(this.h)
+  }
+
+  public getLogKeys(location: string, maxCount = 500): Promise<LogpointKey[]> {
+    return getLogKeys(this.h, location, maxCount)
+  }
+
+  public getLogPointLogs(
+    location: string,
+    key: LogpointKey
+  ): Promise<LogpointLogs> {
+    return getLogPointLogs(this.h, location, key)
+  }
+
+  public createLogpoint(logpoint: LogpointCreate) {
+    return createLogpoint(this.h, logpoint)
+  }
+
+  public createLogPointDefinition(definition: LogpointDefinitionInput) {
+    return createLogPointDefinition(definition)
+  }
+
+  public deleteLogpoint(location: string) {
+    return deleteLogpoint(this.h, location)
   }
 
   public async debuggerStackTrace(semanticURIs = true) {

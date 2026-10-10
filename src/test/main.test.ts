@@ -128,7 +128,31 @@ test(
     expect(graph).toBeDefined()
   })
 )
+test(
+  "logpoints",
+  runTest(async (c: ADTClient) => {
+    const result = await c.logpoints(process.env.ADT_USER!)
+    expect(Array.isArray(result)).toBe(true)
+    if (result.length) {
+      expect(result[0].location.includePosition.uri).toEqual(expect.any(String))
+      expect(result[0].summary.executions).toEqual(expect.any(Number))
+      expect(result[0].links.length).toBeGreaterThan(0)
+    }
+  })
+)
 
+test(
+  "debug statements",
+  runTest(async (c: ADTClient) => {
+    const result = await c.debuggerStatements()
+    expect(Array.isArray(result)).toBe(true)
+    if (result.length) {
+      expect(result[0].description).toEqual(expect.any(String))
+      expect(result[0].name).toEqual(expect.any(String))
+      expect(result[0].group).toEqual(expect.any(String))
+    }
+  })
+)
 test(
   "getNodeContents",
   runTest(async (c: ADTClient) => {
