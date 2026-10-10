@@ -589,12 +589,14 @@ const formatBreakpoint =
   (clientId: string) => (b: DebugBreakpoint | string) => {
     if (isString(b))
       return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="line" clientId="${clientId}" skipCount="0" adtcore:uri="${b}"/>`
+    // id is server-assigned, only sent back on the response - omit it when creating
+    const id = (bp: { id: string }) => (bp.id ? ` id="${bp.id}"` : ``)
     if (isDebugMessageBreakpoint(b))
-      return `<breakpoint kind="message" clientId="${b.clientId}" id="${b.id}" skipCount="${b.skipCount ?? 0}" msgId="${b.msgId}" msgNo="${b.msgNo}" msgTy="${b.msgTy}"/>`
+      return `<breakpoint kind="message" clientId="${b.clientId}"${id(b)} skipCount="${b.skipCount ?? 0}" msgId="${b.msgId}" msgNo="${b.msgNo}" msgTy="${b.msgTy}"/>`
     if (isDebugExceptionBreakpoint(b))
-      return `<breakpoint kind="exception" id="${b.id}" clientId="${b.clientId}" skipCount="${b.skipCount ?? 0}" exceptionClass="${b.exceptionClass}"/>`
+      return `<breakpoint kind="exception"${id(b)} clientId="${b.clientId}" skipCount="${b.skipCount ?? 0}" exceptionClass="${b.exceptionClass}"/>`
     if (isDebugStatementBreakpoint(b))
-      return `<breakpoint kind="statement" id="${b.id}" clientId="${b.clientId}" skipCount="${b.skipCount ?? 0}" statement="${b.statement}"/>`
+      return `<breakpoint kind="statement"${id(b)} clientId="${b.clientId}" skipCount="${b.skipCount ?? 0}" statement="${b.statement}"/>`
     const uri = `adtcore:uri="${b.uri.uri}#start=${b.uri.range.start.line}"`
     const condition = b.condition ? `condition="${b.condition}"` : ``
     return `<breakpoint xmlns:adtcore="http://www.sap.com/adt/core" kind="line" clientId="${b.clientId}" skipCount="${b.skipCount ?? 0}" ${uri} ${condition}/>`

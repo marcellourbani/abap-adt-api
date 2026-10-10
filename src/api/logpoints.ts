@@ -238,6 +238,29 @@ const activationEntriesXml = (
     })
     .join("")
 
+// no servers element means all servers; an empty one activates none
+const serversXml = (servers: LogpointCreateActivation["servers"] = []) =>
+  servers.length
+    ? `\n    <servers>${activationEntriesXml("server", servers)}</servers>`
+    : ""
+
+const definitionDefaults = {
+  rollareaCounter: 100,
+  usageType: "D",
+  retentionTimeInDays: 7
+}
+
+// SAP rejects logpoints without an expiry; default to 24 hours from now
+const defaultActiveUntil = () =>
+  new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+const withDefinitionDefaults = (definition: LogpointCreateDefinition) => {
+  const defined = Object.fromEntries(
+    Object.entries(definition).filter(([, value]) => value !== undefined)
+  )
+  return { ...definitionDefaults, ...defined }
+}
+
 const logpointBody = (logpoint: LogpointCreate) => {
   const { location, definition, activation } = logpoint
   return `<?xml version="1.0" encoding="ASCII"?>
@@ -246,15 +269,16 @@ const logpointBody = (logpoint: LogpointCreate) => {
     ${logpointReferenceXml("includePosition", location.includePosition)}
     ${logpointReferenceXml("mainProgram", location.mainProgram)}
   </location>
-  <definition${xmlAttributes(definition)} />
+  <definition${xmlAttributes(withDefinitionDefaults(definition))} />
   <activation${xmlAttributes({
     state: activation.state,
     activatedBy: activation.activatedBy,
     activeSince: activation.activeSince,
-    activeUntil: activation.activeUntil
+    activeUntil: activation.activeUntil ?? defaultActiveUntil()
   })}>
-    <users>${activationEntriesXml("user", activation.users)}</users>
-    <servers>${activationEntriesXml("server", activation.servers)}</servers>
+    <users>${activationEntriesXml("user", activation.users)}</users>${serversXml(
+      activation.servers
+    )}
   </activation>
 </logpoints:logpoint>`
 }
@@ -288,11 +312,20 @@ const parseLogpoints = (body: string): Logpoint[] => {
 
 const logpointsPath = "/sap/bc/adt/dlp/logpoints/"
 
+// SAP ids can contain a literal "%" (e.g. "%_2ZC...") which isn't valid escaping
+const safeDecode = (id: string) => {
+  try {
+    return decodeURIComponent(id)
+  } catch {
+    return id
+  }
+}
+
 const normalizeLogpointLocation = (location: string) => {
   const id = location.startsWith(logpointsPath)
     ? location.slice(logpointsPath.length)
     : location
-  return decodeURIComponent(id)
+  return safeDecode(id)
 }
 
 const encodeLogpointId = (location: string) =>

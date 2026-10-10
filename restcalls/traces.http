@@ -3,6 +3,7 @@
 GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces?user=MURBANI
 Authorization: Basic {{user}}:{{password}}
 x-csrf-token: fetch
+Accept: *
 
 ### list traces requests
 GET {{baseUrl}}/sap/bc/adt/runtime/traces/abaptraces/requests?user=MURBANI
