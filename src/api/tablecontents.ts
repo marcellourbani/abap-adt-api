@@ -165,6 +165,11 @@ export const extractBindingLinks = (binding: ServiceBinding) => {
 const decodeSapDate = (raw: string) =>
     new Date(`${raw.substr(0, 4)}-${raw.substr(4, 2)}-${raw.substr(6, 2)}`)
 
+const normalizeNumericSign = (raw: string) => {
+    const value = raw.trim()
+    return value.endsWith("-") ? `-${value.slice(0, -1)}` : value
+}
+
 const parseValue = (type: TypeKinds | undefined, raw: string) => {
     switch (type) {
         case TypeKinds.DATE:
@@ -176,12 +181,12 @@ const parseValue = (type: TypeKinds | undefined, raw: string) => {
         case TypeKinds.NUM:
         case TypeKinds.NUMERIC:
         case TypeKinds.PACKED:
-            return parseFloat(raw)
+            return parseFloat(normalizeNumericSign(raw))
         case TypeKinds.INT:
         case TypeKinds.INT1:
         case TypeKinds.INT8:
         case TypeKinds.INT2:
-            return parseInt(raw, 10)
+            return parseInt(normalizeNumericSign(raw), 10)
         case TypeKinds.TIME:
             return raw // converting to date doesn't sound like a great idea
         default:
