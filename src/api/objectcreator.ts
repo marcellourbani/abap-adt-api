@@ -23,6 +23,7 @@ export type NonGroupTypeIds =
   | "AUTH"
   | "DTEL/DE"
   | "DOMA/DD"
+  | "TTYP/DA"
   | "SUSO/B"
   | "MSAG/N"
 
@@ -532,6 +533,15 @@ const ctypes: CreatableType[] = [
     nameSpace: 'xmlns:domain="http://www.sap.com/dictionary/domain"',
     label: "Domain",
     typeId: "DOMA/DD",
+    maxLen: 30
+  },
+  {
+    creationPath: "ddic/tabletypes",
+    validationPath: "ddic/tabletypes/validation",
+    rootName: "ttyp:tableType",
+    nameSpace: 'xmlns:ttyp="http://www.sap.com/dictionary/tabletype"',
+    label: "Table Type",
+    typeId: "TTYP/DA",
     maxLen: 30
   },
   {
