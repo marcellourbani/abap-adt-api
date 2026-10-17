@@ -7,7 +7,9 @@ import {
   parts,
   toInt,
   xmlArray,
+  xmlArrayAnyPrefix,
   xmlNode,
+  xmlNodeAnyPrefix,
   xmlNodeAttr
 } from "../utilities"
 import { Link } from "./objectstructure"
@@ -309,19 +311,18 @@ export async function usageReferences(
     }
   )
   const raw = fullParse(response.body)
-  const rawreferences = xmlArray(
+  const rawreferences = xmlArrayAnyPrefix(
     raw,
-    "usageReferences:usageReferenceResult",
-    "usageReferences:referencedObjects",
-    "usageReferences:referencedObject"
+    "usageReferenceResult",
+    "referencedObjects",
+    "referencedObject"
   )
   const references = rawreferences.map((r: any) => {
+    const adtObject = xmlNodeAnyPrefix(r, "adtObject") || {}
     const reference = {
       ...xmlNodeAttr(r),
-      ...xmlNodeAttr(xmlNode(r, "usageReferences:adtObject") || {}),
-      packageRef: xmlNodeAttr(
-        xmlNode(r, "usageReferences:adtObject", "adtcore:packageRef") || {}
-      ),
+      ...xmlNodeAttr(adtObject),
+      packageRef: xmlNodeAttr(xmlNode(adtObject, "adtcore:packageRef") || {}),
       objectIdentifier: r.objectIdentifier || ""
     } as UsageReference
 
@@ -412,28 +413,26 @@ export async function usageReferenceSnippets(
     }
   )
   const raw = fullParse(response.body)
-  const snippetReferences = xmlArray(
+  const snippetReferences = xmlArrayAnyPrefix(
     raw,
-    "usageReferences:usageSnippetResult",
-    "usageReferences:codeSnippetObjects",
-    "usageReferences:codeSnippetObject"
+    "usageSnippetResult",
+    "codeSnippetObjects",
+    "codeSnippetObject"
   ).map((o: any) => {
-    const snippets = xmlArray(
-      o,
-      "usageReferences:codeSnippets",
-      "usageReferences:codeSnippet"
-    ).map((s: any) => {
-      const parms = xmlNodeAttr(s)
+    const snippets = xmlArrayAnyPrefix(o, "codeSnippets", "codeSnippet").map(
+      (s: any) => {
+        const parms = xmlNodeAttr(s)
 
-      const uri = splitReferenceUri(parms.uri, parms.matches)
+        const uri = splitReferenceUri(parms.uri, parms.matches)
 
-      return {
-        uri,
-        matches: parms.matches,
-        content: s.content,
-        description: s.description
+        return {
+          uri,
+          matches: parms.matches,
+          content: s.content,
+          description: s.description
+        }
       }
-    })
+    )
     return { objectIdentifier: o.objectIdentifier, snippets }
   })
   return snippetReferences as UsageReferenceSnippet[]

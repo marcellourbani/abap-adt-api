@@ -2,8 +2,25 @@ export {
   session_types,
   ClientOptions,
   HttpResponse,
-  HttpClient
+  HttpClient,
+  HttpClientCapabilities
 } from "./AdtHTTP"
+export {
+  AdtClientExtensions,
+  AdtExtension,
+  AdtNext,
+  AdtRequest,
+  AdtRequestContext,
+  AdtRequestPatch,
+  AdtResponse,
+  withRequest
+} from "./AdtExtensions"
+export {
+  AdtCookieImport,
+  AdtSession,
+  AdtSessionFailureReason,
+  AdtSessionProvider
+} from "./AdtSession"
 export * from "./AdtClient"
 export * from "./AdtException"
 export { LogCallback, LogData } from "./requestLogger"

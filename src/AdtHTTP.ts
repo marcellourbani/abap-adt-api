@@ -1,4 +1,9 @@
-import { fromException, isCsrfError } from "./AdtException"
+import {
+  AdtSessionFailure,
+  fromException,
+  isAuthenticationFailure,
+  isCsrfError
+} from "./AdtException"
 import https from "https"
 import {
   AdtException,
@@ -7,9 +12,23 @@ import {
   isLoginError,
   LogCallback
 } from "."
-import { logError, logResponse } from "./requestLogger"
+import { logError, logResponse, redactSensitiveHeaders } from "./requestLogger"
 import { isString } from "./utilities"
 import { AxiosHttpClient } from "./AxiosHttpClient"
+import {
+  AdtExtension,
+  AdtRequest,
+  assertUniqueExtensionIds,
+  composeExtensions,
+  createAdtRequest,
+  withRequest
+} from "./AdtExtensions"
+import {
+  AdtSession,
+  AdtSessionFailureReason,
+  AdtSessionProvider,
+  CookieJar
+} from "./AdtSession"
 
 export type Method =
   | "get"
@@ -36,7 +55,9 @@ export type Method =
 const FETCH_CSRF_TOKEN = "fetch"
 const CSRF_TOKEN_HEADER = "x-csrf-token"
 const SESSION_HEADER = "X-sap-adt-sessiontype"
-const runningInNode =
+const GRAPH_URL = "/sap/bc/adt/compatibility/graph"
+const READ_METHODS = ["GET", "HEAD", "OPTIONS"]
+export const runningInNode =
   typeof process !== "undefined" &&
   process.versions != null &&
   process.versions.node != null
@@ -64,6 +85,10 @@ export interface ClientOptions {
   timeout?: number
   auth?: BasicCredentials
   keepAlive?: boolean
+  /** Supplies and renews cookies from outside the library, instead of Basic or bearer credentials */
+  session?: AdtSessionProvider
+  /** Ordered request/response middleware */
+  extensions?: readonly AdtExtension[]
 }
 
 export interface RequestOptions extends ClientOptions {
@@ -108,11 +133,19 @@ export interface RequestMetadata {
 export interface HttpClientOptions extends RequestOptions, RequestMetadata {
   url: string
 }
+export interface HttpClientCapabilities {
+  readonly headers: boolean
+  readonly cookies: boolean
+  readonly statusCodes: boolean
+}
+
 /**
  * Abstract HTTP client
  * cookies, authentication and CSRF tokens usually handled by higher level intercacve
  */
 export interface HttpClient {
+  /** Missing capabilities are assumed to be supported */
+  readonly capabilities?: HttpClientCapabilities
   /**
    * HTTP request
    * @param options url, headers,...
@@ -120,7 +153,7 @@ export interface HttpClient {
    *
    * expected to throw only AdtException errors
    */
-  request: (options: HttpClientOptions) => Promise<HttpClientResponse>
+  request: (options: Readonly<HttpClientOptions>) => Promise<HttpClientResponse>
 }
 
 export class HttpClientException extends Error {
@@ -156,6 +189,17 @@ export class AdtHTTP {
   private httpclient: HttpClient
   private debugCallback?: LogCallback
   private loginPromise?: Promise<HttpClientResponse>
+  private provider?: AdtSessionProvider
+  private extensions: readonly AdtExtension[]
+  private renewPromise?: Promise<boolean>
+  // successful renewals, lets a late failing request know somebody already renewed
+  private renewals = 0
+  private jar = new CookieJar(() => {
+    this.csrfToken = FETCH_CSRF_TOKEN
+  })
+  get session(): AdtSession {
+    return this.jar
+  }
   get isStateful(): boolean {
     return (
       this.stateful === session_types.stateful ||
@@ -188,7 +232,11 @@ export class AdtHTTP {
     config?: ClientOptions
   ) {
     if (
-      !(baseURLOrClient && username && (password || !isString(baseURLOrClient)))
+      !(
+        baseURLOrClient &&
+        username &&
+        (password || config?.session || !isString(baseURLOrClient))
+      )
     )
       throw adtException(
         "Invalid ADTClient configuration: url, login and password are required"
@@ -207,13 +255,35 @@ export class AdtHTTP {
       ? new AxiosHttpClient(baseURLOrClient, config)
       : baseURLOrClient
     this.debugCallback = config?.debugCallback
+    this.provider = config?.session
+    this.extensions = config?.extensions || []
+    assertUniqueExtensionIds(this.extensions)
+    if (this.provider) this._assertCookieSupport()
     if (config?.keepAlive)
       this.keepAlive = setInterval(() => this.keep_session(), 120000)
   }
 
-  async login(): Promise<any> {
-    if (this.loginPromise) return this.loginPromise
-    this.cookie.clear()
+  private _assertCookieSupport() {
+    if (this.httpclient.capabilities?.cookies === false)
+      throw adtException(
+        "The HTTP client doesn't support cookies, which external sessions require"
+      )
+  }
+
+  login(): Promise<any> {
+    return this._withLoginLock(() =>
+      this.provider ? this._externalLogin() : this._internalLogin()
+    )
+  }
+
+  private _withLoginLock(f: () => Promise<HttpClientResponse>) {
+    if (!this.loginPromise)
+      this.loginPromise = f().finally(() => (this.loginPromise = undefined))
+    return this.loginPromise
+  }
+
+  private async _internalLogin() {
+    this.jar.clearCookies()
     // oauth
     if (this.getToken && !this.bearer) {
       await this.getToken().then(bearer => (this.bearer = bearer))
@@ -222,34 +292,86 @@ export class AdtHTTP {
         username: this.username || "",
         password: this.password || ""
       }
+    this.csrfToken = FETCH_CSRF_TOKEN
+    return this._loginRequest()
+  }
+
+  private async _externalLogin() {
+    if (!this.jar.cookieHeader()) await this._renewOrFail("initial-login")
+    this.csrfToken = FETCH_CSRF_TOKEN
+    try {
+      return await this._loginRequest()
+    } catch (error) {
+      if (!isAuthenticationFailure(error)) throw error
+      await this._renewOrFail("expired", error)
+      this.csrfToken = FETCH_CSRF_TOKEN
+      return this._loginRequest()
+    }
+  }
+
+  // returns the response so handlers can stringify a real value
+  private _loginRequest() {
     const qs: Record<string, string> = {}
     if (this.client) qs["sap-client"] = this.client
     if (this.language) qs["sap-language"] = this.language
-    this.csrfToken = FETCH_CSRF_TOKEN
-    try {
-      this.loginPromise = this._request("/sap/bc/adt/compatibility/graph", {
-        qs
-      })
-      // return the response so handlers can stringify a real value;
-      // previously resolved undefined → MCP tool result failed schema
-      // validation (content[0].text missing)
-      return await this.loginPromise
-    } finally {
-      this.loginPromise = undefined
-    }
+    return this._request(GRAPH_URL, { qs }, 1, true)
   }
-  private cookie = new Map<string, string>()
+
+  private async _renewOrFail(reason: AdtSessionFailureReason, error?: unknown) {
+    if (await this.renewSession(reason, error)) return
+    const parent = isAdtException(error) ? error : undefined
+    throw new AdtSessionFailure(reason, reason !== "initial-login", parent)
+  }
+
+  /**
+   * Asks the session provider for new credentials, concurrent calls share one renewal
+   * @returns true if the session can be used again
+   */
+  renewSession(
+    reason: AdtSessionFailureReason = "manual",
+    error?: unknown
+  ): Promise<boolean> {
+    if (!this.provider) return Promise.resolve(false)
+    if (!this.renewPromise)
+      this.renewPromise = this._renew(this.provider, reason, error).finally(
+        () => (this.renewPromise = undefined)
+      )
+    return this.renewPromise
+  }
+
+  private async _renew(
+    provider: AdtSessionProvider,
+    reason: AdtSessionFailureReason,
+    error?: unknown
+  ) {
+    const before = this.jar.cookieHeader()
+    const cookies = await provider.renew({ client: this, reason, error })
+    if (cookies) this.jar.importCookies(cookies)
+    // without new cookies only a CSRF problem can be fixed
+    const usable = cookies
+      ? reason === "csrf" ||
+        reason === "manual" ||
+        this.jar.cookieHeader() !== before
+      : reason === "csrf"
+    if (usable) {
+      this.jar.resetCsrfToken()
+      this.renewals++
+    }
+    return usable
+  }
+
   ascookies(): string {
-    return [...this.cookie.values()].join("; ")
+    return this.jar.cookieHeader()
   }
   async logout(): Promise<void> {
     this.stateful = session_types.stateless
-    await this._request("/sap/public/bc/icf/logoff", {})
+    if (this.provider?.logoutMode !== "local-only")
+      await this._request("/sap/public/bc/icf/logoff", {})
     // prevent autologin
     this.auth = undefined
     this.bearer = undefined
     // new cookie jar
-    this.cookie.clear()
+    this.jar.clearCookies()
     // clear token
     this.csrfToken = FETCH_CSRF_TOKEN
   }
@@ -257,7 +379,13 @@ export class AdtHTTP {
     this.stateful = session_types.stateless
     await this._request("/sap/bc/adt/compatibility/graph", {})
   }
-  async request(
+  request(url: string, config?: RequestOptions): Promise<HttpClientResponse> {
+    return this.provider
+      ? this._providerRequest(url, config || {})
+      : this._legacyRequest(url, config)
+  }
+
+  private async _legacyRequest(
     url: string,
     config?: RequestOptions
   ): Promise<HttpClientResponse> {
@@ -283,23 +411,95 @@ export class AdtHTTP {
       } else throw adtErr
     }
   }
+
+  private async _providerRequest(
+    url: string,
+    options: RequestOptions
+  ): Promise<HttpClientResponse> {
+    if (!this.loggedin) await this.login()
+    const epoch = this.renewals
+    try {
+      return await this._request(url, options)
+    } catch (e) {
+      const error = fromException(e, options)
+      if (!isLoginError(error)) throw error
+      return this._recover(url, options, error, epoch)
+    }
+  }
+
+  private async _recover(
+    url: string,
+    options: RequestOptions,
+    error: AdtException,
+    epoch: number
+  ) {
+    const reason = isCsrfError(error) ? "csrf" : "expired"
+    if (!this._mayReplay(url, options, error))
+      throw new AdtSessionFailure(reason, true, error)
+    if (!(await this._refreshSession(reason, error, epoch)))
+      throw new AdtSessionFailure(reason, true, error)
+    return this._replay(url, options, reason)
+  }
+
+  // stateful calls and writes may have side effects, so they are never replayed on their own
+  private _mayReplay(url: string, options: RequestOptions, error: unknown) {
+    if (this.isStateful) return false
+    const method = `${options.method || "GET"}`.toUpperCase()
+    const verdict = this.provider?.canRetry?.(
+      {
+        client: this,
+        request: this._buildRequest(url, options, adtRequestNumber),
+        attempt: 1,
+        isLogin: false,
+        isStateful: false
+      },
+      error
+    )
+    return READ_METHODS.includes(method) ? verdict !== false : verdict === true
+  }
+
+  private async _refreshSession(
+    reason: AdtSessionFailureReason,
+    error: AdtException,
+    epoch: number
+  ) {
+    try {
+      // somebody else renewed while this request was failing
+      if (this.renewals === epoch && !(await this.renewSession(reason, error)))
+        return false
+      if (!this.loggedin || this.loginPromise)
+        await this._withLoginLock(() => this._loginRequest())
+      return true
+    } catch (e) {
+      if (!isAuthenticationFailure(e)) throw e
+      throw new AdtSessionFailure(reason, true, fromException(e))
+    }
+  }
+
+  private async _replay(
+    url: string,
+    options: RequestOptions,
+    reason: AdtSessionFailureReason
+  ) {
+    try {
+      return await this._request(url, options, 2)
+    } catch (e) {
+      const error = fromException(e, options)
+      throw isLoginError(error)
+        ? new AdtSessionFailure(reason, true, error)
+        : error
+    }
+  }
+
   private keep_session = async () => {
     if (this.needKeepalive && this.loggedin)
-      await this._request("/sap/bc/adt/compatibility/graph", {}).catch(() => {})
+      await this._request(GRAPH_URL, {}).catch(() => {})
     this.needKeepalive = true
   }
-  private updateCookies(response: HttpClientResponse) {
-    if (runningInNode) {
-      const cookies = response.headers["set-cookie"] || []
-      cookies.forEach(cookie => {
-        const cleaned = cookie
-          .replace(/path=\/,/g, "")
-          .replace(/path=\//g, "")
-          .split(";")[0]
-        const [key] = cookie.split("=", 1)
-        this.cookie.set(key, cleaned)
-      })
-    }
+
+  private _storeCookies(response: HttpClientResponse) {
+    if (runningInNode || this.provider)
+      this.jar.applyResponseCookies(response.headers["set-cookie"])
   }
 
   private logResponse(
@@ -308,8 +508,103 @@ export class AdtHTTP {
   ) {
     if (!this.debugCallback) return
     if (isAdtException(exceptionOrResponse))
-      logError(this.id, exceptionOrResponse, this.debugCallback, options)
-    else logResponse(this.id, exceptionOrResponse, options, this.debugCallback)
+      logError(
+        this.id,
+        exceptionOrResponse,
+        this.debugCallback,
+        this._safeOptions(options)
+      )
+    else
+      logResponse(
+        this.id,
+        this._safeResponse(exceptionOrResponse),
+        this._safeOptions(options),
+        this.debugCallback
+      )
+  }
+
+  // session cookies are credentials: keep them out of logs and exceptions
+  private _safeOptions(options: HttpClientOptions): HttpClientOptions {
+    if (!this.provider) return options
+    return { ...options, headers: redactSensitiveHeaders(options.headers) }
+  }
+
+  private _safeResponse(response: HttpClientResponse): HttpClientResponse {
+    if (!this.provider) return response
+    return { ...response, headers: redactSensitiveHeaders(response.headers) }
+  }
+
+  private _safeError(error: unknown) {
+    if (!this.provider || !isHttpClientException(error)) return error
+    return new HttpClientException(
+      error.message,
+      error.code,
+      error.status,
+      undefined,
+      this._safeOptions(error.request),
+      error.response && this._safeResponse(error.response)
+    )
+  }
+
+  private _buildRequest(
+    url: string,
+    options: RequestOptions,
+    requestNumber: number
+  ): AdtRequest {
+    const request = createAdtRequest({
+      url,
+      method: options.method || "GET",
+      headers: this.commonHeaders,
+      query: options.qs,
+      body: options.body,
+      timeout: options.timeout,
+      session: this.stateful,
+      requestNumber
+    })
+    return withRequest(request, {
+      headers: { ...options.headers, [SESSION_HEADER]: this.stateful }
+    })
+  }
+
+  // credentials and cookies are added last, so extensions never see them
+  private _toClientOptions(
+    request: AdtRequest,
+    options: RequestOptions
+  ): HttpClientOptions {
+    const hasCookie = Object.keys(request.headers).some(
+      k => k.toLowerCase() === "cookie"
+    )
+    const cookie = this.jar.cookieHeader()
+    const { headers } = withRequest(request, {
+      headers: {
+        ...(this.bearer ? { Authorization: `bearer ${this.bearer}` } : {}),
+        ...(!hasCookie && cookie && (runningInNode || this.provider)
+          ? { Cookie: cookie }
+          : {})
+      }
+    })
+    return {
+      ...options,
+      method: request.method,
+      url: request.url,
+      qs: request.query && { ...request.query },
+      headers: { ...headers },
+      body: request.body,
+      timeout: request.timeout,
+      auth: this.auth,
+      adtStartTime: request.startedAt,
+      adtRequestNumber: request.requestNumber
+    }
+  }
+
+  private async _send(
+    request: AdtRequest,
+    options: RequestOptions,
+    sent: { config?: HttpClientOptions }
+  ) {
+    if (this.getToken && !this.bearer) this.bearer = await this.getToken()
+    sent.config = this._toClientOptions(request, options)
+    return this.httpclient.request(sent.config)
   }
 
   /**
@@ -320,42 +615,48 @@ export class AdtHTTP {
    */
   private async _request(
     url: string,
-    options: RequestOptions
+    options: RequestOptions,
+    attempt = 1,
+    isLogin = false
   ): Promise<HttpClientResponse> {
     this.needKeepalive = false
-    const headers = { ...this.commonHeaders, ...options.headers }
-    headers[SESSION_HEADER] = this.stateful
-    if (!headers["Cookie"] && runningInNode)
-      headers["Cookie"] = this.ascookies()
-
-    adtRequestNumber++
-    const adtStartTime = new Date()
-    const config = {
-      ...options,
-      auth: this.auth,
-      headers,
-      adtStartTime,
-      adtRequestNumber,
-      url
-    }
+    const request = this._buildRequest(url, options, ++adtRequestNumber)
+    const sent: { config?: HttpClientOptions } = {}
     try {
-      if (this.getToken && !this.bearer) this.bearer = await this.getToken()
-      if (this.bearer) headers.Authorization = `bearer ${this.bearer}`
-      const response = await this.httpclient.request(config)
-
-      this.updateCookies(response)
-      if (response.status >= 400) throw fromException(response, config)
-      if (
-        this.csrfToken === FETCH_CSRF_TOKEN &&
-        isString(response.headers[CSRF_TOKEN_HEADER])
+      const response = await composeExtensions(this.extensions, r =>
+        this._send(r, options, sent)
+      )({
+        client: this,
+        request,
+        attempt,
+        isLogin,
+        isStateful: this.isStateful
+      })
+      return this._handleResponse(
+        response,
+        sent.config || this._toClientOptions(request, options)
       )
-        this.csrfToken = response.headers[CSRF_TOKEN_HEADER]
-      this.logResponse(response, config)
-      return response
     } catch (error) {
-      const exc = fromException(error, config)
+      const config = sent.config || this._toClientOptions(request, options)
+      const exc = fromException(this._safeError(error), config)
       this.logResponse(exc, config)
       throw exc
     }
+  }
+
+  private _handleResponse(
+    response: HttpClientResponse,
+    config: HttpClientOptions
+  ) {
+    this._storeCookies(response)
+    if (response.status >= 400)
+      throw fromException(this._safeResponse(response), config)
+    if (
+      this.csrfToken === FETCH_CSRF_TOKEN &&
+      isString(response.headers[CSRF_TOKEN_HEADER])
+    )
+      this.csrfToken = response.headers[CSRF_TOKEN_HEADER]
+    this.logResponse(response, config)
+    return response
   }
 }
