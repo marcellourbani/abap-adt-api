@@ -50,6 +50,31 @@ const create = (extra: Partial<AdtSessionProvider> = {}) => {
 }
 const hits = (url: string) => seen.filter(s => s.url === url)
 
+describe("browser-managed sessions", () => {
+  test("allows an external session with the standard Axios transport", () => {
+    const versions = process.versions
+    Object.defineProperty(process, "versions", { value: undefined })
+    try {
+      jest.isolateModules(() => {
+        const { AdtHTTP: BrowserAdtHTTP } =
+          require("./AdtHTTP") as typeof import("./AdtHTTP")
+        const session: AdtSessionProvider = {
+          id: "browser",
+          renew: async () => undefined
+        }
+        expect(
+          () =>
+            new BrowserAdtHTTP("https://adt.example", "user", "", "", "", {
+              session
+            })
+        ).not.toThrow()
+      })
+    } finally {
+      Object.defineProperty(process, "versions", { value: versions })
+    }
+  })
+})
+
 describe("external cookie session over Axios", () => {
   test("renews an expired session once and replays the read", async () => {
     const { client, renew } = create()

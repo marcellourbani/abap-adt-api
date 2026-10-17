@@ -72,10 +72,10 @@ const axiosRespToHttp = (raw: AxiosResponse): HttpClientResponse => {
 
 export class AxiosHttpClient implements HttpClient {
   private axios: Axios
-  // browsers manage cookies themselves, a Cookie header can't be set there
+  // Browsers manage cookies themselves, even though scripts cannot set Cookie.
   readonly capabilities: HttpClientCapabilities = {
     headers: true,
-    cookies: runningInNode,
+    cookies: true,
     statusCodes: true
   }
   constructor(
