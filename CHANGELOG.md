@@ -1,5 +1,19 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
+- `ClientOptions.session`: an `AdtSessionProvider` supplies and renews cookies from outside the library (e.g. browser SSO). Login keeps imported cookies and sends no Basic credentials, a renewal is coalesced and a stateless read is replayed once. Stateful calls and writes are not replayed unless `canRetry` allows it, and `logoutMode: "local-only"` skips the SAP logoff call. Cookie values are redacted from debug callbacks and thrown exceptions
+- `AdtHTTP.session` / `ADTClient.session`: public cookie and CSRF state (`importCookies`, `clearCookies`, `cookieHeader`, `resetCsrfToken`), cookies expired by the server are now removed
+- `ClientOptions.extensions`: ordered request/response middleware with immutable requests (`withRequest`); extensions never see credentials or cookies
+- `AdtSessionFailure` and `isAuthenticationFailure`, a transport independent classifier of authentication failures
+- `HttpClient.capabilities`, external sessions fail early when the transport has no cookie support
+
+### Fixed
+
+- usage references parse whatever namespace prefix the system uses (`usageReferences:` or `usagereferences:`)
+
 ## 5.2.0 [2023-11-06]
 
 ### Added

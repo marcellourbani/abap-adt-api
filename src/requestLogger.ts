@@ -33,6 +33,19 @@ export interface LogCallback {
   (data: LogData): void
 }
 
+const SENSITIVE_HEADER = /^(cookie|set-cookie|authorization)$/i
+
+export const redactSensitiveHeaders = <T extends object | undefined>(
+  headers: T
+): T =>
+  headers &&
+  (Object.fromEntries(
+    Object.entries(headers).map(([k, v]) => [
+      k,
+      SENSITIVE_HEADER.test(k) ? "[redacted]" : v
+    ])
+  ) as T)
+
 interface LoggingConfig {
   adtRequestNumber: number
   adtStartTime: Date

@@ -47,6 +47,26 @@ export function xmlNode(xml: any, ...path: string[]): any {
   return current
 }
 
+const _localName = (key: string) => key.slice(key.indexOf(":") + 1)
+
+/** Child element by local name, whatever its namespace prefix is. */
+export function xmlNodeAnyPrefix(node: any, localName: string): any {
+  if (!isObject(node)) return undefined
+  const key = Object.keys(node).find(
+    k => !k.startsWith("@_") && _localName(k) === localName
+  )
+  return key === undefined ? undefined : (node as any)[key]
+}
+
+export function xmlArrayAnyPrefix<T>(node: any, ...localNames: string[]): T[] {
+  let current = node
+  for (const name of localNames) {
+    current = xmlNodeAnyPrefix(current, name)
+    if (!current) return []
+  }
+  return isArray(current) ? (current as T[]) : [current]
+}
+
 export function xmlFlatArray<T>(xml: any, ...path: string[]): T[] {
   if (!xml) return []
 

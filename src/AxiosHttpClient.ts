@@ -9,12 +9,14 @@ import axios, {
 } from "axios"
 import { ClientOptions, HttpClient } from "."
 import {
+  HttpClientCapabilities,
   HttpClientException,
   HttpClientOptions,
   HttpClientResponse,
   RequestMetadata,
   RequestOptions,
-  ResponseHeaders
+  ResponseHeaders,
+  runningInNode
 } from "./AdtHTTP"
 import { hasMessage, isString } from "./utilities"
 
@@ -70,6 +72,12 @@ const axiosRespToHttp = (raw: AxiosResponse): HttpClientResponse => {
 
 export class AxiosHttpClient implements HttpClient {
   private axios: Axios
+  // browsers manage cookies themselves, a Cookie header can't be set there
+  readonly capabilities: HttpClientCapabilities = {
+    headers: true,
+    cookies: runningInNode,
+    statusCodes: true
+  }
   constructor(
     private baseURL: string,
     private config?: ClientOptions

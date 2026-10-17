@@ -17,9 +17,11 @@ import {
 import { isLeft } from "fp-ts/lib/These"
 import * as t from "io-ts"
 import reporter from "io-ts-reporters"
+import type { AdtSessionFailureReason } from "./AdtSession"
 const ADTEXTYPEID = Symbol.for("ADT EXCEPTION")
 const CSRFEXTYPEID = Symbol.for("BAD CSRF")
 const HTTPEXTYPEID = Symbol.for("HTTP EXCEPTION")
+const SESSIONEXTYPEID = Symbol.for("ADT SESSION FAILURE")
 
 export enum SAPRC {
   Success = "S",
@@ -151,6 +153,30 @@ export type AdtException =
   | AdtErrorException
   | AdtCsrfException
   | AdtHttpException
+  | AdtSessionFailure
+
+// tslint:disable-next-line:max-classes-per-file
+/** The session could not be (re)established or the request could not safely be replayed */
+export class AdtSessionFailure extends Error {
+  get typeID(): symbol {
+    return SESSIONEXTYPEID
+  }
+  get status(): number {
+    if (isAdtError(this.parent)) return this.parent.err
+    return isHttpError(this.parent) ? this.parent.status : 0
+  }
+  get response(): HttpClientResponse | undefined {
+    return isAdtError(this.parent) ? this.parent.response : undefined
+  }
+  constructor(
+    public readonly reason: AdtSessionFailureReason,
+    /** false if the failure happened before anything was sent */
+    public readonly requestSent: boolean,
+    public readonly parent?: AdtException
+  ) {
+    super(`Authentication failed (${reason})`)
+  }
+}
 
 export function isAdtError(e: unknown): e is AdtErrorException {
   return (e as any)?.typeID === ADTEXTYPEID
@@ -161,11 +187,22 @@ export function isCsrfError(e: unknown): e is AdtCsrfException {
 export function isHttpError(e: unknown): e is AdtHttpException {
   return (e as any)?.typeID === HTTPEXTYPEID
 }
+export function isAdtSessionFailure(e: unknown): e is AdtSessionFailure {
+  return (e as any)?.typeID === SESSIONEXTYPEID
+}
 export function isAdtException(e: unknown): e is AdtException {
-  return isAdtError(e) || isCsrfError(e) || isHttpError(e)
+  return (
+    isAdtError(e) || isCsrfError(e) || isHttpError(e) || isAdtSessionFailure(e)
+  )
 }
 export const isLoginError = (adtErr: AdtException) =>
   (isHttpError(adtErr) && adtErr.status === 401) || isCsrfError(adtErr)
+
+/** Transport independent: true for 401s, CSRF/session expiry and failed renewals */
+export function isAuthenticationFailure(e: unknown): boolean {
+  if (isAdtSessionFailure(e)) return true
+  return isLoginError(fromException(e))
+}
 
 const simpleError = (response: HttpClientResponse) =>
   adtException(

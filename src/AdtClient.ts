@@ -380,7 +380,11 @@ export class ADTClient {
     options: ClientOptions = {}
   ) {
     if (
-      !(baseUrlOrClient && username && (password || !isString(baseUrlOrClient)))
+      !(
+        baseUrlOrClient &&
+        username &&
+        (password || options.session || !isString(baseUrlOrClient))
+      )
     )
       throw adtException(
         "Invalid ADTClient configuration: url, login and password are required"
@@ -431,11 +435,12 @@ export class ADTClient {
     if (this.pIsClone) return this
     if (!this.pClone) {
       const pw = this.fetcher || this.password
-      if (!pw) throw adtException("Not logged in")
+      if (!pw && !this.options.options.session)
+        throw adtException("Not logged in")
       this.pClone = new ADTClient(
         this.baseUrl,
         this.username,
-        pw,
+        pw || "",
         this.client,
         this.language,
         this.options.options
@@ -455,6 +460,11 @@ export class ADTClient {
 
   public get loggedin() {
     return this.h.loggedin
+  }
+
+  /** Cookie and CSRF state of this client, see ClientOptions.session */
+  public get session() {
+    return this.h.session
   }
 
   public get isStateful() {
