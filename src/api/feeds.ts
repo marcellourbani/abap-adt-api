@@ -66,6 +66,8 @@ export interface Dump {
   links: Link[]
   id: string
   author?: string
+  title: string
+  updated: Date
   text: string
   type: string
 }
@@ -128,23 +130,28 @@ const parseFeeds = (body: string): Feed[] => {
 const parseDumps = (body: string): DumpsFeed => {
   const raw = fullParse(body, {
     removeNSPrefix: true,
-    processEntities: { enabled: true }
+    // dump summaries embed the whole escaped HTML body (thousands of escaped
+    // entities are normal there) and the default expansion budget of 1000
+    // sits right around a typical dump's size — the source of the flakiness.
+    // Raise the budget for this feed
+    processEntities: { enabled: true, maxTotalExpansions: 1000000 }
   })?.feed
   const { href } = xmlNodeAttr(raw?.link)
   const { title, updated } = raw
   const dumps = xmlArray(raw, "entry").map((e: any) => {
-    const {
-      category,
-      id,
-      author: { name: author },
-      summary: { "#text": text, "@_type": type }
-    } = e
+    const category = xmlArray(e, "category").map(xmlNodeAttr)
     const links = xmlArray(e, "link").map(xmlNodeAttr)
+    // author/summary are not present on every entry; destructuring them
+    // unconditionally throws a TypeError
+    const author = e.author?.name
+    const { "#text": text = "", "@_type": type = "" } = e.summary ?? {}
     return {
-      categories: category.map(xmlNodeAttr),
+      categories: category,
       links,
-      id,
+      id: e.id,
       author,
+      title: e.title,
+      updated: parseJsonDate(e.updated),
       text: text,
       type
     }
@@ -163,8 +170,19 @@ export async function feeds(h: AdtHTTP) {
 
 export async function dumps(h: AdtHTTP, query: string = "") {
   const headers = { Accept: "application/atom+xml;type=feed" }
-  const qs: any = {}
-  if (query) qs["$query"] = query
+  // the dumps endpoint takes plain query params (maxNumber / from / user...)
+  // and rejects $query — split the caller's "maxNumber=5&from=..." and pass
+  // the pairs through as-is
+  const qs: Record<string, string> = {}
+  for (const pair of query.replace(/^\?/, "").split("&")) {
+    if (!pair) continue
+    const eq = pair.indexOf("=")
+    if (eq < 0) qs[decodeURIComponent(pair)] = ""
+    else
+      qs[decodeURIComponent(pair.slice(0, eq))] = decodeURIComponent(
+        pair.slice(eq + 1)
+      )
+  }
   const response = await h.request("/sap/bc/adt/runtime/dumps", {
     method: "GET",
     qs,

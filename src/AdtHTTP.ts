@@ -230,7 +230,10 @@ export class AdtHTTP {
       this.loginPromise = this._request("/sap/bc/adt/compatibility/graph", {
         qs
       })
-      await this.loginPromise
+      // return the response so handlers can stringify a real value;
+      // previously resolved undefined → MCP tool result failed schema
+      // validation (content[0].text missing)
+      return await this.loginPromise
     } finally {
       this.loginPromise = undefined
     }
