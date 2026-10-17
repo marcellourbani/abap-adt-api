@@ -14,7 +14,7 @@ const {
   repouser = "",
   repopwd = "",
   bindingName = ""
-} = JSON.parse(process.env.ADT_CP || "") as { [key: string]: string }
+} = JSON.parse(process.env.ADT_CP || "{}") as { [key: string]: string }
 
 let oldToken: string = ""
 

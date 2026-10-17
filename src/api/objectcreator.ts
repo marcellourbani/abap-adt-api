@@ -1,7 +1,13 @@
-import { sprintf } from "sprintf-js"
 import { adtException } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, encodeEntity, isString } from "../utilities"
+
+// sprintf-js dropped for GHSA-hp3w-g68c-fv3c (no fixed release exists).
+// Creation templates are static and hold at most one %s; the parent name is
+// encodeURIComponent output, so it can never contain the `$` replacement
+// patterns of String.replace.
+const formatCreationPath = (path: string, parent: string) =>
+  path.replace("%s", parent)
 
 export type PackageTypeId = "DEVC/K"
 
@@ -271,7 +277,7 @@ export function objectPath(
   if (!ot) return ""
   return (
     "/sap/bc/adt/" +
-    sprintf(ot.creationPath, encodeURIComponent(parentName || "")) +
+    formatCreationPath(ot.creationPath, encodeURIComponent(parentName || "")) +
     "/" +
     encodedname
   )
@@ -311,7 +317,7 @@ export async function createObject(
   if (!ot) throw adtException("Unsupported object type")
   const url =
     "/sap/bc/adt/" +
-    sprintf(
+    formatCreationPath(
       ot.creationPath,
       encodeURIComponent(options.parentName.toLowerCase())
     )

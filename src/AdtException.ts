@@ -174,10 +174,25 @@ const simpleError = (response: HttpClientResponse) =>
   )
 
 const isCsrfException = (r: HttpClientResponse) =>
-  (r.status === 403 && r.headers["x-csrf-token"] === "Required") ||
-  (r.status === 400 && r.statusText === "Session timed out") // hack to get login refresh to work on expired sessions
-
+  (r.status === 403 &&
+    `${r.headers["x-csrf-token"]}`.toLowerCase() === "required") ||
+  // expired-session POSTs come back as 400; the statusText wording varies
+  // ("Session timed out", localized variants) — treat any bare 400 whose
+  // body is not an ADT exception XML as a session refresh candidate
+  (r.status === 400 &&
+    // ICM error pages are also bare 400s, but upstream contract preserves
+    // the HttpClientException status/code for them; only ICM sets these
+    !r.headers["x-sap-icm-err-id"] &&
+    !r.headers["sap-err-id"] &&
+    !r.body?.match(/exc:exception/) &&
+    /\bsession\b/i.test(r.body))
 export const fromResponse = (data: string, response: HttpClientResponse) => {
+  // CSRF/session-expired classification must precede the empty-body
+  // short-circuit: SAP rejects expired-session POSTs with an empty-ish
+  // 403/400 body, which used to fall into simpleError and never reach
+  // the request() re-login path
+  if (isCsrfException(response))
+    return new AdtCsrfException(`Session expired (${response.status})`)
   if (!data) return simpleError(response)
   if (data.match(/CSRF/)) return new AdtCsrfException(data)
   const raw = fullParse(data as string)
@@ -208,6 +223,14 @@ export const fromError = (error: unknown): AdtException => {
     if (isHttpClientException(error)) {
       if (error.response) {
         if (error.status === 401) return new AdtHttpException(error)
+        // expired-session 400s must surface as CSRF exceptions so the
+        // request() retry path (isLoginError) re-logins instead of
+        // surfacing an opaque error to the caller
+        if (isCsrfException(error.response))
+          return new AdtCsrfException(
+            `Session expired (${error.response.status})`,
+            error
+          )
         try {
           return fromResponse(error.response.body, error.response)
         } catch (e) {}
