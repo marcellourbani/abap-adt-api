@@ -13,6 +13,8 @@ export interface AdtCookieImport {
   readonly cookieHeader: string
   /** Replacing, rather than merging, avoids retaining a dead external identity */
   readonly replace?: boolean
+  /** The cookie header was independently validated, even if its value is unchanged */
+  readonly verified?: boolean
 }
 
 export interface AdtSessionProvider {
@@ -26,6 +28,8 @@ export interface AdtSessionProvider {
     readonly reason: AdtSessionFailureReason
     readonly error?: unknown
   }): Promise<AdtCookieImport | undefined>
+  /** Called after credentials change through renewal or Set-Cookie responses */
+  readonly onCookiesChanged?: (cookieHeader: string) => void | Promise<void>
   /** A browser SSO logout should normally only clear local ADT state. Defaults to remote */
   readonly logoutMode?: "remote" | "local-only"
   /**

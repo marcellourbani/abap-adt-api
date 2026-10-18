@@ -346,10 +346,15 @@ export class AdtHTTP {
   ) {
     const before = this.jar.cookieHeader()
     const cookies = await provider.renew({ client: this, reason, error })
-    if (cookies) this.jar.importCookies(cookies)
+    if (cookies) {
+      this.jar.importCookies(cookies)
+      if (this.jar.cookieHeader() !== before)
+        await provider.onCookiesChanged?.(this.jar.cookieHeader())
+    }
     // without new cookies only a CSRF problem can be fixed
     const usable = cookies
-      ? reason === "csrf" ||
+      ? cookies.verified === true ||
+        reason === "csrf" ||
         reason === "manual" ||
         this.jar.cookieHeader() !== before
       : reason === "csrf"
@@ -363,6 +368,38 @@ export class AdtHTTP {
   ascookies(): string {
     return this.jar.cookieHeader()
   }
+
+  /**
+   * Tests an external cookie header using an isolated login context and this client's transport.
+   * The active session's cookies, CSRF token and stateful context are not modified.
+   */
+  async probeCookieHeader(cookieHeader: string): Promise<string | undefined> {
+    const probe = new AdtHTTP(
+      this.httpclient,
+      this.username,
+      this.password || "",
+      this.client,
+      this.language,
+      {
+        headers: this.commonHeaders,
+        debugCallback: this.debugCallback,
+        extensions: this.extensions,
+        session: {
+          id: `cookie-probe:${this.id}`,
+          logoutMode: "local-only",
+          renew: async () => undefined
+        }
+      }
+    )
+    probe.session.importCookies({ cookieHeader, replace: true })
+    try {
+      await probe.login()
+      return probe.session.cookieHeader() || undefined
+    } finally {
+      await probe.logout()
+    }
+  }
+
   async logout(): Promise<void> {
     this.stateful = session_types.stateless
     if (this.provider?.logoutMode !== "local-only")
@@ -497,9 +534,13 @@ export class AdtHTTP {
     this.needKeepalive = true
   }
 
-  private _storeCookies(response: HttpClientResponse) {
-    if (runningInNode || this.provider)
+  private async _storeCookies(response: HttpClientResponse) {
+    if (runningInNode || this.provider) {
+      const before = this.jar.cookieHeader()
       this.jar.applyResponseCookies(response.headers["set-cookie"])
+      const after = this.jar.cookieHeader()
+      if (after !== before) await this.provider?.onCookiesChanged?.(after)
+    }
   }
 
   private logResponse(
@@ -632,7 +673,7 @@ export class AdtHTTP {
         isLogin,
         isStateful: this.isStateful
       })
-      return this._handleResponse(
+      return await this._handleResponse(
         response,
         sent.config || this._toClientOptions(request, options)
       )
@@ -644,11 +685,11 @@ export class AdtHTTP {
     }
   }
 
-  private _handleResponse(
+  private async _handleResponse(
     response: HttpClientResponse,
     config: HttpClientOptions
   ) {
-    this._storeCookies(response)
+    await this._storeCookies(response)
     if (response.status >= 400)
       throw fromException(this._safeResponse(response), config)
     if (

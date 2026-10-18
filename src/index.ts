@@ -1,5 +1,6 @@
 export {
   session_types,
+  AdtHTTP,
   ClientOptions,
   HttpResponse,
   HttpClient,
@@ -21,6 +22,12 @@ export {
   AdtSessionFailureReason,
   AdtSessionProvider
 } from "./AdtSession"
+export {
+  CookieSessionAcquisitionContext,
+  CookieSessionClient,
+  CookieSessionOptions,
+  createCookieSessionOptions
+} from "./AdtCookieSession"
 export * from "./AdtClient"
 export * from "./AdtException"
 export { LogCallback, LogData } from "./requestLogger"
