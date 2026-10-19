@@ -1,4 +1,5 @@
 import { Schema } from "effect"
+import type { DeepMutable } from "effect/Types"
 import { AdtHTTP } from "../AdtHTTP"
 import {
   encodeEntity,
@@ -13,7 +14,7 @@ import {
   xmlNodeAttr
 } from "../utilities"
 import { adtException, isErrorMessageType, validateParseResult } from ".."
-import { parseUri, UriParts, uriParts } from "./urlparser"
+import { parseUri, uriParts } from "./urlparser"
 
 // SATC_AC_RSLT_XMPT_KIND Atc based/Inline/none
 const exemptionKind = Schema.Union([
@@ -176,104 +177,12 @@ const atcUser = Schema.Struct({
   title: Schema.String
 })
 
-/** the public types, same shape io-ts used to infer: mutable, required keys stay required */
-export interface AtcRunResult {
-  id: string
-  timestamp: number
-  infos: { type: string; description: string }[]
-}
-export interface AtcCustomizing {
-  properties: { name: string; value: boolean | string }[]
-  excemptions: { id: string; justificationMandatory: boolean; title: string }[]
-}
-export interface AtcWorkList {
-  id: string
-  timestamp: number
-  usedObjectSet: string
-  objectSetIsComplete: boolean
-  objectSets: { name: string; title: string; kind: string }[]
-  objects: {
-    uri: string
-    type: string
-    name: string
-    packageName: string
-    author: string
-    objectTypeId: string | undefined
-    findings: {
-      uri: string
-      location: UriParts
-      priority: number
-      checkId: string
-      checkTitle: string
-      messageId: string
-      messageTitle: string
-      exemptionApproval: string
-      exemptionKind: string
-      quickfixInfo: string | undefined
-      link: { href: string; rel: string; type: string }
-    }[]
-  }[]
-}
-export interface AtcUser {
-  id: string
-  title: string
-}
-export interface AtcProposal {
-  finding:
-    | {
-        uri: string
-        type: string
-        name: string
-        location: string
-        processor: string
-        lastChangedBy: string
-        priority: number
-        checkId: string
-        checkTitle: string
-        messageId: string
-        messageTitle: string
-        exemptionApproval: string
-        exemptionKind: string
-        checksum: number
-        quickfixInfo: string
-        quickfixes?: { automatic?: boolean; manual?: boolean; pseudo?: boolean }
-      }
-    | string
-  package: string
-  subObject: string
-  subObjectType: string
-  subObjectTypeDescr: string
-  objectTypeDescr: string
-  approver: string
-  reason: "FPOS" | "OTHR" | ""
-  justification: string
-  notify: "never" | "on_rejection" | "always"
-  restriction: {
-    enabled: boolean
-    singlefinding: boolean
-    rangeOfFindings: {
-      enabled: boolean
-      restrictByObject: {
-        object: boolean
-        package: boolean
-        subobject: boolean
-        target: "subobject" | "object" | "package" | ""
-      }
-      restrictByCheck: {
-        check: boolean
-        message: boolean
-        target: "message" | "check" | ""
-      }
-    }
-  }
-  apprIsArea?: string
-  checkClass?: string
-  validUntil?: string
-}
-export interface AtcProposalMessage {
-  type: string
-  message: string
-}
+export type AtcRunResult = DeepMutable<typeof atcRunResult.Type>
+export type AtcCustomizing = DeepMutable<typeof atcCustomizingi.Type>
+export type AtcWorkList = DeepMutable<typeof atcWorklist.Type>
+export type AtcUser = DeepMutable<typeof atcUser.Type>
+export type AtcProposal = DeepMutable<typeof atcProposal.Type>
+export type AtcProposalMessage = DeepMutable<typeof atcProposalMessage.Type>
 
 export const isProposalMessage = (u: unknown): u is AtcProposalMessage =>
   Schema.is(atcProposalMessage)(u)
@@ -298,7 +207,7 @@ export async function atcCustomizing(h: AdtHTTP): Promise<AtcCustomizing> {
     "reason"
   ).map(xmlNodeAttr)
   const retval = { properties, excemptions }
-  return validateParseResult(atcCustomizingi, retval) as AtcCustomizing
+  return validateParseResult(atcCustomizingi, retval)
 }
 
 export async function atcCheckVariant(
@@ -345,7 +254,7 @@ export async function createAtcRun(
   const ts = xmlNode(raw, "worklistRun", "worklistTimestamp")
   const infos = xmlArray(raw, "worklistRun", "infos", "info")
   const retval = { id, timestamp: new Date(ts).getTime() / 1000, infos }
-  return validateParseResult(atcRunResult, retval) as AtcRunResult
+  return validateParseResult(atcRunResult, retval)
 }
 
 export async function atcWorklists(
@@ -392,7 +301,7 @@ export async function atcWorklists(
   })
   const ts = new Date(attrs.timestamp).getTime() / 1000
   const result = { ...attrs, timestamp: ts, objectSets, objects }
-  return validateParseResult(atcWorklist, result) as AtcWorkList
+  return validateParseResult(atcWorklist, result)
 }
 
 export async function atcUsers(h: AdtHTTP): Promise<AtcUser[]> {
@@ -428,7 +337,7 @@ export async function atcExemptProposal(
   const { message, type } = xmlNode(raw, "exemptionApply", "status") || {}
   if (isErrorMessageType(type)) throw adtException(message)
   if (message && type)
-    return validateParseResult(atcProposalMessage, { message, type }) as AtcProposalMessage
+    return validateParseResult(atcProposalMessage, { message, type })
   const finding = isString(root.finding)
     ? root.finding
     : xmlNodeAttr(xmlNode(root, "finding"))
@@ -491,7 +400,7 @@ export async function atcExemptProposal(
       }
     }
   }
-  return validateParseResult(atcProposal, result) as AtcProposal
+  return validateParseResult(atcProposal, result)
 }
 
 export async function atcDocumentation(h: AdtHTTP, docUri: string) {
@@ -592,7 +501,7 @@ export async function atcRequestExemption(
     parseTagValue: false,
     parseAttributeValue: false
   })
-  const result = validateParseResult(atcProposalMessage, raw?.status) as AtcProposalMessage
+  const result = validateParseResult(atcProposalMessage, raw?.status)
   if (isErrorMessageType(result.type)) throw adtException(result.message)
   return result
 }

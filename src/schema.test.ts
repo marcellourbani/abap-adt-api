@@ -33,14 +33,4 @@ describe("schema validation", () => {
       expect(e.message.split("\n").length).toBeLessThanOrEqual(3)
     }
   })
-
-  test("still accepts io-ts style validations", () => {
-    expect(validateParseResult({ _tag: "Right", right: 42 })).toBe(42)
-    expect(() =>
-      validateParseResult({
-        _tag: "Left",
-        left: [{ value: 1, context: [{ key: "" }, { key: "name" }] }]
-      })
-    ).toThrow("Invalid value 1 at name")
-  })
 })

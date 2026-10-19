@@ -164,22 +164,12 @@ export const toAdtResponse = (
     headers: toResponseHeaders(response)
   }))
 
-const nodeErrorCode = (cause: unknown): string | undefined => {
-  let current: any = cause
-  for (let depth = 0; current && depth < 5; depth++) {
-    if (typeof current.code === "string") return current.code
-    current = current.cause
+/** first value `pick` finds walking down the `cause` chain */
+const fromCauses = <T>(cause: any, pick: (e: any) => T | undefined): T | undefined => {
+  for (let depth = 0; cause && depth < 5; depth++, cause = cause.cause) {
+    const found = pick(cause)
+    if (found !== undefined) return found
   }
-  return undefined
-}
-
-const causeMessage = (cause: unknown, fallback: string) => {
-  let current: any = cause
-  for (let depth = 0; current && depth < 5; depth++) {
-    if (hasMessage(current) && current.message) return current.message
-    current = current.cause
-  }
-  return fallback
 }
 
 /**
@@ -193,38 +183,20 @@ export const toHttpClientException = (
   config?: ClientOptions
 ): HttpClientException => {
   if (error instanceof HttpClientException) return error
+  const fail = (message: string, code?: string) =>
+    new HttpClientException(message, code, undefined, config, options, undefined, error)
   if (Cause.isTimeoutError(error))
-    return new HttpClientException(
-      `timeout of ${options.timeout}ms exceeded`,
-      "ECONNABORTED",
-      undefined,
-      config,
-      options,
-      undefined,
-      error
-    )
+    return fail(`timeout of ${options.timeout}ms exceeded`, "ECONNABORTED")
   if (HttpClientError.isHttpClientError(error)) {
-    const reason = error.reason
+    const { reason } = error
     const cause = "cause" in reason ? reason.cause : undefined
-    return new HttpClientException(
-      causeMessage(cause, reason.description || error.message || reason._tag),
-      nodeErrorCode(cause) || reason._tag,
-      undefined,
-      config,
-      options,
-      undefined,
-      error
+    return fail(
+      fromCauses(cause, e => (hasMessage(e) && e.message) || undefined) ??
+        (reason.description || error.message || reason._tag),
+      fromCauses(cause, e => (typeof e.code === "string" ? e.code : undefined)) ?? reason._tag
     )
   }
-  return new HttpClientException(
-    hasMessage(error) ? error.message : "Unknown error in HTTP client",
-    undefined,
-    undefined,
-    config,
-    options,
-    undefined,
-    error
-  )
+  return fail(hasMessage(error) ? error.message : "Unknown error in HTTP client")
 }
 
 /**
@@ -292,22 +264,18 @@ const agentLayer = (config?: ClientOptions) =>
  *
  * honours `ClientOptions.httpsAgent` (certificates, keep alive) and follows redirects
  */
+const nodeHttp = (config?: ClientOptions) =>
+  Effect.provide(
+    Effect.map(makeNodeHttp, EffectHttp.followRedirects(MAX_REDIRECTS)),
+    agentLayer(config)
+  )
+
 export const nodeHttpClientLayer = (
   config?: ClientOptions
-): Layer.Layer<EffectHttp.HttpClient> =>
-  Layer.effect(
-    EffectHttp.HttpClient,
-    Effect.map(makeNodeHttp, EffectHttp.followRedirects(MAX_REDIRECTS))
-  ).pipe(Layer.provide(agentLayer(config)))
+): Layer.Layer<EffectHttp.HttpClient> => Layer.effect(EffectHttp.HttpClient, nodeHttp(config))
 
 /** The default node client as a plain value, for the promise API */
-export const makeNodeHttpClient = (config?: ClientOptions) =>
-  Effect.runSync(
-    Effect.provide(
-      Effect.map(makeNodeHttp, EffectHttp.followRedirects(MAX_REDIRECTS)),
-      agentLayer(config)
-    )
-  )
+export const makeNodeHttpClient = (config?: ClientOptions) => Effect.runSync(nodeHttp(config))
 
 /**
  * `HttpClient` implementation backed by the effect HTTP client

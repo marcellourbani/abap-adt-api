@@ -15,6 +15,7 @@ import {
   xmlArray
 } from "./utilities"
 import { Result, Schema } from "effect"
+import type { DeepMutable } from "effect/Types"
 import type { AdtSessionFailureReason } from "./AdtSession"
 const ADTEXTYPEID = Symbol.for("ADT EXCEPTION")
 const CSRFEXTYPEID = Symbol.for("BAD CSRF")
@@ -329,52 +330,20 @@ export function ValidateStateful(h: AdtHTTP) {
     "This operation can only be performed in stateful mode"
   )
 }
-/** structural shape of an fp-ts Either / io-ts Validation, kept for existing callers */
-export type LegacyValidation<T> =
-  | { readonly _tag: "Left"; readonly left: unknown }
-  | { readonly _tag: "Right"; readonly right: T }
-
-const legacyMessages = (left: unknown) =>
-  (Array.isArray(left) ? left : [left]).map((e: any) => {
-    const path = Array.isArray(e?.context)
-      ? e.context
-          .map((c: any) => c?.key)
-          .filter((k: unknown) => k !== undefined && k !== "")
-          .join(".")
-      : ""
-    return e?.message || `Invalid value ${JSON.stringify(e?.value)}${path ? ` at ${path}` : ""}`
-  })
-
 /**
  * Checks a parsed response against a schema
  *
  * Returns the input itself, like io-ts did: attributes the schema doesn't know are kept
  * @throws AdtErrorException with the first validation messages
  */
-export function validateParseResult<S extends Schema.Top>(
+export const validateParseResult = <S extends Schema.Top & { readonly DecodingServices: never }>(
   schema: S,
   input: unknown
-): S["Type"]
-/** @deprecated pass a schema and the value instead of an io-ts validation */
-export function validateParseResult<T>(parseResult: LegacyValidation<T>): T
-export function validateParseResult(
-  schemaOrValidation: Schema.Top | LegacyValidation<unknown>,
-  input?: unknown
-): unknown {
-  if (!Schema.isSchema(schemaOrValidation)) {
-    if (schemaOrValidation._tag === "Right") return schemaOrValidation.right
-    throw adtException(
-      legacyMessages(schemaOrValidation.left).slice(0, 3).join("\n")
-    )
-  }
-  const result = Schema.decodeUnknownResult(schemaOrValidation as any)(input, {
-    errors: "all"
-  })
+): DeepMutable<S["Type"]> => {
+  const result = Schema.decodeUnknownResult(schema)(input, { errors: "all" })
   if (Result.isFailure(result))
-    throw adtException(
-      `${result.failure.message}`.split("\n").slice(0, 3).join("\n")
-    )
-  return input
+    throw adtException(result.failure.message.split("\n").slice(0, 3).join("\n"))
+  return input as DeepMutable<S["Type"]>
 }
 
 export const isErrorMessageType = (x: string | SAPRC | undefined) =>

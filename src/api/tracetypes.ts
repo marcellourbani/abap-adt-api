@@ -1,5 +1,4 @@
 import { Schema } from "effect"
-import type { DeepMutable } from "effect/Types"
 import {
   extractXmlArray,
   fullParse,
@@ -289,9 +288,6 @@ const tlFeed = Schema.Struct({
 })
 const tracesListRequest = Schema.Struct({ feed: tlFeed })
 
-/** validates a parsed response, typed as the mutable shape io-ts used to infer */
-const validate = <S extends Schema.Top>(schema: S, x: unknown) =>
-  validateParseResult(schema, x) as DeepMutable<S["Type"]>
 
 export interface TraceResults {
   author: string
@@ -630,7 +626,7 @@ export interface TracesCreationConfig {
   parametersId: string
 }
 
-const parseRawTrace = (x: unknown) => validate(traceResults, x).feed
+const parseRawTrace = (x: unknown) => validateParseResult(traceResults, x).feed
 
 export const parseTraceResults = (xml: string): TraceResults => {
   const raw = parseRawTrace(fullParse(xml, { removeNSPrefix: true }))
@@ -676,7 +672,7 @@ export const parseTraceResults = (xml: string): TraceResults => {
 }
 
 export const parseTraceHitList = (xml: string): TraceHitList => {
-  const raw = validate(
+  const raw = validateParseResult(
     HitListResponse,
     fullParse(xml, { removeNSPrefix: true })
   ).hitlist
@@ -704,7 +700,7 @@ export const parseTraceHitList = (xml: string): TraceHitList => {
 
 export const parseTraceDbAccess = (xml: string): TraceDBAccessResponse => {
   const toParse = fullParse(xml, { removeNSPrefix: true })
-  const raw = validate(traceDBAccesResponse, toParse).dbAccesses
+  const raw = validateParseResult(traceDBAccesResponse, toParse).dbAccesses
   const parentLink = raw.link["@_href"]
   const dbaccesses = extractXmlArray(raw.dbAccess).map(a => {
     const callingProgram = a.callingProgram && typedNodeAttr(a.callingProgram)
@@ -726,7 +722,7 @@ const parseCount = (count: string | number) => {
 }
 
 export const parseTraceStatements = (xml: string) => {
-  const raw = validate(
+  const raw = validateParseResult(
     traceStatementResponse,
     fullParse(xml, { removeNSPrefix: true })
   ).statements
@@ -751,7 +747,7 @@ export const parseTraceStatements = (xml: string) => {
 }
 
 export const parseTraceRequestList = (xml: string): TraceRequestList => {
-  const parsed = validate(
+  const parsed = validateParseResult(
     tracesListRequest,
     fullParse(xml, { removeNSPrefix: true })
   ).feed
