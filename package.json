@@ -6,7 +6,7 @@
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "engines": {
-    "node": ">=20.19.0"
+    "node": "^20.19.5 || >=22.15.0"
   },
   "scripts": {
     "build": "tsc",

@@ -8,7 +8,8 @@
 - HTTP goes through the Effect HTTP client (`EffectHttpClient`, node:http(s) by default) instead of axios. Requests are unchanged on the wire except that no `User-Agent: axios/…` and `Accept-Encoding` headers are sent; error responses still reject with `HttpClientException` (codes `ERR_BAD_REQUEST`/`ERR_BAD_RESPONSE`, `ECONNABORTED` on timeout, node codes like `ECONNREFUSED`)
 - Response bodies are returned as received; axios re-serialized JSON-looking bodies
 - Responses are validated with Effect Schema. `validateParseResult(schema, value)` replaces `validateParseResult(codec.decode(value))` and returns the schema's type. Types formerly derived from io-ts codecs (`AtcRunResult`, `AtcWorkList`, `AtcProposal`, `UriParts`, `Range`, `UnitTestOccurrenceMarker`, trace results, …) keep the same shape
-- Requires Node.js 20.19 or later (`require` of ES modules), `npm test` runs Jest with `--experimental-vm-modules`
+- Requires Node.js 20.19.5+ or 22.15+ (`require` of ES modules; earlier 20.19 and 22.12–22.14 releases fail for ESM clients that also import `effect`), `npm test` runs Jest with `--experimental-vm-modules`
+- TypeScript clients need `moduleResolution` `bundler`, `node16` or `nodenext`
 
 ### Added
 
