@@ -11,7 +11,9 @@ import {
 import { AdtExtension } from "./AdtExtensions"
 import { AdtSessionProvider, AdtCookieImport } from "./AdtSession"
 import {
+  fromException,
   isAdtError,
+  isCsrfError,
   isAdtSessionFailure,
   isAuthenticationFailure
 } from "./AdtException"
@@ -136,6 +138,31 @@ describe("external cookie login", () => {
     expect(renew).toHaveBeenCalledTimes(1)
     expect(renew.mock.calls[0][0]).toMatchObject({ reason: "expired" })
     expect(transport.count(GRAPH)).toBe(2)
+  })
+
+  test("a login without a CSRF token renews once and never reports logged in", async () => {
+    const { p, renew } = provider(() => ({ cookieHeader: "s=new" }))
+    const { http, transport } = create(() => reply(200), p)
+    http.session.importCookies({ cookieHeader: "s=old" })
+
+    const error = await http.login().catch(e => e)
+
+    expect(isAdtSessionFailure(error) && error.reason).toBe("expired")
+    expect(http.loggedin).toBe(false)
+    expect(renew).toHaveBeenCalledTimes(1)
+    expect(transport.count(GRAPH)).toBe(2)
+  })
+
+  test("removes an imported sap-contextid before login", async () => {
+    const { p } = provider(() => undefined)
+    const { http, transport } = create(() => ok(), p)
+    http.session.importCookies({
+      cookieHeader: "SAP-CONTEXTID=old; MYSAPSSO2=abc"
+    })
+
+    await http.login()
+
+    expect(cookieOf(transport.calls[0])).toBe("MYSAPSSO2=abc")
   })
 })
 
@@ -262,6 +289,126 @@ describe("session renewal", () => {
     expect(res.status).toBe(200)
     expect(renew.mock.calls[0][0]).toMatchObject({ reason: "csrf" })
     expect(transport.count(GRAPH)).toBe(2)
+  })
+
+  test("renewal resets statefulness and drops sap-contextid before the next login", async () => {
+    const { p } = provider(() => ({
+      cookieHeader: "sap-contextid=old; MYSAPSSO2=new",
+      replace: true
+    }))
+    const { http, transport } = create(() => ok(), p)
+    http.session.importCookies({
+      cookieHeader: "SAP-CONTEXTID=old; MYSAPSSO2=old"
+    })
+    http.stateful = session_types.stateful
+
+    await http.renewSession("expired")
+    await http.login()
+
+    expect(http.stateful).toBe(session_types.stateless)
+    expect(cookieOf(transport.calls[0])).toBe("MYSAPSSO2=new")
+  })
+
+  test("a Session timed out status text triggers provider recovery", async () => {
+    const { p, renew } = provider(() => ({ cookieHeader: "s=new" }))
+    let failed = false
+    const { http, transport } = create(o => {
+      if (o.url === "/a" && !failed) {
+        failed = true
+        return { ...reply(400), statusText: "Session timed out" }
+      }
+      return ok()
+    }, p)
+    http.session.importCookies({ cookieHeader: "s=old" })
+
+    const response = await http.request("/a")
+
+    expect(response.status).toBe(200)
+    expect(renew).toHaveBeenCalledTimes(1)
+    expect(transport.count("/a")).toBe(2)
+    expect(transport.count(GRAPH)).toBe(2)
+  })
+
+  test("an unrelated 400 status text does not trigger provider recovery", async () => {
+    const { p, renew } = provider(() => ({ cookieHeader: "s=new" }))
+    const { http } = create(
+      () => ({ ...reply(400), statusText: "Invalid input" }),
+      p
+    )
+    http.session.importCookies({ cookieHeader: "s=old" })
+
+    const error = await http.request("/a").catch(e => e)
+
+    expect(isAdtError(error) && error.err).toBe(400)
+    expect(renew).not.toHaveBeenCalled()
+  })
+})
+
+describe("external session HTTP errors", () => {
+  test.each([400, 401])(
+    "stores cookies from a %d response and notifies the provider",
+    async status => {
+      const onCookiesChanged = jest.fn()
+      const { p } = provider(() => undefined, { onCookiesChanged })
+      const { http } = create(
+        () => reply(status, { "set-cookie": ["SAP_SESSIONID=rotated; path=/"] }),
+        p
+      )
+      http.session.importCookies({ cookieHeader: "MYSAPSSO2=abc" })
+
+      await http.request("/a").catch(() => undefined)
+
+      expect(http.session.cookieHeader()).toBe(
+        "MYSAPSSO2=abc; SAP_SESSIONID=rotated"
+      )
+      expect(onCookiesChanged).toHaveBeenCalledWith(
+        "MYSAPSSO2=abc; SAP_SESSIONID=rotated"
+      )
+    }
+  )
+
+  test("removes expired cookies from error responses", async () => {
+    const onCookiesChanged = jest.fn()
+    const { p } = provider(() => undefined, { onCookiesChanged })
+    const { http } = create(
+      () =>
+        reply(500, {
+          "set-cookie": ["SAP_SESSIONID=; Max-Age=0; path=/"]
+        }),
+      p
+    )
+    http.session.importCookies({
+      cookieHeader: "MYSAPSSO2=abc; SAP_SESSIONID=old"
+    })
+
+    await http.request("/a").catch(() => undefined)
+
+    expect(http.session.cookieHeader()).toBe("MYSAPSSO2=abc")
+    expect(onCookiesChanged).toHaveBeenCalledWith("MYSAPSSO2=abc")
+  })
+})
+
+describe("CSRF response classification", () => {
+  const responseError = (statusText: string) =>
+    new HttpClientException(
+      "Request failed",
+      undefined,
+      400,
+      undefined,
+      { url: "" },
+      { ...reply(400), statusText }
+    )
+
+  test("classifies an empty 400 body with a session timeout status text", () => {
+    expect(isCsrfError(fromException(responseError("Session timed out")))).toBe(
+      true
+    )
+  })
+
+  test("keeps unrelated empty 400 status text as an HTTP error", () => {
+    expect(isCsrfError(fromException(responseError("Invalid input")))).toBe(
+      false
+    )
   })
 })
 

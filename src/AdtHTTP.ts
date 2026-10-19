@@ -297,15 +297,21 @@ export class AdtHTTP {
   }
 
   private async _externalLogin() {
+    this._dropContextId()
     if (!this.jar.cookieHeader()) await this._renewOrFail("initial-login")
     this.csrfToken = FETCH_CSRF_TOKEN
     try {
-      return await this._loginRequest()
+      const response = await this._loginRequest()
+      if (!this.loggedin) throw new AdtSessionFailure("expired", true)
+      return response
     } catch (error) {
       if (!isAuthenticationFailure(error)) throw error
       await this._renewOrFail("expired", error)
+      this._dropContextId()
       this.csrfToken = FETCH_CSRF_TOKEN
-      return this._loginRequest()
+      const response = await this._loginRequest()
+      if (!this.loggedin) throw new AdtSessionFailure("expired", true)
+      return response
     }
   }
 
@@ -348,8 +354,11 @@ export class AdtHTTP {
     const cookies = await provider.renew({ client: this, reason, error })
     if (cookies) {
       this.jar.importCookies(cookies)
-      if (this.jar.cookieHeader() !== before)
-        await provider.onCookiesChanged?.(this.jar.cookieHeader())
+      this._dropContextId()
+      const after = this.jar.cookieHeader()
+      if (cookies.replace || after !== before)
+        this.stateful = session_types.stateless
+      if (after !== before) await provider.onCookiesChanged?.(after)
     }
     // without new cookies only a CSRF problem can be fixed
     const usable = cookies
@@ -367,6 +376,21 @@ export class AdtHTTP {
 
   ascookies(): string {
     return this.jar.cookieHeader()
+  }
+
+  private _dropContextId() {
+    const cookieHeader = this.jar.cookieHeader()
+    const cookies = cookieHeader
+      .split(";")
+      .map(cookie => cookie.trim())
+      .filter(
+        cookie =>
+          cookie.length > 0 &&
+          cookie.slice(0, cookie.indexOf("=")).toLowerCase() !==
+          "sap-contextid"
+      )
+    if (cookies.length !== (cookieHeader ? cookieHeader.split(";").length : 0))
+      this.jar.importCookies({ cookieHeader: cookies.join("; "), replace: true })
   }
 
   /**
@@ -392,6 +416,7 @@ export class AdtHTTP {
       }
     )
     probe.session.importCookies({ cookieHeader, replace: true })
+    probe._dropContextId()
     try {
       await probe.login()
       return probe.session.cookieHeader() || undefined
@@ -678,6 +703,8 @@ export class AdtHTTP {
         sent.config || this._toClientOptions(request, options)
       )
     } catch (error) {
+      if (isHttpClientException(error) && error.response?.headers)
+        await this._storeCookies(error.response)
       const config = sent.config || this._toClientOptions(request, options)
       const exc = fromException(this._safeError(error), config)
       this.logResponse(exc, config)

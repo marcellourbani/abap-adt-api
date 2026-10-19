@@ -222,7 +222,7 @@ const isCsrfException = (r: HttpClientResponse) =>
     !r.headers["x-sap-icm-err-id"] &&
     !r.headers["sap-err-id"] &&
     !r.body?.match(/exc:exception/) &&
-    /\bsession\b/i.test(r.body))
+    /\bsession\b/i.test(`${r.body ?? ""} ${r.statusText ?? ""}`))
 export const fromResponse = (data: string, response: HttpClientResponse) => {
   // CSRF/session-expired classification must precede the empty-body
   // short-circuit: SAP rejects expired-session POSTs with an empty-ish

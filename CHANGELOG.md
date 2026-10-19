@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- Hardened external cookie sessions: require a CSRF token at login, discard stale SAP context IDs, persist cookies from error responses, and recognize session timeouts in 400 status text
 - usage references parse whatever namespace prefix the system uses (`usageReferences:` or `usagereferences:`)
 
 ## 5.2.0 [2023-11-06]

@@ -11,6 +11,8 @@ import {
   type HttpClientResponse
 } from "./AdtHTTP"
 
+const GRAPH = "/sap/bc/adt/compatibility/graph"
+
 const response = (
   status = 200,
   headers: HttpClientResponse["headers"] = {}
@@ -29,7 +31,10 @@ type Handler = (
 class FakeTransport implements HttpClient {
   readonly calls: HttpClientOptions[] = []
 
-  constructor(private readonly handler: Handler = () => response()) {}
+  constructor(
+    private readonly handler: Handler = options =>
+      response(200, options.url === GRAPH ? { "x-csrf-token": "token" } : {})
+  ) {}
 
   async request(options: Readonly<HttpClientOptions>) {
     this.calls.push({ ...options, headers: { ...options.headers } })
@@ -45,7 +50,6 @@ class FakeTransport implements HttpClient {
     )
   }
 }
-
 test("loads saved cookies for the initial external login", async () => {
   const transport = new FakeTransport()
   const acquireCookies = jest.fn(async () => undefined)
@@ -264,6 +268,45 @@ test("reports stateful session loss without replaying the request", async () => 
       call => call.url === "/sap/bc/adt/security/reentranceticket"
     )
   ).toHaveLength(1)
+})
+
+test("a replacement after stateful loss drops the old context before the next login", async () => {
+  const graph = "/sap/bc/adt/compatibility/graph"
+  const ticket = "/sap/bc/adt/security/reentranceticket"
+  const transport = new FakeTransport(options =>
+    options.url === ticket
+      ? response(401)
+      : response(200, { "x-csrf-token": "token" })
+  )
+  const client = new ADTClient(
+    transport,
+    "user",
+    "",
+    "",
+    "",
+    createCookieSessionOptions({
+      id: "test",
+      loadCookies: async () =>
+        "sap-contextid=old; MYSAPSSO2=saved",
+      acquireCookies: async () => undefined
+    })
+  )
+  await client.login()
+  client.stateful = session_types.stateful
+
+  await expect(client.reentranceTicket()).rejects.toMatchObject({
+    reason: "expired",
+    requestSent: true
+  })
+
+  expect(client.isStateful).toBe(false)
+  await client.login()
+
+  const loginCalls = transport.calls.filter(call => call.url === graph)
+  expect(loginCalls).toHaveLength(3)
+  loginCalls.forEach(call =>
+    expect(call.headers?.Cookie).toBe("MYSAPSSO2=saved")
+  )
 })
 
 test("external-cookie logout is local-only", async () => {
