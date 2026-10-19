@@ -10,7 +10,7 @@ Designed for general use, mostly used in [ABAP remote filesystem extension for v
 
 ## Requirements
 
-- Node.js 20.19.5+ or 22.15+. The package is CommonJS and loads Effect, which is ESM only, with `require`. Bundled code (esbuild, Rolldown, webpack) has no such limit
+- Node.js 20.19.5+ or 22.15+. The package is CommonJS and loads Effect, which is ESM only, with `require`. Code bundled with Rolldown or esbuild has no such limit (esbuild's ESM output needs the usual `createRequire` banner)
 - TypeScript: `moduleResolution` `bundler`, `node16` or `nodenext`. With `node10` (`"node"`) the Effect types can't be resolved, and with `skipLibCheck` the types that use them silently become `any`
 - ESM: import the package as usual; deep imports need the extension, i.e. `abap-adt-api/build/utilities.js`
 
