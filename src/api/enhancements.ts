@@ -192,7 +192,7 @@ export async function objectEnhancements(
     response = await h.request(`${sourceMain}/enhancements`, { qs, headers })
   } catch (err: any) {
     // AdtHTTP wraps HTTP 404s through fromError() as AdtErrorException(500)
-    // when the underlying HTTP client (axios) throws on non-2xx responses.
+    // when the underlying HTTP client throws on non-2xx responses.
     // We detect 404 both from the err code and from the error message.
     const httpStatus: number = err?.err ?? err?.code ?? 0
     const msg: string = String(err?.message || "")

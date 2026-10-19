@@ -2,8 +2,18 @@
 
 ## Unreleased
 
+### Changed (breaking)
+
+- Built on [Effect](https://effect.website) v4: fp-ts, io-ts, io-ts-reporters and axios are no longer dependencies. fp-ts has joined the Effect ecosystem and is no longer actively developed
+- HTTP goes through the Effect HTTP client (`EffectHttpClient`, node:http(s) by default) instead of axios. Requests are unchanged on the wire except that no `User-Agent: axios/…` and `Accept-Encoding` headers are sent; error responses still reject with `HttpClientException` (codes `ERR_BAD_REQUEST`/`ERR_BAD_RESPONSE`, `ECONNABORTED` on timeout, node codes like `ECONNREFUSED`)
+- Response bodies are returned as received; axios re-serialized JSON-looking bodies
+- Responses are validated with Effect Schema. `validateParseResult(schema, value)` replaces `validateParseResult(codec.decode(value))`, the old form is deprecated but still accepted. Types formerly derived from io-ts codecs (`AtcRunResult`, `AtcWorkList`, `AtcProposal`, `UriParts`, `Range`, `UnitTestOccurrenceMarker`, trace results, …) are explicit interfaces with the same shape
+- Requires Node.js 20.19 or later (`require` of ES modules), `npm test` runs Jest with `--experimental-vm-modules`
+
 ### Added
 
+- `AdtEffect`: Effect native surface with the `AdtClientService` service, `layer`/`layerNode`/`fromClient` layers, `effectify` and tagged errors (`AdtServerError`, `AdtCsrfError`, `AdtHttpError`, `AdtSessionError`)
+- `ClientOptions.effectHttpClient`, `EffectHttpClient`, `nodeHttpClientLayer` and `makeNodeHttpClient` to run on any Effect `HttpClient` (i.e. fetch in browsers)
 - `ClientOptions.session`: an `AdtSessionProvider` supplies and renews cookies from outside the library (e.g. browser SSO). Login keeps imported cookies and sends no Basic credentials, a renewal is coalesced and a stateless read is replayed once. Stateful calls and writes are not replayed unless `canRetry` allows it, and `logoutMode: "local-only"` skips the SAP logoff call. Cookie values are redacted from debug callbacks and thrown exceptions
 - `AdtHTTP.session` / `ADTClient.session`: public cookie and CSRF state (`importCookies`, `clearCookies`, `cookieHeader`, `resetCsrfToken`), cookies expired by the server are now removed
 - `ClientOptions.extensions`: ordered request/response middleware with immutable requests (`withRequest`); extensions never see credentials or cookies

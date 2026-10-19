@@ -14,7 +14,8 @@ import {
 } from "."
 import { logError, logResponse, redactSensitiveHeaders } from "./requestLogger"
 import { isString } from "./utilities"
-import { AxiosHttpClient } from "./AxiosHttpClient"
+import { EffectHttpClient } from "./EffectHttpClient"
+import type { HttpClient as EffectHttp } from "effect/http"
 import {
   AdtExtension,
   AdtRequest,
@@ -89,6 +90,11 @@ export interface ClientOptions {
   session?: AdtSessionProvider
   /** Ordered request/response middleware */
   extensions?: readonly AdtExtension[]
+  /**
+   * Effect HTTP client used when the client is created from a base url,
+   * i.e. FetchHttpClient in a browser. Defaults to the node:http(s) client
+   */
+  effectHttpClient?: EffectHttp.HttpClient
 }
 
 export interface RequestOptions extends ClientOptions {
@@ -252,7 +258,7 @@ export class AdtHTTP {
       [CSRF_TOKEN_HEADER]: FETCH_CSRF_TOKEN
     }
     this.httpclient = isString(baseURLOrClient)
-      ? new AxiosHttpClient(baseURLOrClient, config)
+      ? new EffectHttpClient(baseURLOrClient, config, config?.effectHttpClient)
       : baseURLOrClient
     this.debugCallback = config?.debugCallback
     this.provider = config?.session

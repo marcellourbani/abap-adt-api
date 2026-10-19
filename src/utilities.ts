@@ -1,5 +1,5 @@
 import { XMLParser, strnumOptions, X2jOptions } from "fast-xml-parser"
-import * as t from "io-ts"
+import { Effect, Schema } from "effect"
 export { encode as encodeEntity } from "html-entities"
 import { encode } from "html-entities"
 
@@ -30,8 +30,11 @@ export function JSON2AbapXML(original: any, root: string = "DATA") {
   </asx:abap>`
 }
 
-export const xmlArrayType = <C extends t.Mixed>(x: C) =>
-  t.union([t.array(x), x, t.undefined])
+/** a repeated XML element: one object, an array of them or nothing (a missing key is accepted) */
+export const xmlArrayType = <S extends Schema.Top>(x: S) =>
+  Schema.Union([Schema.mutable(Schema.Array(x)), x, Schema.Undefined]).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(undefined))
+  )
 export const extractXmlArray = <T>(x: T | T[] | undefined): T[] =>
   x ? (isArray(x) ? x : [x]) : []
 
@@ -222,12 +225,23 @@ export const toXmlAttributes = (o: any, prefix: string) => {
 
 export type Clean<T> = Pick<T, keyof T>
 
-export const orUndefined = <T extends t.Mixed>(x: T) =>
-  t.union([t.undefined, x])
+/** required key whose value may be undefined, a missing key decodes to undefined (io-ts semantics) */
+export const orUndefined = <S extends Schema.Top>(x: S) =>
+  Schema.UndefinedOr(x).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(undefined))
+  )
 
-export function mixed<R extends t.Props, O extends t.Props>(
-  required: R,
-  optional: O
-): t.IntersectionC<[t.TypeC<R>, t.PartialC<O>]> {
-  return t.intersection([t.type(required), t.partial(optional)])
+type OptionalFields<O extends Schema.Struct.Fields> = {
+  [K in keyof O]: Schema.optional<O[K]>
+}
+
+/** struct with required and optional fields, the replacement of io-ts intersection(type, partial) */
+export function mixed<
+  R extends Schema.Struct.Fields,
+  O extends Schema.Struct.Fields
+>(required: R, optional: O) {
+  const opt = Object.fromEntries(
+    Object.entries(optional).map(([k, v]) => [k, Schema.optional(v)])
+  ) as OptionalFields<O>
+  return Schema.Struct({ ...required, ...opt })
 }

@@ -1,4 +1,5 @@
-import * as t from "io-ts"
+import { Schema } from "effect"
+import type { DeepMutable } from "effect/Types"
 import {
   extractXmlArray,
   fullParse,
@@ -12,12 +13,12 @@ import {
 } from "../utilities"
 import { validateParseResult } from "../AdtException"
 
-const contributorClass = t.type({ name: t.string })
-const link = t.type({
-  "@_href": t.string,
-  "@_rel": t.string,
-  "@_type": t.string,
-  "@_title": t.string
+const contributorClass = Schema.Struct({ name: Schema.String })
+const link = Schema.Struct({
+  "@_href": Schema.String,
+  "@_rel": Schema.String,
+  "@_type": Schema.String,
+  "@_title": Schema.String
 })
 
 // A	Active
@@ -27,72 +28,72 @@ const link = t.type({
 // T	TimeLim
 // C	Close Error
 
-const state = t.type({ "@_value": t.string, "@_text": t.string })
+const state = Schema.Struct({ "@_value": Schema.String, "@_text": Schema.String })
 
-const extendedData = t.type({
-  host: t.string,
-  size: t.number,
-  runtime: t.number,
-  runtimeABAP: t.number,
-  runtimeSystem: t.number,
-  runtimeDatabase: t.number,
-  expiration: t.string,
-  system: t.string,
-  client: t.number,
-  isAggregated: t.boolean,
-  aggregationKind: orUndefined(t.string),
-  objectName: t.string,
+const extendedData = Schema.Struct({
+  host: Schema.String,
+  size: Schema.Number,
+  runtime: Schema.Number,
+  runtimeABAP: Schema.Number,
+  runtimeSystem: Schema.Number,
+  runtimeDatabase: Schema.Number,
+  expiration: Schema.String,
+  system: Schema.String,
+  client: Schema.Number,
+  isAggregated: Schema.Boolean,
+  aggregationKind: orUndefined(Schema.String),
+  objectName: Schema.String,
   state: state
 })
 
-const entryAuthor = t.type({ name: t.string, uri: t.string })
-const entry = t.type({
+const entryAuthor = Schema.Struct({ name: Schema.String, uri: Schema.String })
+const entry = Schema.Struct({
   author: entryAuthor,
-  content: t.type({
-    "@_type": t.string,
-    "@_src": t.string
+  content: Schema.Struct({
+    "@_type": Schema.String,
+    "@_src": Schema.String
   }),
-  id: t.string,
+  id: Schema.String,
   link: xmlArrayType(link),
-  published: t.string,
-  title: t.string,
-  updated: t.string,
+  published: Schema.String,
+  title: Schema.String,
+  updated: Schema.String,
   extendedData: extendedData,
-  "@_lang": t.string
+  "@_lang": Schema.String
 })
 
-const feed = t.type({
+const feed = Schema.Struct({
   author: contributorClass,
   contributor: contributorClass,
-  title: t.string,
-  updated: t.string,
+  title: Schema.String,
+  updated: Schema.String,
   entry: xmlArrayType(entry)
 })
-const traceResults = t.type({ feed: feed })
+const traceResults = Schema.Struct({ feed: feed })
 
-const time = t.type({
-  "@_time": t.number,
-  "@_percentage": t.number
+const time = Schema.Struct({
+  "@_time": Schema.Number,
+  "@_percentage": Schema.Number
 })
 
-const baseLink = t.type({
-  "@_rel": t.string,
-  "@_href": t.string
+const baseLink = Schema.Struct({
+  "@_rel": Schema.String,
+  "@_href": Schema.String
 })
 
-const calledProgram = t.type({ "@_context": t.string })
+const calledProgram = Schema.Struct({ "@_context": Schema.String })
 
 const callingProgram = mixed(
   {
-    "@_context": t.string,
-    "@_byteCodeOffset": t.number
+    "@_context": Schema.String,
+    "@_byteCodeOffset": Schema.Number
   },
   {
-    "@_uri": t.string,
-    "@_type": t.string,
-    "@_name": t.string,
-    "@_packageName": t.string,
-    "@_objectReferenceQuery": t.string
+    "@_uri": Schema.String,
+    "@_type": Schema.String,
+    "@_name": Schema.String,
+    "@_packageName": Schema.String,
+    "@_objectReferenceQuery": Schema.String
   }
 )
 
@@ -102,76 +103,72 @@ const hlentry = mixed(
     grossTime: time,
     traceEventNetTime: time,
     proceduralNetTime: time,
-    "@_topDownIndex": t.number,
-    "@_index": t.number,
-    "@_hitCount": t.number,
-    "@_recursionDepth": t.number,
-    "@_description": t.string
+    "@_topDownIndex": Schema.Number,
+    "@_index": Schema.Number,
+    "@_hitCount": Schema.Number,
+    "@_recursionDepth": Schema.Number,
+    "@_description": Schema.String
   },
   {
     callingProgram: callingProgram,
-    "@_stackCount": t.number,
-    "@_proceduralEntryAnchor": t.number,
-    "@_dbAccessAnchor": t.number
+    "@_stackCount": Schema.Number,
+    "@_proceduralEntryAnchor": Schema.Number,
+    "@_dbAccessAnchor": Schema.Number
   }
 )
 
-const Hitlist = t.type({
+const Hitlist = Schema.Struct({
   link: baseLink,
   entry: xmlArrayType(hlentry)
 })
 
-const HitListResponse = t.type({ hitlist: Hitlist })
+const HitListResponse = Schema.Struct({ hitlist: Hitlist })
 ///
 
-const accessTime = t.type({
-  "@_total": t.number,
-  "@_applicationServer": t.number,
-  "@_database": t.number,
-  "@_ratioOfTraceTotal": t.number
+const accessTime = Schema.Struct({
+  "@_total": Schema.Number,
+  "@_applicationServer": Schema.Number,
+  "@_database": Schema.Number,
+  "@_ratioOfTraceTotal": Schema.Number
 })
 
 const dBAccess = mixed(
   {
     accessTime: accessTime,
-    "@_index": t.number,
-    "@_tableName": t.string,
-    "@_statement": t.string,
-    "@_type": t.union([
-      t.literal("EXEC SQL"),
-      t.literal("OpenSQL"),
-      t.literal("")
-    ]),
-    "@_totalCount": t.number,
-    "@_bufferedCount": t.number
+    "@_index": Schema.Number,
+    "@_tableName": Schema.String,
+    "@_statement": Schema.String,
+    "@_type": Schema.Literals(["EXEC SQL", "OpenSQL", ""]),
+    "@_totalCount": Schema.Number,
+    "@_bufferedCount": Schema.Number
   },
   {
     callingProgram: callingProgram
   }
 )
 
-const dBAccesses = t.type({
+const dBAccesses = Schema.Struct({
   link: baseLink,
   dbAccess: xmlArrayType(dBAccess),
-  tables: t.union([
-    t.type({
+  tables: Schema.Union([
+    Schema.Struct({
       table: xmlArrayType(
-        t.type({
-          "@_name": t.string,
-          "@_type": t.string,
-          "@_description": t.string,
-          "@_bufferMode": t.string,
-          "@_storageType": t.string,
-          "@_package": t.string
+        Schema.Struct({
+          "@_name": Schema.String,
+          "@_type": Schema.String,
+          "@_description": Schema.String,
+          "@_bufferMode": Schema.String,
+          "@_storageType": Schema.String,
+          "@_package": Schema.String
         })
       )
     }),
-    t.literal("")
+    Schema.Literal("")
   ]),
-  "@_totalDbTime": t.number
+  "@_totalDbTime": Schema.Number
 })
 
-const traceDBAccesResponse = t.type({ dbAccesses: dBAccesses })
+const traceDBAccesResponse = Schema.Struct({ dbAccesses: dBAccesses })
 ///
 const statement = mixed(
   {
@@ -179,119 +176,122 @@ const statement = mixed(
     grossTime: time,
     traceEventNetTime: time,
     proceduralNetTime: time,
-    "@_index": t.number,
-    "@_id": t.number,
-    "@_description": t.string,
-    "@_hitCount": t.number,
-    "@_hasDetailSubnodes": t.boolean,
-    "@_hasProcedureLikeSubnodes": t.boolean,
-    "@_callerId": t.number,
-    "@_callLevel": t.number,
-    "@_subnodeCount": t.number,
-    "@_directSubnodeCount": t.number,
-    "@_directSubnodeCountProcedureLike": t.number,
-    "@_hitlistAnchor": t.number
+    "@_index": Schema.Number,
+    "@_id": Schema.Number,
+    "@_description": Schema.String,
+    "@_hitCount": Schema.Number,
+    "@_hasDetailSubnodes": Schema.Boolean,
+    "@_hasProcedureLikeSubnodes": Schema.Boolean,
+    "@_callerId": Schema.Number,
+    "@_callLevel": Schema.Number,
+    "@_subnodeCount": Schema.Number,
+    "@_directSubnodeCount": Schema.Number,
+    "@_directSubnodeCountProcedureLike": Schema.Number,
+    "@_hitlistAnchor": Schema.Number
   },
   {
-    "@_isProcedureLike": t.boolean,
-    "@_isProceduralUnit": t.boolean,
-    "@_isAutoDrillDowned": t.boolean,
-    "@_calltreeAnchor": t.number,
-    "@_moduleHitlistAnchor": t.number
+    "@_isProcedureLike": Schema.Boolean,
+    "@_isProceduralUnit": Schema.Boolean,
+    "@_isAutoDrillDowned": Schema.Boolean,
+    "@_calltreeAnchor": Schema.Number,
+    "@_moduleHitlistAnchor": Schema.Number
   }
 )
 
-const traceStatementResponse = t.type({
-  statements: t.type({
+const traceStatementResponse = Schema.Struct({
+  statements: Schema.Struct({
     link: baseLink,
     statement: xmlArrayType(statement),
-    "@_withDetails": t.boolean,
-    "@_withSysEvents": t.boolean,
-    "@_count": t.union([t.number, t.string])
+    "@_withDetails": Schema.Boolean,
+    "@_withSysEvents": Schema.Boolean,
+    "@_count": Schema.Union([Schema.Number, Schema.String])
   })
 })
 
 ///
 
-const author = t.type({
-  name: t.string,
-  uri: t.string,
-  "@_role": t.string
+const author = Schema.Struct({
+  name: Schema.String,
+  uri: Schema.String,
+  "@_role": Schema.String
 })
 
-const client = t.partial({
-  "#text": orUndefined(t.number),
-  "@_role": t.string
+const client = mixed(
+  {},
+  {
+    "#text": Schema.Number,
+    "@_role": Schema.String
+  }
+)
+
+const executions = Schema.Struct({
+  "@_maximal": Schema.Number,
+  "@_completed": Schema.Number
 })
 
-const executions = t.type({
-  "@_maximal": t.number,
-  "@_completed": t.number
-})
-
-const rawProcessTypes = t.union([
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/any"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/http"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc"),
-  t.literal(
-    "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea"
-  )
+const rawProcessTypes = Schema.Literals([
+  "/sap/bc/adt/runtime/traces/abaptraces/processtypes/any",
+  "/sap/bc/adt/runtime/traces/abaptraces/processtypes/http",
+  "/sap/bc/adt/runtime/traces/abaptraces/processtypes/dialog",
+  "/sap/bc/adt/runtime/traces/abaptraces/processtypes/batch",
+  "/sap/bc/adt/runtime/traces/abaptraces/processtypes/rfc",
+  "/sap/bc/adt/runtime/traces/abaptraces/processtypes/sharedobjectsarea"
 ])
 
-const rawObjectTypes = t.union([
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/any"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/transaction"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/report"),
-  t.literal("/sap/bc/adt/runtime/traces/abaptraces/objecttypes/functionmodule"),
-  t.literal(
-    "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/sharedobjectarea"
-  )
+const rawObjectTypes = Schema.Literals([
+  "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/any",
+  "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/url",
+  "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/transaction",
+  "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/report",
+  "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/functionmodule",
+  "/sap/bc/adt/runtime/traces/abaptraces/objecttypes/sharedobjectarea"
 ])
-type RawObjectTypes = t.TypeOf<typeof rawObjectTypes>
-type RawProcessTypes = t.TypeOf<typeof rawProcessTypes>
-const traceListextendedData = t.type({
-  host: t.string,
-  requestIndex: t.number,
+type RawObjectTypes = typeof rawObjectTypes.Type
+type RawProcessTypes = typeof rawProcessTypes.Type
+const traceListextendedData = Schema.Struct({
+  host: Schema.String,
+  requestIndex: Schema.Number,
   client: xmlArrayType(client),
-  description: t.string,
-  isAggregated: t.boolean,
-  expires: t.string,
-  processType: t.type({ "@_processTypeId": rawProcessTypes }),
-  object: t.type({ "@_objectTypeId": rawObjectTypes }),
+  description: Schema.String,
+  isAggregated: Schema.Boolean,
+  expires: Schema.String,
+  processType: Schema.Struct({ "@_processTypeId": rawProcessTypes }),
+  object: Schema.Struct({ "@_objectTypeId": rawObjectTypes }),
   executions: executions
 })
 
 const traceListEntry = mixed(
   {
-    id: t.string,
+    id: Schema.String,
     author: xmlArrayType(author),
-    content: t.type({
-      "@_type": t.string,
-      "@_src": t.string
+    content: Schema.Struct({
+      "@_type": Schema.String,
+      "@_src": Schema.String
     }),
-    published: t.string,
-    title: t.string,
-    updated: t.string,
+    published: Schema.String,
+    title: Schema.String,
+    updated: Schema.String,
     extendedData: traceListextendedData,
-    "@_lang": t.string
+    "@_lang": Schema.String
   },
   {
     link: xmlArrayType(link)
   }
 )
-const tlFeed = t.type({
-  contributor: t.type({
-    name: t.string,
-    "@_role": t.string
+const tlFeed = Schema.Struct({
+  contributor: Schema.Struct({
+    name: Schema.String,
+    "@_role": Schema.String
   }),
-  title: t.string,
-  updated: t.string,
+  title: Schema.String,
+  updated: Schema.String,
   entry: xmlArrayType(traceListEntry)
 })
-const tracesListRequest = t.type({ feed: tlFeed })
+const tracesListRequest = Schema.Struct({ feed: tlFeed })
+
+/** validates a parsed response, typed as the mutable shape io-ts used to infer */
+const validate = <S extends Schema.Top>(schema: S, x: unknown) =>
+  validateParseResult(schema, x) as DeepMutable<S["Type"]>
 
 export interface TraceResults {
   author: string
@@ -630,8 +630,7 @@ export interface TracesCreationConfig {
   parametersId: string
 }
 
-const parseRawTrace = (x: unknown) =>
-  validateParseResult(traceResults.decode(x)).feed
+const parseRawTrace = (x: unknown) => validate(traceResults, x).feed
 
 export const parseTraceResults = (xml: string): TraceResults => {
   const raw = parseRawTrace(fullParse(xml, { removeNSPrefix: true }))
@@ -677,8 +676,9 @@ export const parseTraceResults = (xml: string): TraceResults => {
 }
 
 export const parseTraceHitList = (xml: string): TraceHitList => {
-  const raw = validateParseResult(
-    HitListResponse.decode(fullParse(xml, { removeNSPrefix: true }))
+  const raw = validate(
+    HitListResponse,
+    fullParse(xml, { removeNSPrefix: true })
   ).hitlist
   const parentLink = raw.link["@_href"]
   const entries = extractXmlArray(raw.entry).map(e => {
@@ -704,8 +704,7 @@ export const parseTraceHitList = (xml: string): TraceHitList => {
 
 export const parseTraceDbAccess = (xml: string): TraceDBAccessResponse => {
   const toParse = fullParse(xml, { removeNSPrefix: true })
-  const parsed = traceDBAccesResponse.decode(toParse)
-  const raw = validateParseResult(parsed).dbAccesses
+  const raw = validate(traceDBAccesResponse, toParse).dbAccesses
   const parentLink = raw.link["@_href"]
   const dbaccesses = extractXmlArray(raw.dbAccess).map(a => {
     const callingProgram = a.callingProgram && typedNodeAttr(a.callingProgram)
@@ -727,8 +726,9 @@ const parseCount = (count: string | number) => {
 }
 
 export const parseTraceStatements = (xml: string) => {
-  const raw = validateParseResult(
-    traceStatementResponse.decode(fullParse(xml, { removeNSPrefix: true }))
+  const raw = validate(
+    traceStatementResponse,
+    fullParse(xml, { removeNSPrefix: true })
   ).statements
 
   const parentLink = raw.link["@_href"]
@@ -751,8 +751,10 @@ export const parseTraceStatements = (xml: string) => {
 }
 
 export const parseTraceRequestList = (xml: string): TraceRequestList => {
-  const raw = tracesListRequest.decode(fullParse(xml, { removeNSPrefix: true }))
-  const parsed = validateParseResult(raw).feed
+  const parsed = validate(
+    tracesListRequest,
+    fullParse(xml, { removeNSPrefix: true })
+  ).feed
   const {
     contributor: { name: contributorName, "@_role": contributorRole },
     title

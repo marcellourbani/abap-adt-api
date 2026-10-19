@@ -1,6 +1,6 @@
+import { Schema } from "effect"
 import { AdtHTTP } from "../AdtHTTP"
 import {
-  Clean,
   encodeEntity,
   fullParse,
   isString,
@@ -12,94 +12,87 @@ import {
   xmlNode,
   xmlNodeAttr
 } from "../utilities"
-import * as t from "io-ts"
 import { adtException, isErrorMessageType, validateParseResult } from ".."
-import { parseUri, uriParts } from "./urlparser"
-const exemptionKind = t.union([
-  t.literal("A"),
-  t.literal("I"),
-  t.literal(""),
-  t.string
-]) // SATC_AC_RSLT_XMPT_KIND Atc based/Inline/none
+import { parseUri, UriParts, uriParts } from "./urlparser"
+
+// SATC_AC_RSLT_XMPT_KIND Atc based/Inline/none
+const exemptionKind = Schema.Union([
+  Schema.Literals(["A", "I", ""]),
+  Schema.String
+])
 const proposalFinding = mixed(
   {
-    uri: t.string,
-    type: t.string,
-    name: t.string,
-    location: t.string,
-    processor: t.string,
-    lastChangedBy: t.string,
-    priority: t.number,
-    checkId: t.string,
-    checkTitle: t.string,
-    messageId: t.string,
-    messageTitle: t.string,
-    exemptionApproval: t.string,
+    uri: Schema.String,
+    type: Schema.String,
+    name: Schema.String,
+    location: Schema.String,
+    processor: Schema.String,
+    lastChangedBy: Schema.String,
+    priority: Schema.Number,
+    checkId: Schema.String,
+    checkTitle: Schema.String,
+    messageId: Schema.String,
+    messageTitle: Schema.String,
+    exemptionApproval: Schema.String,
     exemptionKind, // SATC_AC_RSLT_XMPT_KIND Atc based/Inline/none
-    checksum: t.number,
-    quickfixInfo: t.string
+    checksum: Schema.Number,
+    quickfixInfo: Schema.String
   },
   {
-    quickfixes: t.partial({
-      automatic: t.boolean,
-      manual: t.boolean,
-      pseudo: t.boolean
-    })
+    quickfixes: mixed(
+      {},
+      {
+        automatic: Schema.Boolean,
+        manual: Schema.Boolean,
+        pseudo: Schema.Boolean
+      }
+    )
   }
 )
 
-const restriction = t.type({
-  enabled: t.boolean,
-  singlefinding: t.boolean,
-  rangeOfFindings: t.type({
-    enabled: t.boolean,
-    restrictByObject: t.type({
-      object: t.boolean,
-      package: t.boolean,
-      subobject: t.boolean,
-      target: t.union([
-        t.literal("subobject"),
-        t.literal("object"),
-        t.literal("package"),
-        t.literal("")
-      ])
+const restriction = Schema.Struct({
+  enabled: Schema.Boolean,
+  singlefinding: Schema.Boolean,
+  rangeOfFindings: Schema.Struct({
+    enabled: Schema.Boolean,
+    restrictByObject: Schema.Struct({
+      object: Schema.Boolean,
+      package: Schema.Boolean,
+      subobject: Schema.Boolean,
+      target: Schema.Literals(["subobject", "object", "package", ""])
     }),
-    restrictByCheck: t.type({
-      check: t.boolean,
-      message: t.boolean,
-      target: t.union([t.literal("message"), t.literal("check"), t.literal("")])
+    restrictByCheck: Schema.Struct({
+      check: Schema.Boolean,
+      message: Schema.Boolean,
+      target: Schema.Literals(["message", "check", ""])
     })
   })
 })
 
 const atcProposal = mixed(
   {
-    finding: t.union([proposalFinding, t.string]),
-    package: t.string,
-    subObject: t.string,
-    subObjectType: t.string,
-    subObjectTypeDescr: t.string,
-    objectTypeDescr: t.string,
-    approver: t.string,
-    reason: t.union([t.literal("FPOS"), t.literal("OTHR"), t.literal("")]),
-    justification: t.string,
-    notify: t.union([
-      t.literal("never"),
-      t.literal("on_rejection"),
-      t.literal("always")
-    ]),
+    finding: Schema.Union([proposalFinding, Schema.String]),
+    package: Schema.String,
+    subObject: Schema.String,
+    subObjectType: Schema.String,
+    subObjectTypeDescr: Schema.String,
+    objectTypeDescr: Schema.String,
+    approver: Schema.String,
+    reason: Schema.Literals(["FPOS", "OTHR", ""]),
+    justification: Schema.String,
+    notify: Schema.Literals(["never", "on_rejection", "always"]),
     restriction: restriction
   },
   {
-    apprIsArea: t.string,
-    checkClass: t.string,
-    validUntil: t.string
+    apprIsArea: Schema.String,
+    checkClass: Schema.String,
+    validUntil: Schema.String
   }
 )
 
-const atcProposalMessage = t.type({
-  type: t.string,
-  message: t.string
+const atcProposalMessage = Schema.Struct({
+  type: Schema.String,
+  message: Schema.String
 })
 export interface RestrictByObject {
   object: boolean
@@ -108,89 +101,182 @@ export interface RestrictByObject {
   text: string
 }
 
-const atcRunResultInfo = t.type({
-  type: t.string,
-  description: t.string
+const atcRunResultInfo = Schema.Struct({
+  type: Schema.String,
+  description: Schema.String
 })
 
-const atcRunResult = t.type({
-  id: t.string,
-  timestamp: t.number,
-  infos: t.array(atcRunResultInfo)
+const atcRunResult = Schema.Struct({
+  id: Schema.String,
+  timestamp: Schema.Number,
+  infos: Schema.Array(atcRunResultInfo)
 })
 
-const atcExcemption = t.type({
-  id: t.string,
-  justificationMandatory: t.boolean,
-  title: t.string
+const atcExcemption = Schema.Struct({
+  id: Schema.String,
+  justificationMandatory: Schema.Boolean,
+  title: Schema.String
 })
 
-const atcProperty = t.type({
-  name: t.string,
-  value: t.union([t.boolean, t.string])
+const atcProperty = Schema.Struct({
+  name: Schema.String,
+  value: Schema.Union([Schema.Boolean, Schema.String])
 })
 
-const atcCustomizingi = t.type({
-  properties: t.array(atcProperty),
-  excemptions: t.array(atcExcemption)
+const atcCustomizingi = Schema.Struct({
+  properties: Schema.Array(atcProperty),
+  excemptions: Schema.Array(atcExcemption)
 })
 
-const objectSet = t.type({
-  name: t.string,
-  title: t.string,
-  kind: t.string
+const objectSet = Schema.Struct({
+  name: Schema.String,
+  title: Schema.String,
+  kind: Schema.String
 })
 
-const link = t.type({
-  href: t.string,
-  rel: t.string,
-  type: t.string
+const link = Schema.Struct({
+  href: Schema.String,
+  rel: Schema.String,
+  type: Schema.String
 })
 
-const finding = t.type({
-  uri: t.string,
+const finding = Schema.Struct({
+  uri: Schema.String,
   location: uriParts,
-  priority: t.number,
-  checkId: t.string,
-  checkTitle: t.string,
-  messageId: t.string,
-  messageTitle: t.string,
-  exemptionApproval: t.string,
+  priority: Schema.Number,
+  checkId: Schema.String,
+  checkTitle: Schema.String,
+  messageId: Schema.String,
+  messageTitle: Schema.String,
+  exemptionApproval: Schema.String,
   exemptionKind,
-  quickfixInfo: orUndefined(t.string),
+  quickfixInfo: orUndefined(Schema.String),
   link: link
 })
-const object = t.type({
-  uri: t.string,
-  type: t.string,
-  name: t.string,
-  packageName: t.string,
-  author: t.string,
-  objectTypeId: orUndefined(t.string),
-  findings: t.array(finding)
+const object = Schema.Struct({
+  uri: Schema.String,
+  type: Schema.String,
+  name: Schema.String,
+  packageName: Schema.String,
+  author: Schema.String,
+  objectTypeId: orUndefined(Schema.String),
+  findings: Schema.Array(finding)
 })
-const atcWorklist = t.type({
-  id: t.string,
-  timestamp: t.number,
-  usedObjectSet: t.string,
-  objectSetIsComplete: t.boolean,
-  objectSets: t.array(objectSet),
-  objects: t.array(object)
-})
-
-const atcUser = t.type({
-  id: t.string,
-  title: t.string
+const atcWorklist = Schema.Struct({
+  id: Schema.String,
+  timestamp: Schema.Number,
+  usedObjectSet: Schema.String,
+  objectSetIsComplete: Schema.Boolean,
+  objectSets: Schema.Array(objectSet),
+  objects: Schema.Array(object)
 })
 
-export type AtcRunResult = Clean<t.TypeOf<typeof atcRunResult>>
-export type AtcCustomizing = Clean<t.TypeOf<typeof atcCustomizingi>>
-export type AtcWorkList = Clean<t.TypeOf<typeof atcWorklist>>
-export type AtcUser = Clean<t.TypeOf<typeof atcUser>>
-export type AtcProposal = Clean<t.TypeOf<typeof atcProposal>>
-export type AtcProposalMessage = Clean<t.TypeOf<typeof atcProposalMessage>>
+const atcUser = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String
+})
 
-export const isProposalMessage = atcProposalMessage.is
+/** the public types, same shape io-ts used to infer: mutable, required keys stay required */
+export interface AtcRunResult {
+  id: string
+  timestamp: number
+  infos: { type: string; description: string }[]
+}
+export interface AtcCustomizing {
+  properties: { name: string; value: boolean | string }[]
+  excemptions: { id: string; justificationMandatory: boolean; title: string }[]
+}
+export interface AtcWorkList {
+  id: string
+  timestamp: number
+  usedObjectSet: string
+  objectSetIsComplete: boolean
+  objectSets: { name: string; title: string; kind: string }[]
+  objects: {
+    uri: string
+    type: string
+    name: string
+    packageName: string
+    author: string
+    objectTypeId: string | undefined
+    findings: {
+      uri: string
+      location: UriParts
+      priority: number
+      checkId: string
+      checkTitle: string
+      messageId: string
+      messageTitle: string
+      exemptionApproval: string
+      exemptionKind: string
+      quickfixInfo: string | undefined
+      link: { href: string; rel: string; type: string }
+    }[]
+  }[]
+}
+export interface AtcUser {
+  id: string
+  title: string
+}
+export interface AtcProposal {
+  finding:
+    | {
+        uri: string
+        type: string
+        name: string
+        location: string
+        processor: string
+        lastChangedBy: string
+        priority: number
+        checkId: string
+        checkTitle: string
+        messageId: string
+        messageTitle: string
+        exemptionApproval: string
+        exemptionKind: string
+        checksum: number
+        quickfixInfo: string
+        quickfixes?: { automatic?: boolean; manual?: boolean; pseudo?: boolean }
+      }
+    | string
+  package: string
+  subObject: string
+  subObjectType: string
+  subObjectTypeDescr: string
+  objectTypeDescr: string
+  approver: string
+  reason: "FPOS" | "OTHR" | ""
+  justification: string
+  notify: "never" | "on_rejection" | "always"
+  restriction: {
+    enabled: boolean
+    singlefinding: boolean
+    rangeOfFindings: {
+      enabled: boolean
+      restrictByObject: {
+        object: boolean
+        package: boolean
+        subobject: boolean
+        target: "subobject" | "object" | "package" | ""
+      }
+      restrictByCheck: {
+        check: boolean
+        message: boolean
+        target: "message" | "check" | ""
+      }
+    }
+  }
+  apprIsArea?: string
+  checkClass?: string
+  validUntil?: string
+}
+export interface AtcProposalMessage {
+  type: string
+  message: string
+}
+
+export const isProposalMessage = (u: unknown): u is AtcProposalMessage =>
+  Schema.is(atcProposalMessage)(u)
 
 export async function atcCustomizing(h: AdtHTTP): Promise<AtcCustomizing> {
   const headers = {
@@ -212,7 +298,7 @@ export async function atcCustomizing(h: AdtHTTP): Promise<AtcCustomizing> {
     "reason"
   ).map(xmlNodeAttr)
   const retval = { properties, excemptions }
-  return validateParseResult(atcCustomizingi.decode(retval))
+  return validateParseResult(atcCustomizingi, retval) as AtcCustomizing
 }
 
 export async function atcCheckVariant(
@@ -259,7 +345,7 @@ export async function createAtcRun(
   const ts = xmlNode(raw, "worklistRun", "worklistTimestamp")
   const infos = xmlArray(raw, "worklistRun", "infos", "info")
   const retval = { id, timestamp: new Date(ts).getTime() / 1000, infos }
-  return validateParseResult(atcRunResult.decode(retval))
+  return validateParseResult(atcRunResult, retval) as AtcRunResult
 }
 
 export async function atcWorklists(
@@ -306,7 +392,7 @@ export async function atcWorklists(
   })
   const ts = new Date(attrs.timestamp).getTime() / 1000
   const result = { ...attrs, timestamp: ts, objectSets, objects }
-  return validateParseResult(atcWorklist.decode(result))
+  return validateParseResult(atcWorklist, result) as AtcWorkList
 }
 
 export async function atcUsers(h: AdtHTTP): Promise<AtcUser[]> {
@@ -318,7 +404,7 @@ export async function atcUsers(h: AdtHTTP): Promise<AtcUser[]> {
     parseAttributeValue: false
   })
   const users = xmlArray(raw, "feed", "entry")
-  return validateParseResult(t.array(atcUser).decode(users))
+  return validateParseResult(Schema.Array(atcUser), users) as AtcUser[]
 }
 
 export async function atcExemptProposal(
@@ -342,7 +428,7 @@ export async function atcExemptProposal(
   const { message, type } = xmlNode(raw, "exemptionApply", "status") || {}
   if (isErrorMessageType(type)) throw adtException(message)
   if (message && type)
-    return validateParseResult(atcProposalMessage.decode({ message, type }))
+    return validateParseResult(atcProposalMessage, { message, type }) as AtcProposalMessage
   const finding = isString(root.finding)
     ? root.finding
     : xmlNodeAttr(xmlNode(root, "finding"))
@@ -405,7 +491,7 @@ export async function atcExemptProposal(
       }
     }
   }
-  return validateParseResult(atcProposal.decode(result))
+  return validateParseResult(atcProposal, result) as AtcProposal
 }
 
 export async function atcDocumentation(h: AdtHTTP, docUri: string) {
@@ -506,9 +592,9 @@ export async function atcRequestExemption(
     parseTagValue: false,
     parseAttributeValue: false
   })
-  const result = validateParseResult(atcProposalMessage.decode(raw?.status))
+  const result = validateParseResult(atcProposalMessage, raw?.status) as AtcProposalMessage
   if (isErrorMessageType(result.type)) throw adtException(result.message)
-  return validateParseResult(atcProposalMessage.decode(result))
+  return result
 }
 
 export async function atcContactUri(
@@ -536,7 +622,7 @@ export async function atcContactUri(
     parseAttributeValue: false
   })
   const { uri } = xmlNodeAttr(xmlNode(raw, "items", "item"))
-  return validateParseResult(t.string.decode(uri))
+  return validateParseResult(Schema.String, uri)
 }
 
 export async function atcChangeContact(

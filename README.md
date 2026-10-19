@@ -22,9 +22,35 @@ const client = new ADTClient(
 const nodes = await client.nodeContents("DEVC/K", "$TMP")
 ```
 
+## Effect
+
+The library is built on [Effect](https://effect.website) (v4): responses are validated with Effect Schema and requests go through the Effect HTTP client. `ADTClient` keeps its promise API, `AdtEffect` exposes the same operations as effects with tagged errors (`AdtServerError`, `AdtCsrfError`, `AdtHttpError`, `AdtSessionError`, the original exception is the `cause`):
+
+```typescript
+import { Effect } from "effect"
+import { AdtEffect } from "abap-adt-api"
+
+const program = Effect.gen(function* () {
+  const adt = yield* AdtEffect.AdtClientService
+  return yield* adt.nodeContents("DEVC/K", "$TMP")
+}).pipe(Effect.catchTag("AdtHttpError", e => Effect.die(e.cause)))
+
+const AdtLive = AdtEffect.layerNode({
+  url: "http://vhcalnplci.bti.local:8000",
+  username: "developer",
+  password: "mypassword"
+}) // logs out when the layer is released
+
+const nodes = await Effect.runPromise(Effect.provide(program, AdtLive))
+```
+
+- `AdtEffect.layer(config)` takes the Effect `HttpClient` from the context, i.e. `FetchHttpClient.layer` in a browser; `layerNode(config)` uses node:http(s) and honours `options.httpsAgent`
+- `AdtEffect.fromClient(client)` / `AdtEffect.effectify(client)` wrap an existing `ADTClient`
+- `ClientOptions.effectHttpClient` runs the promise API on any Effect `HttpClient`
+
 ## Testing
 
-`npm test` runs Jest. Unit/mock tests use sample data in `testdata/src/` and don't need a SAP system.
+`npm test` runs Jest (with `--experimental-vm-modules`, Effect is ESM only). Unit/mock tests use sample data in `testdata/src/` and don't need a SAP system.
 
 Integration tests require a live SAP system. Jest loads `setenv.js` (gitignored) at startup and aborts with a Validation Error when the file is missing, so copy `setenv_sample.js` → `setenv.js` and fill in credentials:
 
