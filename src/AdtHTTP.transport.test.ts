@@ -51,7 +51,7 @@ const create = (extra: Partial<AdtSessionProvider> = {}) => {
 const hits = (url: string) => seen.filter(s => s.url === url)
 
 describe("browser-managed sessions", () => {
-  test("allows an external session with the standard Axios transport", () => {
+  test("allows an external session with the standard effect transport", () => {
     const versions = process.versions
     Object.defineProperty(process, "versions", { value: undefined })
     try {
@@ -75,7 +75,7 @@ describe("browser-managed sessions", () => {
   })
 })
 
-describe("external cookie session over Axios", () => {
+describe("external cookie session over the effect transport", () => {
   test("renews an expired session once and replays the read", async () => {
     const { client, renew } = create()
     client.session.importCookies({ cookieHeader: "MYSAPSSO2=old" })

@@ -1,26 +1,34 @@
-import { Clean, parts, toInt } from "../utilities"
+import { Schema } from "effect"
+import { orUndefined, parts, toInt } from "../utilities"
 import { Location } from "./syntax"
-import * as t from "io-ts";
 
-const location = t.type({
-  line: t.number,
-  column: t.number
+const location = Schema.Struct({
+  line: Schema.Number,
+  column: Schema.Number
 })
 
-const range = t.type({
+const range = Schema.Struct({
   start: location,
   end: location
 })
 
-export const uriParts = t.type({
-  uri: t.string,
-  query: t.union([t.undefined, t.record(t.string, t.string)]),
+export const uriParts = Schema.Struct({
+  uri: Schema.String,
+  query: orUndefined(Schema.Record(Schema.String, Schema.String)),
   range: range,
-  hashparms: t.union([t.undefined, t.record(t.string, t.string)]),
+  hashparms: orUndefined(Schema.Record(Schema.String, Schema.String))
 })
 
-export type Range = Clean<t.TypeOf<typeof range>>
-export type UriParts = Clean<t.TypeOf<typeof uriParts>>
+export interface Range {
+  start: Location
+  end: Location
+}
+export interface UriParts {
+  uri: string
+  query: Record<string, string> | undefined
+  range: Range
+  hashparms: Record<string, string> | undefined
+}
 
 export const rangeToString = (range: Range) =>
   `#start=${range.start.line},${range.start.column};end=${range.end.line},${range.end.column}`

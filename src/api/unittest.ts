@@ -1,8 +1,8 @@
-import * as t from "io-ts"
+import { Schema } from "effect"
 import { validateParseResult } from ".."
 import { AdtHTTP } from "../AdtHTTP"
 import { fullParse, xmlArray, xmlFlatArray, xmlNodeAttr } from "../utilities"
-import { parseUri, uriParts } from "./urlparser"
+import { parseUri, UriParts, uriParts } from "./urlparser"
 
 export interface UnitTestStackEntry {
   "adtcore:uri": string
@@ -52,13 +52,17 @@ export interface UnitTestClass {
   alerts: UnitTestAlert[]
 }
 
-const markerCodec = t.type({
-  kind: t.string,
-  keepsResult: t.boolean,
+const markerCodec = Schema.Struct({
+  kind: Schema.String,
+  keepsResult: Schema.Boolean,
   location: uriParts
 })
 
-export type UnitTestOccurrenceMarker = t.TypeOf<typeof markerCodec>
+export interface UnitTestOccurrenceMarker {
+  kind: string
+  keepsResult: boolean
+  location: UriParts
+}
 
 const parseDetail = (alert: any) =>
   xmlArray(alert, "details", "detail").reduce((result: string[], d: any) => {
@@ -220,5 +224,5 @@ export async function unitTestOccurrenceMarkers(
     return { kind, keepsResult, location: parseUri(uri) }
   })
 
-  return validateParseResult(t.array(markerCodec).decode(markers))
+  return validateParseResult(Schema.Array(markerCodec), markers) as UnitTestOccurrenceMarker[]
 }

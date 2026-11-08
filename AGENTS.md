@@ -7,7 +7,7 @@ TypeScript client library for SAP's ABAP Developer Tools (ADT) REST API. Primary
 ```bash
 npm run build    # tsc → build/
 npm run watch    # tsc -w (watch mode)
-npm test         # jest (all tests; integration tests skip if ADT_URL unset)
+npm test         # jest with --experimental-vm-modules (effect is ESM only); integration tests skip if ADT_URL unset
 ```
 
 No linter config — TypeScript strict mode (`strict: true`) is the code quality gate.
@@ -19,6 +19,8 @@ src/
   index.ts          # Re-exports everything public
   AdtClient.ts      # Thin delegating client (~120 methods)
   AdtHTTP.ts        # HTTP transport: CSRF, OAuth, sessions
+  EffectHttpClient.ts # Default HttpClient on the effect HTTP client
+  AdtEffect.ts      # Effect native surface: service, layers, tagged errors
   AdtException.ts   # Exception types + type guards
   utilities.ts      # XML helpers, type guards
   api/              # One module per domain (activate, debugger, atc, …)
@@ -50,7 +52,7 @@ most SAP ADT responses are XML. `fast-xml-parser` maps them to objects with thes
 
 ### Runtime validation
 
-Use `io-ts` codecs (`t.type`, `t.union`, etc.) when validating external API responses.
+Use Effect Schema (`Schema.Struct`, `Schema.Union`, …, helpers `xmlArrayType`, `orUndefined`, `mixed` in `utilities.ts`) when validating external API responses, via `validateParseResult(schema, value)`. Do not add fp-ts, io-ts or axios.
 
 ### Type guards / error handling
 

@@ -31,6 +31,12 @@ export {
 export * from "./AdtClient"
 export * from "./AdtException"
 export { LogCallback, LogData } from "./requestLogger"
+export * as AdtEffect from "./AdtEffect"
+export {
+  EffectHttpClient,
+  makeNodeHttpClient,
+  nodeHttpClientLayer
+} from "./EffectHttpClient"
 export {
   AbapClassStructure,
   AbapObjectStructure,

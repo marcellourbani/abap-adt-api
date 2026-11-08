@@ -14,9 +14,8 @@ import {
   isString,
   xmlArray
 } from "./utilities"
-import { isLeft } from "fp-ts/lib/These"
-import * as t from "io-ts"
-import reporter from "io-ts-reporters"
+import { Result, Schema } from "effect"
+import type { DeepMutable } from "effect/Types"
 import type { AdtSessionFailureReason } from "./AdtSession"
 const ADTEXTYPEID = Symbol.for("ADT EXCEPTION")
 const CSRFEXTYPEID = Symbol.for("BAD CSRF")
@@ -331,12 +330,20 @@ export function ValidateStateful(h: AdtHTTP) {
     "This operation can only be performed in stateful mode"
   )
 }
-export const validateParseResult = <T>(parseResult: t.Validation<T>): T => {
-  if (isLeft(parseResult)) {
-    const messages = reporter.report(parseResult)
-    throw adtException(messages.slice(0, 3).join("\n"))
-  }
-  return parseResult.right
+/**
+ * Checks a parsed response against a schema
+ *
+ * Returns the input itself, like io-ts did: attributes the schema doesn't know are kept
+ * @throws AdtErrorException with the first validation messages
+ */
+export const validateParseResult = <S extends Schema.Top & { readonly DecodingServices: never }>(
+  schema: S,
+  input: unknown
+): DeepMutable<S["Type"]> => {
+  const result = Schema.decodeUnknownResult(schema)(input, { errors: "all" })
+  if (Result.isFailure(result))
+    throw adtException(result.failure.message.split("\n").slice(0, 3).join("\n"))
+  return input as DeepMutable<S["Type"]>
 }
 
 export const isErrorMessageType = (x: string | SAPRC | undefined) =>

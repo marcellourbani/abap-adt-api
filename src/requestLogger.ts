@@ -1,4 +1,3 @@
-import axios, { AxiosResponse } from "axios"
 import { AdtException, isAdtError, isAdtException, session_types } from "."
 import { isNumber, isObject, isString, isUndefined } from "./utilities"
 import { HeaderValue, HttpClientOptions, HttpClientResponse } from "./AdtHTTP"
@@ -88,17 +87,6 @@ const convertRequest = (original?: unknown): RequestData => {
     body: isString(body) || isUndefined(body) ? body : JSON.stringify(body)
   }
 }
-const convertAxiosResponse = (original?: AxiosResponse): ResponseData => {
-  if (!original) return { headers: {}, statusCode: 0, statusMessage: "" }
-  const { headers, data, status, statusText } = original
-  return {
-    headers: headers ? { ...headers } : {},
-    statusCode: status,
-    statusMessage: statusText,
-    body: isString(data) ? data : JSON.stringify(data)
-  }
-}
-
 const convertResponse = (
   original?: HttpClientResponse | AdtException
 ): ResponseData => {
@@ -129,24 +117,18 @@ export const logError = (
 ) => {
   try {
     if (!callback) return
-    if (axios.isAxiosError(error)) {
-      const request = convertRequest(error.config)
-      const response = convertAxiosResponse(error.response!)
-      callback(createLogData(request, response, clientId, error.config, error))
-    } else {
-      const resp = isAdtException(error)
-        ? convertResponse(error)
-        : convertResponse(undefined)
-      callback(
-        createLogData(
-          convertRequest(config),
-          resp,
-          clientId,
-          config,
-          error as Error
-        )
+    const resp = isAdtException(error)
+      ? convertResponse(error)
+      : convertResponse(undefined)
+    callback(
+      createLogData(
+        convertRequest(config),
+        resp,
+        clientId,
+        config,
+        error as Error
       )
-    }
+    )
   } catch (error) {}
 }
 
