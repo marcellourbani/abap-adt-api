@@ -70,10 +70,10 @@ export interface PackageSpecificData {
   packagetype: PackageTypes
 }
 export interface PackageValidateOptions
-  extends PackageSpecificData,
-    BaseValidateOptions {
+  extends PackageSpecificData, BaseValidateOptions {
   objtype: PackageTypeId
   packagename: string
+  checkmode?: "basic"
 }
 
 export interface BindingValidationOptions extends BaseValidateOptions {
@@ -96,8 +96,7 @@ export interface NewObjectOptions {
   masterSystem?: string
 }
 export interface NewPackageOptions
-  extends NewObjectOptions,
-    PackageSpecificData {
+  extends NewObjectOptions, PackageSpecificData {
   objtype: PackageTypeId
 }
 
