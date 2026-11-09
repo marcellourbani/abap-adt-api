@@ -114,6 +114,11 @@ class AdtCsrfException extends Error {
   get typeID(): symbol {
     return CSRFEXTYPEID
   }
+  get response(): HttpClientResponse | undefined {
+    const p: any = this.parent
+    if (isHttpClientException(p)) return p.response
+    return undefined
+  }
   constructor(
     public readonly message: string,
     public readonly parent?: Error
@@ -139,6 +144,11 @@ class AdtHttpException extends Error {
   }
   get message() {
     return this.parent.message
+  }
+  get response(): HttpClientResponse | undefined {
+    const p: any = this.parent
+    if (isHttpClientException(p)) return p.response
+    return undefined
   }
   get name() {
     return this.parent.name
@@ -248,7 +258,8 @@ export const fromResponse = (data: string, response: HttpClientResponse) => {
     root.message["#text"],
     undefined,
     getf(root.namespace, "@_id"),
-    getf(root.localizedMessage, "#text")
+    getf(root.localizedMessage, "#text"),
+    response
   )
 }
 
@@ -336,13 +347,17 @@ export function ValidateStateful(h: AdtHTTP) {
  * Returns the input itself, like io-ts did: attributes the schema doesn't know are kept
  * @throws AdtErrorException with the first validation messages
  */
-export const validateParseResult = <S extends Schema.Top & { readonly DecodingServices: never }>(
+export const validateParseResult = <
+  S extends Schema.Top & { readonly DecodingServices: never }
+>(
   schema: S,
   input: unknown
 ): DeepMutable<S["Type"]> => {
   const result = Schema.decodeUnknownResult(schema)(input, { errors: "all" })
   if (Result.isFailure(result))
-    throw adtException(result.failure.message.split("\n").slice(0, 3).join("\n"))
+    throw adtException(
+      result.failure.message.split("\n").slice(0, 3).join("\n")
+    )
   return input as DeepMutable<S["Type"]>
 }
 

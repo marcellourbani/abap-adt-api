@@ -1,4 +1,10 @@
-import { AdtException, isAdtError, isAdtException, session_types } from "."
+import {
+  AdtException,
+  isAdtError,
+  isAdtException,
+  isCsrfError,
+  session_types
+} from "."
 import { isNumber, isObject, isString, isUndefined } from "./utilities"
 import { HeaderValue, HttpClientOptions, HttpClientResponse } from "./AdtHTTP"
 
@@ -118,7 +124,7 @@ export const logError = (
   try {
     if (!callback) return
     const resp = isAdtException(error)
-      ? convertResponse(error)
+      ? convertResponse(error.response)
       : convertResponse(undefined)
     callback(
       createLogData(
