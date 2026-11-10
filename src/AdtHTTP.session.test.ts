@@ -349,7 +349,7 @@ describe("external session HTTP errors", () => {
   test.each([400, 401])(
     "stores cookies from a %d response and notifies the provider",
     async status => {
-      const onCookiesChanged = jest.fn()
+      const onCookiesChanged = jest.fn(async () => undefined)
       const { p } = provider(() => undefined, { onCookiesChanged })
       const { http } = create(
         () =>
@@ -370,7 +370,7 @@ describe("external session HTTP errors", () => {
   )
 
   test("removes expired cookies from error responses", async () => {
-    const onCookiesChanged = jest.fn()
+    const onCookiesChanged = jest.fn(async () => undefined)
     const { p } = provider(() => undefined, { onCookiesChanged })
     const { http } = create(
       () =>
