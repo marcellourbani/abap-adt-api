@@ -6,6 +6,7 @@ import { session_types } from "../"
 import { NewObjectOptions } from "../"
 import { AdtLock } from "../"
 import { ADTClient } from "../AdtClient"
+import { jest } from "@jest/globals"
 import {
   ChangePackageRefactoring,
   hasPackageOptions,

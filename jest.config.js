@@ -15,11 +15,12 @@ module.exports = {
     testMatch: ["**/__tests__/*.+(ts|tsx|js)", "**/*.test.ts"],
 
     // A map from regular expressions to paths to transformers
-    // effect is ESM only: jest loads it through require(esm), which needs
-    // --experimental-vm-modules (set by the npm test script)
-    // 151002: ts-jest wants isolatedModules with module nodenext, the emitted CommonJS is the same
+    moduleNameMapper: {
+        "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    extensionsToTreatAsEsm: [".ts"],
     transform: {
-        "\\.(ts|tsx)$": ["ts-jest", { tsconfig: "tsconfig.json", diagnostics: { ignoreCodes: [151002] } }]
+        "\\.(ts|tsx)$": ["ts-jest", { tsconfig: "tsconfig.test.json", useESM: true }]
     },
     testTimeout: 10000,
     transformIgnorePatterns: ["/node_modules/"]

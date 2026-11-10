@@ -1,5 +1,6 @@
 // these tests call a real system.
 // will only work if there's one connected and the environment variables are set
+import { jest } from "@jest/globals"
 import exp from "constants"
 import {
   ADTClient,
@@ -13,9 +14,10 @@ import {
   objectPath,
   UnitTestAlertKind
 } from "../"
-import { HttpClientException, session_types } from "../AdtHTTP"
+import { AdtHTTP, HttpClientException, session_types } from "../AdtHTTP"
 import {
   classIncludes,
+  getSystemInformation,
   isBindingOptions,
   NewBindingOptions,
   NewObjectOptions,
@@ -129,6 +131,18 @@ test(
     expect(graph).toBeDefined()
   })
 )
+
+test(
+  "get system information",
+  runTest(async (c: ADTClient) => {
+    const info = await c.getSystemInformation()
+    expect(info).toBeDefined()
+    expect(info.systemID).toBeDefined()
+    expect(info.userName).toBeDefined()
+    expect(info.client).toBeDefined()
+  })
+)
+
 test(
   "logpoints",
   runTest(async (c: ADTClient) => {

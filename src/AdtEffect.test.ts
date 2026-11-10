@@ -5,6 +5,7 @@ import { Effect, Layer } from "effect"
 import { HttpClient as EffectHttp } from "effect/http"
 import { HttpAgent, makeNodeHttp } from "@effect/platform-node/NodeHttpClient"
 import { ADTClient, AdtEffect, isAdtError } from "."
+import { jest } from "@jest/globals"
 
 const GRAPH = "/sap/bc/adt/compatibility/graph"
 const ADT_ERROR = `<exc:exception xmlns:exc="http://www.sap.com/abapxml/types/communicationframework"><type id="Boom"/><message lang="EN">exploded</message></exc:exception>`
@@ -67,7 +68,9 @@ describe("effect surface", () => {
         Effect.succeed(`${e.message} ${isAdtError(e.cause)}`)
       )
     )
-    const result = await Effect.runPromise(Effect.provide(program, clientLayer()))
+    const result = await Effect.runPromise(
+      Effect.provide(program, clientLayer())
+    )
     expect(result).toBe("exploded true")
   })
 
@@ -91,7 +94,9 @@ describe("effect surface", () => {
 
   test("wraps the promise methods of an existing client", async () => {
     const client = new ADTClient(baseURL, "user", "pass")
-    const fake = jest.spyOn(client, "transportDelete").mockResolvedValue(undefined)
+    const fake = jest
+      .spyOn(client, "transportDelete")
+      .mockResolvedValue(undefined)
     const program = Effect.gen(function* () {
       const adt = yield* AdtEffect.AdtClientService
       yield* adt.transportDelete("K900001")

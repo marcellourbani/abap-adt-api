@@ -46,6 +46,7 @@ export {
   AdtCoreDiscoveryResult,
   AdtDiscoveryResult,
   AdtGraphNode,
+  AdtSystemInformation,
   AdtLock,
   AtcCustomizing,
   AtcProposal,

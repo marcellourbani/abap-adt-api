@@ -18,6 +18,7 @@ import {
   isAuthenticationFailure
 } from "./AdtException"
 import { LogData } from "./requestLogger"
+import { jest } from "@jest/globals"
 
 type Handler = (
   options: HttpClientOptions,
@@ -351,7 +352,8 @@ describe("external session HTTP errors", () => {
       const onCookiesChanged = jest.fn()
       const { p } = provider(() => undefined, { onCookiesChanged })
       const { http } = create(
-        () => reply(status, { "set-cookie": ["SAP_SESSIONID=rotated; path=/"] }),
+        () =>
+          reply(status, { "set-cookie": ["SAP_SESSIONID=rotated; path=/"] }),
         p
       )
       http.session.importCookies({ cookieHeader: "MYSAPSSO2=abc" })

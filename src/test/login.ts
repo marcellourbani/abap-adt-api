@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals"
 import { ADTClient, createSSLConfig } from "../"
 import { AdtHTTP } from "../AdtHTTP"
 export function create() {

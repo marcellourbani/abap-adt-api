@@ -3,6 +3,7 @@ import { AddressInfo } from "net"
 import { AdtHTTP } from "./AdtHTTP"
 import { AdtSessionProvider } from "./AdtSession"
 import { isAdtError, isAdtSessionFailure } from "./AdtException"
+import { jest } from "@jest/globals"
 
 interface Seen {
   url: string
@@ -51,13 +52,12 @@ const create = (extra: Partial<AdtSessionProvider> = {}) => {
 const hits = (url: string) => seen.filter(s => s.url === url)
 
 describe("browser-managed sessions", () => {
-  test("allows an external session with the standard effect transport", () => {
+  test("allows an external session with the standard effect transport", async () => {
     const versions = process.versions
     Object.defineProperty(process, "versions", { value: undefined })
     try {
-      jest.isolateModules(() => {
-        const { AdtHTTP: BrowserAdtHTTP } =
-          require("./AdtHTTP") as typeof import("./AdtHTTP")
+      await jest.isolateModulesAsync(async () => {
+        const { AdtHTTP: BrowserAdtHTTP } = await import("./AdtHTTP.js")
         const session: AdtSessionProvider = {
           id: "browser",
           renew: async () => undefined

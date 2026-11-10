@@ -10,6 +10,7 @@ import {
   type HttpClientOptions,
   type HttpClientResponse
 } from "./AdtHTTP"
+import { jest } from "@jest/globals"
 
 const GRAPH = "/sap/bc/adt/compatibility/graph"
 
@@ -286,8 +287,7 @@ test("a replacement after stateful loss drops the old context before the next lo
     "",
     createCookieSessionOptions({
       id: "test",
-      loadCookies: async () =>
-        "sap-contextid=old; MYSAPSSO2=saved",
+      loadCookies: async () => "sap-contextid=old; MYSAPSSO2=saved",
       acquireCookies: async () => undefined
     })
   )

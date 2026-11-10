@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals"
 import { ADTClient } from "../AdtClient"
 import ClientOAuth2 from "client-oauth2"
 import { parseServiceBinding, servicePreviewUrl } from "../"

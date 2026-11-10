@@ -1,4 +1,5 @@
 import { CookieJar } from "./AdtSession"
+import { jest } from "@jest/globals"
 
 const newJar = () => {
   const resetCsrf = jest.fn()

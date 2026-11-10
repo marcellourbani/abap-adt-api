@@ -19,6 +19,7 @@ import {
   AdtCoreDiscoveryResult,
   adtDiscovery,
   AdtDiscoveryResult,
+  AdtSystemInformation,
   AdtLock,
   annotationDefinitions,
   bindingDetails,
@@ -93,6 +94,7 @@ import {
   FixProposal,
   fixProposals,
   FragmentLocation,
+  getSystemInformation,
   fragmentMappings,
   getObjectSource,
   getTransportConfiguration,
@@ -808,6 +810,9 @@ export class ADTClient {
   }
   public adtCompatibiliyGraph() {
     return adtCompatibilityGraph(this.h)
+  }
+  public getSystemInformation(): Promise<AdtSystemInformation> {
+    return getSystemInformation(this.h)
   }
 
   public syntaxCheckTypes() {

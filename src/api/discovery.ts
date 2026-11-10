@@ -20,6 +20,14 @@ export interface AdtCoreDiscoveryResult {
   collection: { href: string; title: string; category: string }
 }
 
+export interface AdtSystemInformation {
+  systemID: string
+  userName: string
+  userFullName: string
+  client: string
+  language: string
+}
+
 export interface AdtGraphNode {
   nameSpace: string
   name: string
@@ -69,6 +77,20 @@ export async function adtCoreDiscovery(h: AdtHTTP) {
       title: w["atom:title"]
     }
   }) as AdtCoreDiscoveryResult[]
+}
+
+export async function getSystemInformation(
+  h: AdtHTTP
+): Promise<AdtSystemInformation> {
+  const response = await h.request(
+    "/sap/bc/adt/core/http/systeminformation",
+    {
+      headers: {
+        Accept: "application/vnd.sap.adt.core.http.systeminformation.v1+json"
+      }
+    }
+  )
+  return JSON.parse(response.body) as AdtSystemInformation
 }
 
 export async function adtCompatibilityGraph(h: AdtHTTP) {

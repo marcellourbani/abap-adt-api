@@ -7,6 +7,7 @@ import {
   validateNewObject
 } from "./objectcreator"
 import { fullParse } from "../utilities"
+import { jest } from "@jest/globals"
 
 describe("table type creation", () => {
   const options: NewObjectOptions = {

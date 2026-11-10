@@ -1,5 +1,6 @@
 import { AdtHTTP } from "../AdtHTTP"
 import { usageReferenceSnippets, usageReferences } from "./syntax"
+import { jest } from "@jest/globals"
 
 const NS = "http://www.sap.com/adt/ris/usageReferences"
 

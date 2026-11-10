@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## 10.0.0 [2026-11-10]
 
 ### Changed (breaking)
 
@@ -25,6 +25,10 @@
 
 - Hardened external cookie sessions: require a CSRF token at login, discard stale SAP context IDs, persist cookies from error responses, and recognize session timeouts in 400 status text
 - usage references parse whatever namespace prefix the system uses (`usageReferences:` or `usagereferences:`)
+
+### Removed
+
+- Axios based client
 
 ## 5.2.0 [2023-11-06]
 
