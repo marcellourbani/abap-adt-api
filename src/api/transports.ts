@@ -249,11 +249,17 @@ const parseRequest = (r: any) => {
   }
   return request
 }
-const parseTargets = (s: any) => ({
-  ...xmlNodeAttr(s),
-  modifiable: xmlArray(s, "tm:modifiable", "tm:request").map(parseRequest),
-  released: xmlArray(s, "tm:released", "tm:request").map(parseRequest)
-})
+const parseTargets = (s: any) => {
+  // some systems nest the requests under tm:project, others list them directly
+  const sources = [s, ...xmlArray(s, "tm:project")]
+  const requests = (kind: string) =>
+    sources.flatMap(p => xmlArray(p, kind, "tm:request").map(parseRequest))
+  return {
+    ...xmlNodeAttr(s),
+    modifiable: requests("tm:modifiable"),
+    released: requests("tm:released")
+  }
+}
 
 export async function transportDetails(h: AdtHTTP, transportNumber: string) {
   const Accept = "application/vnd.sap.adt.transportorganizer.v1+xml"
