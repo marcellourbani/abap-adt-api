@@ -191,3 +191,85 @@ export async function dumps(h: AdtHTTP, query: string = "") {
 
   return parseDumps(response.body)
 }
+
+export interface FeedEntryCategory {
+  term?: string
+  label?: string
+  scheme?: string
+}
+
+export interface FeedEntry {
+  id: string
+  title: string
+  updated?: Date
+  published?: Date
+  author?: string
+  categories: FeedEntryCategory[]
+  links: Link[]
+  /** summary text, often escaped HTML */
+  summary: string
+  /** summary type, i.e. text or html */
+  summaryType: string
+  content?: string
+}
+
+export interface FeedEntries {
+  title: string
+  updated?: Date
+  entries: FeedEntry[]
+}
+
+const textOf = (value: any): string => {
+  if (value === undefined || value === null) return ""
+  if (typeof value !== "object") return `${value}`
+  return textOf(value["#text"])
+}
+
+const optionalDate = (value: any) => {
+  const text = textOf(value)
+  return text ? parseJsonDate(text) : undefined
+}
+
+const parseFeedEntry = (entry: any): FeedEntry => ({
+  id: textOf(entry.id),
+  title: textOf(entry.title),
+  updated: optionalDate(entry.updated),
+  published: optionalDate(entry.published),
+  author: textOf(entry.author?.name) || undefined,
+  categories: xmlArray(entry, "category").map(xmlNodeAttr),
+  links: xmlArray(entry, "link").map(xmlNodeAttr),
+  summary: textOf(entry.summary),
+  summaryType: `${entry.summary?.["@_type"] ?? ""}`,
+  content: textOf(entry.content) || undefined
+})
+
+const parseFeedEntries = (body: string): FeedEntries => {
+  const raw = fullParse(body, {
+    removeNSPrefix: true,
+    parseTagValue: false,
+    parseAttributeValue: false,
+    // summaries can embed whole escaped HTML pages, like the dumps feed
+    processEntities: { enabled: true, maxTotalExpansions: 1000000 }
+  })?.feed
+  return {
+    title: textOf(raw?.title),
+    updated: optionalDate(raw?.updated),
+    entries: xmlArray(raw, "entry").map(parseFeedEntry)
+  }
+}
+
+/**
+ * Reads the entries of any ADT feed, like the ones listed by feeds()
+ * @param feedUrl feed path, i.e. /sap/bc/adt/atc/feeds/verdicts
+ * @param query optional filter, sent as $query
+ */
+export async function feedEntries(
+  h: AdtHTTP,
+  feedUrl: string,
+  query?: string
+): Promise<FeedEntries> {
+  const headers = { Accept: "application/atom+xml;type=feed" }
+  const qs = query ? { $query: query } : undefined
+  const response = await h.request(feedUrl, { method: "GET", qs, headers })
+  return parseFeedEntries(response.body)
+}

@@ -88,6 +88,7 @@ import {
   externalRepoInfo,
   Feed,
   feeds,
+  feedEntries,
   findDefinition,
   findObjectPath,
   fixEdits,
@@ -1205,6 +1206,14 @@ export class ADTClient {
 
   public feeds() {
     return feeds(this.h)
+  }
+
+  /**
+   * Reads the entries of any ADT feed, like the ones listed by feeds()
+   * @param query optional filter, sent as $query
+   */
+  public feedEntries(feedUrl: string, query?: string) {
+    return feedEntries(this.h, feedUrl, query)
   }
 
   public dumps(query?: string) {
