@@ -185,14 +185,32 @@ export interface DdicObjectReference {
   path: string
 }
 
+export interface DdicRepositoryAccessOptions {
+  /** only return entries matching the path exactly (exactMatch=X) */
+  exactMatch?: boolean
+  /** ask SAP to resolve the object uri of each entry (uriRequired=X) */
+  uriRequired?: boolean
+}
+
+/**
+ * Resolves CDS names to DDIC repository objects
+ * @param path a data source name, or paths like SOURCE.FIELD
+ * @returns the matching objects, an unresolved one has the uri not_used
+ */
 export async function ddicRepositoryAccess(
   h: AdtHTTP,
-  path: string | string[]
+  path: string | string[],
+  options: DdicRepositoryAccessOptions = {}
 ) {
   const headers = { Accept: "application/*" }
-  const qs = isArray(path)
-    ? formatQS({ requestScope: "all", path })
-    : `datasource=${encodeURIComponent(path)}`
+  const target = isArray(path)
+    ? { requestScope: "all", path }
+    : { datasource: path }
+  const flags = {
+    ...(options.exactMatch ? { exactMatch: "X" } : {}),
+    ...(options.uriRequired ? { uriRequired: "X" } : {})
+  }
+  const qs = formatQS({ ...target, ...flags })
   const url = `/sap/bc/adt/ddic/ddl/ddicrepositoryaccess?${qs}`
   const response = await h.request(url, { headers })
   const raw = fullParse(response.body)

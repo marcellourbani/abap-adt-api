@@ -47,6 +47,7 @@ import {
   DdicElement,
   DdicObjectReference,
   ddicRepositoryAccess,
+  DdicRepositoryAccessOptions,
   DebugAttach,
   DebugBreakpoint,
   DebugBreakpointError,
@@ -1172,8 +1173,11 @@ export class ADTClient {
     )
   }
 
-  public ddicRepositoryAccess(path: string | string[]) {
-    return ddicRepositoryAccess(this.h, path)
+  public ddicRepositoryAccess(
+    path: string | string[],
+    options?: DdicRepositoryAccessOptions
+  ) {
+    return ddicRepositoryAccess(this.h, path, options)
   }
 
   public publishServiceBinding(name: string, version: string) {
