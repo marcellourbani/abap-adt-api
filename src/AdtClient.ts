@@ -222,6 +222,11 @@ import {
   atcWorklists,
   AtcWorkList,
   atcUsers,
+  objectRelationNetwork,
+  objectRelationComponents,
+  objectRelationReferences,
+  objectRelationSets,
+  ObjectRelationReference,
   atcExemptProposal,
   isProposalMessage,
   atcContactUri,
@@ -1612,6 +1617,33 @@ export class ADTClient {
   }
   public atcUsers() {
     return atcUsers(this.h)
+  }
+
+  /** Objects related to the given one, see ObjectRelationContexts for the context ids */
+  public objectRelationNetwork(
+    object: ObjectRelationReference,
+    context?: string,
+    desiredContexts?: string[]
+  ) {
+    return objectRelationNetwork(this.h, object, context, desiredContexts)
+  }
+
+  public objectRelationComponents(object: ObjectRelationReference, context?: string) {
+    return objectRelationComponents(this.h, object, context)
+  }
+
+  /** Source locations where one object refers to the other */
+  public objectRelationReferences(
+    from: ObjectRelationReference,
+    to: ObjectRelationReference,
+    context?: string
+  ) {
+    return objectRelationReferences(this.h, from, to, context)
+  }
+
+  /** Relations between two objects, compared as object sets */
+  public objectRelationSets(left: ObjectRelationReference, right: ObjectRelationReference) {
+    return objectRelationSets(this.h, left, right)
   }
 
   public atcExemptProposal(markerId: string) {
