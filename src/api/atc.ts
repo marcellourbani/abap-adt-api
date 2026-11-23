@@ -546,3 +546,35 @@ export async function atcChangeContact(
     </atcfinding:items>`
   await h.request(`/sap/bc/adt/atc/items`, { headers, body, method: "PUT" })
 }
+
+const atcVariant = Schema.Struct({
+  name: Schema.String,
+  description: Schema.String
+})
+export type AtcVariant = DeepMutable<typeof atcVariant.Type>
+
+/**
+ * Lists the ATC check variants of the system
+ * @param query name pattern, supports * wildcards
+ * @param maxItems maximum number of variants returned by the server
+ */
+export async function atcVariants(
+  h: AdtHTTP,
+  query = "*",
+  maxItems = 100
+): Promise<AtcVariant[]> {
+  const headers = { Accept: "application/vnd.sap.adt.nameditems.v1+xml" }
+  const qs = { maxItemCount: maxItems, name: query }
+  const response = await h.request("/sap/bc/adt/atc/variants", { qs, headers })
+  const raw = fullParse(response.body, {
+    removeNSPrefix: true,
+    parseTagValue: false
+  })
+  const variants = xmlArray(raw, "namedItemList", "namedItem").map(
+    (item: any) => ({
+      name: `${item?.name ?? ""}`,
+      description: `${item?.description ?? ""}`
+    })
+  )
+  return validateParseResult(Schema.Array(atcVariant), variants) as AtcVariant[]
+}

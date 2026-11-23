@@ -222,6 +222,7 @@ import {
   atcWorklists,
   AtcWorkList,
   atcUsers,
+  atcVariants,
   atcExemptProposal,
   isProposalMessage,
   atcContactUri,
@@ -1612,6 +1613,15 @@ export class ADTClient {
   }
   public atcUsers() {
     return atcUsers(this.h)
+  }
+
+  /**
+   * Lists the ATC check variants of the system
+   * @param query name pattern, supports * wildcards
+   * @param maxItems maximum number of variants returned by the server
+   */
+  public atcVariants(query?: string, maxItems?: number) {
+    return atcVariants(this.h, query, maxItems)
   }
 
   public atcExemptProposal(markerId: string) {
