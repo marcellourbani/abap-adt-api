@@ -1,6 +1,7 @@
 import { adtException, ValidateObjectUrl } from "../AdtException"
 import { AdtHTTP } from "../AdtHTTP"
 import {
+  encodeEntity,
   fullParse,
   isArray,
   isString,
@@ -54,7 +55,60 @@ function toElement(source: any) {
   } as InactiveObjectElement
 }
 
+/** Empty attributes are left out: SAP doesn't expect an empty parentUri */
+function objectReference(attributes: Record<string, string | undefined>) {
+  const values = Object.entries(attributes)
+    .filter(([, value]) => value)
+    .map(([key, value]) => `adtcore:${key}="${encodeEntity(`${value}`)}"`)
+  return `<adtcore:objectReference ${values.join(" ")}/>`
+}
+
+const textOf = (value: any): string => {
+  if (isString(value) || typeof value === "number") return `${value}`
+  if (isArray(value)) return value.map(textOf).filter(Boolean).join(" ")
+  return value ? textOf(value.txt ?? value["#text"]) : ""
+}
+
+/** Attributes can come with or without the chkl namespace prefix */
+function activationMessage(m: any): ActivationResultMessage {
+  const attributes = xmlNodeAttr(m) || {}
+  const get = (name: string) => attributes[name] ?? attributes[`chkl:${name}`]
+  return {
+    ...attributes,
+    objDescr: `${get("objDescr") ?? ""}`,
+    type: `${get("type") ?? ""}`,
+    line: Number(get("line")) || 0,
+    href: `${get("href") ?? ""}`,
+    forceSupported: `${get("forceSupported")}` === "true",
+    shortText:
+      textOf(m.shortText) || `${get("shortText") ?? ""}` || "Syntax error"
+  }
+}
+
+/** Some systems list inactive objects as plain adtcore:objectReferences */
+function referenceElement(reference: any): InactiveObjectElement | undefined {
+  const attributes = xmlNodeAttr(reference) || {}
+  const [uri, type, name] = ["uri", "type", "name"].map(
+    key => attributes[`adtcore:${key}`]
+  )
+  if (!uri || !type || !name) return undefined
+  const parentUri = attributes["adtcore:parentUri"]
+  return {
+    "adtcore:uri": `${uri}`,
+    "adtcore:type": `${type}`,
+    "adtcore:name": `${name}`,
+    "adtcore:parentUri": parentUri ? `${parentUri}` : "",
+    user: "",
+    deleted: false
+  }
+}
+
 function parseInactive(raw: any): InactiveObjectRecord[] {
+  if (raw?.["adtcore:objectReferences"])
+    return xmlArray(raw, "adtcore:objectReferences", "adtcore:objectReference")
+      .map(referenceElement)
+      .filter(object => !!object)
+      .map(object => ({ object }))
   return xmlArray(raw, "ioc:inactiveObjects", "ioc:entry").map((obj: any) => {
     return {
       object: toElement(xmlNode(obj, "ioc:object")),
@@ -91,7 +145,10 @@ export async function activate(
 
     if (mainInclude) incl = `?context=${encodeURIComponent(mainInclude)}`
     objects.push(
-      `<adtcore:objectReference adtcore:uri="${objectUrlOrPreauditReq}${incl}" adtcore:name="${objectNameOrObjects}"/>`
+      objectReference({
+        uri: `${objectUrlOrPreauditReq}${incl}`,
+        name: objectNameOrObjects
+      })
     )
   } else {
     let inactives: InactiveObject[]
@@ -104,9 +161,13 @@ export async function activate(
       inactives = objectNameOrObjects
     } else inactives = [objectNameOrObjects]
     inactives.forEach(i => ValidateObjectUrl(i["adtcore:uri"]))
-    objects = inactives.map(
-      i =>
-        `<adtcore:objectReference adtcore:uri="${i["adtcore:uri"]}" adtcore:type="${i["adtcore:type"]}" adtcore:parentUri="${i["adtcore:parentUri"]}" adtcore:name="${i["adtcore:name"]}"/>`
+    objects = inactives.map(i =>
+      objectReference({
+        uri: i["adtcore:uri"],
+        type: i["adtcore:type"],
+        parentUri: i["adtcore:parentUri"],
+        name: i["adtcore:name"]
+      })
     )
   }
   const qs = { method: "activate", preauditRequested }
@@ -127,17 +188,9 @@ export async function activate(
   if (response.body) {
     const raw = fullParse(response.body)
     inactive = parseInactive(raw)
-    messages = xmlArray(raw, "chkl:messages", "msg").map((m: any) => {
-      const message = xmlNodeAttr(m)
-      message.shortText = (m.shortText && m.shortText.txt) || "Syntax error"
-      return message
-    }) as ActivationResultMessage[]
+    messages = xmlArray(raw, "chkl:messages", "msg").map(activationMessage)
     if (inactive.length > 0) success = false
-    else
-      messages.some(m => {
-        if (m.type.match(/[EAX]/)) success = false
-        return !success
-      })
+    else success = !messages.some(m => /[EAX]/.test(m.type))
   }
   return { messages, success, inactive } as ActivationResult
 }
